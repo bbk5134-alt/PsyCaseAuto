@@ -1,0 +1,15 @@
+FROM n8nio/n8n:latest
+
+USER root
+
+RUN apk add --no-cache ffmpeg
+
+USER node
+
+ENV N8N_BASIC_AUTH_ACTIVE=true
+ENV N8N_PORT=5678
+ENV GENERIC_TIMEZONE=Asia/Seoul
+ENV N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+ENV N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+
+EXPOSE 5678

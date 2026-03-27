@@ -1,0 +1,68 @@
+{
+  "name": "WF3 - Error Workflow",
+  "nodes": [
+    {
+      "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "parameters": {}
+    },
+    {
+      "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      "name": "에러 메시지 구성",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "const workflowName = $execution.workflow.name || 'unknown';\nconst nodeName = $execution.errorNode?.name || 'unknown';\nconst errorMsg = ($execution.errorMessage || '').substring(0, 200);\nconst patientCode = $execution.data?.patientCode || 'N/A';\nconst ts = $now.toFormat('yyyy-MM-dd HH:mm');\n\nconst text = [\n  '⚠️ PsyCaseAuto 오류 발생',\n  '',\n  `워크플로우: ${workflowName}`,\n  `노드: ${nodeName}`,\n  `시간: ${ts}`,\n  `환자: ${patientCode}`,\n  `오류: ${errorMsg}`,\n  '',\n  'n8n 대시보드에서 상세 로그를 확인하세요.'\n].join('\\n');\n\nreturn [{ json: { text } }];"
+      }
+    },
+    {
+      "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+      "name": "Telegram 발송",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [720, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "={{ $json.text }}",
+        "additionalFields": {}
+      }
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "에러 메시지 구성",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "에러 메시지 구성": {
+      "main": [
+        [
+          {
+            "node": "Telegram 발송",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "timezone": "Asia/Seoul"
+  },
+  "tags": [
+    { "name": "PsyCaseAuto" }
+  ]
+}
