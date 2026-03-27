@@ -112,6 +112,44 @@ psychiatric interview automation/
 
 ---
 
+### 세션 1C — Telegram 핑 테스트 & Google Drive 초기화 워크플로우 (2026-03-27)
+
+#### 생성 파일
+
+| 파일 | 설명 |
+|------|------|
+| `n8n_workflows/wf_telegram_ping_test.json` | Telegram 봇 연결 확인용 핑 테스트 |
+| `n8n_workflows/wf_gdrive_init.json` | Google Drive 폴더 구조 1회 초기화 |
+
+#### wf_telegram_ping_test 구조
+```
+Telegram Trigger → 입력 파싱 (Code) → ping 여부 (IF)
+                                           ├─ true  → 응답 — pong
+                                           └─ false → 응답 — unknown
+```
+- "ping" 수신 시 "pong 🟢 PsyCaseAuto 연결 확인됨 (HH:mm)" 응답
+- 그 외 텍스트는 안내 메시지 응답
+- maxConcurrency: 1
+
+#### wf_gdrive_init 구조
+```
+수동 실행 → 루트 폴더 생성 (GoogleDrive) → 서브폴더 목록 (Code)
+         → 배치 순회 (SplitInBatches)
+              ├─ loop  → 서브폴더 생성 (GoogleDrive) → (배치 순회로 복귀)
+              └─ done  → 완료 메시지 (Telegram)
+```
+- 생성 폴더: PsyCaseAuto/ → config/, PT-SAMPLE/
+- 완료 후 Telegram으로 루트 폴더 ID 전송 (→ PATIENT_DRIVE_ROOT_FOLDER_ID 에 저장)
+- 실행 후 비활성화할 것
+
+#### import 후 필수 작업 (1C)
+1. Telegram Trigger 노드 → Credentials → "PsyCaseAuto Telegram Bot" 선택
+2. GoogleDrive 노드 → Credentials → "PsyCaseAuto Google Drive" 선택
+3. wf_telegram_ping_test 활성화 → Telegram에서 `ping` 전송으로 검증
+4. wf_gdrive_init 수동 실행 → Telegram으로 루트 폴더 ID 수신 → `.env`의 PATIENT_DRIVE_ROOT_FOLDER_ID 업데이트
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |

@@ -1,0 +1,153 @@
+{
+  "name": "PsyCaseAuto — Google Drive 폴더 초기화 (1회성)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b2c3d4e5-0001-4000-8000-000000000001",
+      "name": "수동 실행",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "PsyCaseAuto",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $env.PATIENT_DRIVE_ROOT_FOLDER_ID }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-0002-4000-8000-000000000002",
+      "name": "루트 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [480, 300],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "2",
+          "name": "PsyCaseAuto Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  { json: { name: 'config' } },\n  { json: { name: 'PT-SAMPLE' } }\n];"
+      },
+      "id": "b2c3d4e5-0003-4000-8000-000000000003",
+      "name": "서브폴더 목록",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "b2c3d4e5-0004-4000-8000-000000000004",
+      "name": "배치 순회",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [960, 300]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "={{ $json.name }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('루트 폴더 생성').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-0005-4000-8000-000000000005",
+      "name": "서브폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1200, 180],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "2",
+          "name": "PsyCaseAuto Google Drive"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $env.TELEGRAM_ADMIN_CHAT_ID }}",
+        "text": "=✅ Google Drive 폴더 구조 생성 완료\n루트 폴더 ID: {{ $('루트 폴더 생성').item.json.id }}\n이 ID를 PATIENT_DRIVE_ROOT_FOLDER_ID에 저장하세요.",
+        "additionalFields": {}
+      },
+      "id": "b2c3d4e5-0006-4000-8000-000000000006",
+      "name": "완료 메시지",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 420],
+      "credentials": {
+        "telegramApi": {
+          "id": "1",
+          "name": "PsyCaseAuto Telegram Bot"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "수동 실행": {
+      "main": [
+        [{ "node": "루트 폴더 생성", "type": "main", "index": 0 }]
+      ]
+    },
+    "루트 폴더 생성": {
+      "main": [
+        [{ "node": "서브폴더 목록", "type": "main", "index": 0 }]
+      ]
+    },
+    "서브폴더 목록": {
+      "main": [
+        [{ "node": "배치 순회", "type": "main", "index": 0 }]
+      ]
+    },
+    "배치 순회": {
+      "main": [
+        [{ "node": "서브폴더 생성", "type": "main", "index": 0 }],
+        [{ "node": "완료 메시지", "type": "main", "index": 0 }]
+      ]
+    },
+    "서브폴더 생성": {
+      "main": [
+        [{ "node": "배치 순회", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true,
+    "errorWorkflow": "={{ $env.ERROR_WORKFLOW_ID }}"
+  },
+  "versionId": "b2c3d4e5-ffff-4fff-afff-000000000001",
+  "meta": {
+    "instanceId": "psycaseauto-local"
+  },
+  "tags": ["PsyCaseAuto", "초기화"]
+}
