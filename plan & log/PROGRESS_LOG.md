@@ -213,6 +213,30 @@ PsyCaseAuto/
 
 ---
 
+### 세션 3 — WF1-B 버그 수정 + End-to-End 테스트 완료 (2026-03-29)
+
+#### 수정 사항
+
+| 항목 | 수정 내용 |
+|------|-----------|
+| `response_format` | `verbose_json` → `json` (gpt-4o-transcribe 호환) |
+| STT 결과 정리 코드 | segments/duration 파싱 제거, `stt_engine: 'gpt-4o-transcribe'` 수정 |
+| binary 필드명 | `audio ID 확정` 출력 `{ audio: ... }` → `{ data: ... }` (Drive 업로드 호환) |
+| Whisper API 프롬프트 | 환각 방지 중립 프롬프트로 변경 |
+| 워크플로우 ID | `l0jeHQosObPlaUce` → `XElVH6RbgWCGZcjO` (백업 재import) |
+
+#### 테스트 결과
+- **End-to-End 성공** ✅
+- Drive 저장: `audio_20260329.m4a` + `stt_20260329.json`
+- Telegram 알림 수신 ✅
+- WF1-B Published (활성화 완료)
+
+#### 알려진 이슈 (추후)
+- STT 짧은 오디오 환각 문제 (실제 임상 녹음으로 검증 필요)
+- HTML UI 개선 (음성만 모드 직행, 탭 수 정리)
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |
