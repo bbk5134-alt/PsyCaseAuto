@@ -163,6 +163,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-
 /* ── WEBHOOK URL FIELD IN SETTINGS ── */
 .wh-url-wrap{position:relative}
 .wh-url-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:4px}
+
+/* ── MODE SELECTOR ── */
+.mode-selector{display:flex;gap:6px;margin-bottom:14px}
+.mode-btn{flex:1;padding:10px 4px;border-radius:8px;font-size:11px;font-weight:500;font-family:var(--sans);border:1px solid var(--bdh);background:var(--sf2);color:var(--t2);cursor:pointer;text-align:center;transition:all .15s;line-height:1.5}
+.mode-btn.active{background:var(--ac-bg);border-color:var(--ac);color:var(--ac);font-weight:700}
+
+/* ── AUDIO UPLOAD ── */
+.audio-drop{border:1.5px dashed var(--bdh);border-radius:10px;padding:18px 16px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:10px;background:var(--sf2);user-select:none}
+.audio-drop:hover,.audio-drop.dragover{border-color:var(--ac);background:var(--ac-bg)}
+.audio-drop.has-file{border-color:var(--gr-bd);background:var(--gr-bg)}
+.audio-drop-icon{font-size:26px;margin-bottom:4px}
+.audio-drop-label{font-size:13px;color:var(--t2);line-height:1.5}
+.audio-drop-sub{font-size:10px;color:var(--t3);margin-top:2px}
+.audio-size-err{background:var(--re-bg);border:1px solid #5a1f1f;border-radius:8px;padding:11px 13px;font-size:12px;color:var(--re);line-height:1.75;margin-bottom:10px}
+.drive-link{color:var(--ac);text-decoration:underline}
+
+/* ── POST-SEND BOX ── */
+.post-send-box{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:8px;padding:12px 14px;margin-top:10px;text-align:center}
+.post-send-box p{font-size:12px;color:var(--gr);margin-bottom:8px;font-weight:700}
+.post-send-btns{display:flex;gap:8px}
+.btn-new-pt{flex:1;padding:9px;background:var(--ac);color:#fff;font-family:var(--sans);font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer}
+.btn-keep-pt{flex:1;padding:9px;background:var(--sf2);color:var(--t2);font-family:var(--sans);font-size:12px;border:1px solid var(--bd);border-radius:8px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -211,19 +233,55 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-
     </div>
     <div class="sheet-body">
       <div class="wh-status" id="wh-status"></div>
-      <div class="field-lbl">Webhook URL</div>
-      <div class="wh-url-wrap">
-        <input class="field-inp" id="wh-url" type="password" placeholder="https://your-n8n.com/webhook/..." autocomplete="off" style="padding-right:40px">
-        <button class="wh-url-eye" onclick="toggleWHVis()" id="wh-eye">👁</button>
-      </div>
-      <div class="field-hint">설정 후 자동 저장됩니다</div>
-      <div class="field-lbl">Webhook Secret (선택)</div>
-      <input class="field-inp" id="wh-secret" type="password" placeholder="X-Webhook-Secret 헤더값" autocomplete="off">
-      <div class="field-hint">PRD의 N8N_WEBHOOK_SECRET 값과 동일하게 입력</div>
 
-      <div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--t2);line-height:1.75;margin-top:4px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--am);margin-bottom:6px">전송 데이터 미리보기</div>
-        <div id="payload-preview" style="font-family:monospace;font-size:11px;color:var(--t2);word-break:break-all;max-height:160px;overflow-y:auto"></div>
+      <!-- 설문지 URL (음성만 모드에서는 숨김) -->
+      <div id="checklist-url-section">
+        <div class="field-lbl">설문지 Webhook URL</div>
+        <div class="wh-url-wrap">
+          <input class="field-inp" id="wh-url" type="password" placeholder="https://your-n8n.com/webhook/psycase-checklist" autocomplete="off" style="padding-right:40px">
+          <button class="wh-url-eye" onclick="toggleWHVis()" id="wh-eye">👁</button>
+        </div>
+        <div class="field-hint">설정 후 자동 저장됩니다</div>
+        <div class="field-lbl">Webhook Secret (선택)</div>
+        <input class="field-inp" id="wh-secret" type="password" placeholder="X-Webhook-Secret 헤더값" autocomplete="off">
+        <div class="field-hint">N8N_WEBHOOK_SECRET 값과 동일하게 입력</div>
+      </div>
+
+      <!-- 음성 파일 업로드 (음성 포함 모드에서만 표시) -->
+      <div id="audio-section" style="display:none">
+        <div class="field-lbl">음성 녹음 파일</div>
+        <div class="audio-drop" id="audio-drop"
+          onclick="document.getElementById('audio-file-inp').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="event.preventDefault();this.classList.remove('dragover');onAudioFile(event.dataTransfer.files[0])">
+          <div class="audio-drop-icon">🎙</div>
+          <div class="audio-drop-label" id="audio-drop-label">파일 선택 또는 여기에 끌어놓기</div>
+          <div class="audio-drop-sub">m4a · mp3 · wav · webm · flac · 최대 24MB</div>
+        </div>
+        <input type="file" id="audio-file-inp" accept="audio/*,.m4a,.mp3,.wav,.webm,.ogg,.flac" style="display:none" onchange="onAudioFile(this.files[0])">
+        <div id="audio-size-err" class="audio-size-err" style="display:none">
+          ❌ 파일 크기 초과 (24MB 제한)<br>
+          Google Drive에 직접 업로드 후 STT 처리를 요청해주세요.<br>
+          <a class="drive-link" href="https://drive.google.com/drive/my-drive" target="_blank">→ Google Drive 열기</a>
+        </div>
+      </div>
+
+      <!-- 설문지 데이터 미리보기 (음성만 모드에서는 숨김) -->
+      <div id="payload-section">
+        <div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--t2);line-height:1.75;margin-top:4px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--am);margin-bottom:6px">전송 데이터 미리보기</div>
+          <div id="payload-preview" style="font-family:monospace;font-size:11px;color:var(--t2);word-break:break-all;max-height:160px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- 전송 완료 후 새 환자 프롬프트 -->
+      <div id="post-send-box" class="post-send-box" style="display:none">
+        <p>🎉 전송 완료! 새 환자를 시작할까요?</p>
+        <div class="post-send-btns">
+          <button class="btn-new-pt" onclick="startNewSession()">🔄 새 환자 시작</button>
+          <button class="btn-keep-pt" onclick="closeWebhookSheet()">현재 세션 유지</button>
+        </div>
       </div>
     </div>
     <div class="sheet-foot">
@@ -256,9 +314,23 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-
         <option value="case_conference">케이스 컨퍼런스</option>
         <option value="progress">경과 면담</option>
       </select>
+      <div class="field-lbl" style="margin-top:2px">전송 모드</div>
+      <div class="mode-selector">
+        <button class="mode-btn" id="mode-btn-checklist" onclick="setMode('checklist')">📋<br>설문지만</button>
+        <button class="mode-btn" id="mode-btn-audio" onclick="setMode('audio')">🎙<br>음성만</button>
+        <button class="mode-btn" id="mode-btn-both" onclick="setMode('both')">📋🎙<br>둘 다</button>
+      </div>
+      <div id="audio-url-wrap" style="display:none">
+        <div class="field-lbl">음성 Webhook URL</div>
+        <input class="field-inp" id="s-audio-url" type="password" placeholder="https://.../webhook/psycase-audio" autocomplete="off">
+        <div class="field-hint">WF1-B Webhook URL — 설정 후 자동 저장</div>
+      </div>
+      <div style="text-align:center;padding-top:4px">
+        <button onclick="resetAll()" style="background:none;border:none;color:var(--t3);font-size:11px;font-family:var(--sans);cursor:pointer;text-decoration:underline;padding:4px 8px">전체 초기화 (Webhook URL 포함 모두 삭제)</button>
+      </div>
     </div>
     <div class="sheet-foot">
-      <button class="btn-danger" onclick="resetAll()">전체 초기화</button>
+      <button class="btn-secondary" onclick="newSession()">새 환자</button>
       <button class="btn-primary" onclick="saveSession()">저장</button>
     </div>
   </div>
@@ -437,17 +509,23 @@ const S=[
 let checked={}, notes={}, cur=0;
 let session={ id:'', date: new Date().toISOString().slice(0,10), dr:'', type:'initial' };
 let webhookUrl='', webhookSecret='';
+let sessionMode='checklist'; // 'checklist' | 'audio' | 'both'
+let audioWebhookUrl='';
+let selectedAudioFile=null;
+const AUDIO_MAX_MB=24;
 
 /* ═══════════════════════════════════════════════════
    STORAGE
 ═══════════════════════════════════════════════════ */
 function save(){
   try{
-    localStorage.setItem('cl_v3_checked', JSON.stringify(checked));
-    localStorage.setItem('cl_v3_notes',   JSON.stringify(notes));
-    localStorage.setItem('cl_v3_session', JSON.stringify(session));
-    localStorage.setItem('cl_v3_wh_url',  webhookUrl);
-    localStorage.setItem('cl_v3_wh_sec',  webhookSecret);
+    localStorage.setItem('cl_v3_checked',    JSON.stringify(checked));
+    localStorage.setItem('cl_v3_notes',      JSON.stringify(notes));
+    localStorage.setItem('cl_v3_session',    JSON.stringify(session));
+    localStorage.setItem('cl_v3_wh_url',     webhookUrl);
+    localStorage.setItem('cl_v3_wh_sec',     webhookSecret);
+    localStorage.setItem('cl_v3_mode',       sessionMode);
+    localStorage.setItem('cl_v3_audio_url',  audioWebhookUrl);
   }catch(e){}
 }
 
@@ -456,8 +534,10 @@ function load(){
     const c=localStorage.getItem('cl_v3_checked'); if(c) checked=JSON.parse(c);
     const n=localStorage.getItem('cl_v3_notes');   if(n) notes=JSON.parse(n);
     const s=localStorage.getItem('cl_v3_session'); if(s) session=JSON.parse(s);
-    webhookUrl    = localStorage.getItem('cl_v3_wh_url') || '';
-    webhookSecret = localStorage.getItem('cl_v3_wh_sec') || '';
+    webhookUrl      = localStorage.getItem('cl_v3_wh_url')    || '';
+    webhookSecret   = localStorage.getItem('cl_v3_wh_sec')    || '';
+    sessionMode     = localStorage.getItem('cl_v3_mode')      || 'checklist';
+    audioWebhookUrl = localStorage.getItem('cl_v3_audio_url') || '';
   }catch(e){}
 }
 
@@ -654,11 +734,24 @@ function updateProg(){
 /* ═══════════════════════════════════════════════════
    SESSION SHEET
 ═══════════════════════════════════════════════════ */
+function setMode(m){
+  sessionMode=m;
+  ['checklist','audio','both'].forEach(id=>{
+    const btn=document.getElementById('mode-btn-'+id);
+    if(btn) btn.classList.toggle('active',id===m);
+  });
+  const aw=document.getElementById('audio-url-wrap');
+  if(aw) aw.style.display=(m==='audio'||m==='both')?'':'none';
+}
+
 function openSessionSheet(){
   document.getElementById('s-id').value=session.id||'';
   document.getElementById('s-date').value=session.date||new Date().toISOString().slice(0,10);
   document.getElementById('s-dr').value=session.dr||'';
   document.getElementById('s-type').value=session.type||'initial';
+  const sau=document.getElementById('s-audio-url');
+  if(sau) sau.value=audioWebhookUrl;
+  setMode(sessionMode);
   document.getElementById('session-overlay').classList.add('open');
 }
 function closeSessionSheet(){ document.getElementById('session-overlay').classList.remove('open'); }
@@ -673,13 +766,46 @@ function saveSession(){
     dr:document.getElementById('s-dr').value.trim(),
     type:document.getElementById('s-type').value
   };
+  const sau=document.getElementById('s-audio-url');
+  if(sau) audioWebhookUrl=sau.value.trim();
   save(); closeSessionSheet(); go(cur);
 }
 
+// 새 환자 시작 — 체크/메모 초기화, Webhook URL·면담자 유지
+function newSession(){
+  if(!confirm('체크 및 메모를 초기화하고 새 환자를 시작할까요?\nWebhook URL과 면담자 설정은 유지됩니다.')) return;
+  checked={}; notes={};
+  session={id:'',date:new Date().toISOString().slice(0,10),dr:session.dr,type:session.type};
+  selectedAudioFile=null;
+  try{
+    localStorage.removeItem('cl_v3_checked');
+    localStorage.removeItem('cl_v3_notes');
+    localStorage.setItem('cl_v3_session',JSON.stringify(session));
+  }catch(e){}
+  closeSessionSheet(); go(0);
+  setTimeout(openSessionSheet,300);
+}
+
+// 전송 완료 후 "새 환자 시작" 버튼에서 호출
+function startNewSession(){
+  checked={}; notes={};
+  session={id:'',date:new Date().toISOString().slice(0,10),dr:session.dr,type:session.type};
+  selectedAudioFile=null;
+  try{
+    localStorage.removeItem('cl_v3_checked');
+    localStorage.removeItem('cl_v3_notes');
+    localStorage.setItem('cl_v3_session',JSON.stringify(session));
+  }catch(e){}
+  closeWebhookSheet(); go(0);
+  setTimeout(openSessionSheet,300);
+}
+
+// 전체 초기화 — Webhook URL 포함 모두 삭제
 function resetAll(){
   if(!confirm('모든 체크, 메모, 세션 데이터를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
   checked={}; notes={};
   session={id:'',date:new Date().toISOString().slice(0,10),dr:'',type:'initial'};
+  selectedAudioFile=null;
   try{ localStorage.removeItem('cl_v3_checked'); localStorage.removeItem('cl_v3_notes'); localStorage.removeItem('cl_v3_session'); }catch(e){}
   closeSessionSheet(); go(cur);
 }
@@ -767,12 +893,41 @@ function buildPayload(){
   };
 }
 
+function onAudioFile(file){
+  if(!file) return;
+  const drop=document.getElementById('audio-drop');
+  const label=document.getElementById('audio-drop-label');
+  const errEl=document.getElementById('audio-size-err');
+  if(file.size > AUDIO_MAX_MB*1024*1024){
+    selectedAudioFile=null;
+    if(drop){ drop.className='audio-drop'; }
+    if(label) label.innerHTML=`⚠️ ${file.name} — 크기 초과`;
+    if(errEl) errEl.style.display='';
+  } else {
+    selectedAudioFile=file;
+    if(drop){ drop.className='audio-drop has-file'; }
+    const sizeMB=(file.size/1024/1024).toFixed(1);
+    if(label) label.innerHTML=`✅ ${file.name}<br><span style="font-size:11px;color:var(--t3)">${sizeMB}MB · ${file.type||'audio'}</span>`;
+    if(errEl) errEl.style.display='none';
+  }
+}
+
 function openWebhookSheet(){
   document.getElementById('wh-url').value=webhookUrl;
   document.getElementById('wh-secret').value=webhookSecret;
+  // 모드에 따라 섹션 표시/숨김
+  const aS=document.getElementById('audio-section');
+  const cS=document.getElementById('checklist-url-section');
+  const pS=document.getElementById('payload-section');
+  const isAudio=(sessionMode==='audio'||sessionMode==='both');
+  const isChecklist=(sessionMode==='checklist'||sessionMode==='both');
+  if(aS) aS.style.display=isAudio?'':'none';
+  if(cS) cS.style.display=isChecklist?'':'none';
+  if(pS) pS.style.display=isChecklist?'':'none';
   const payload=buildPayload();
   document.getElementById('payload-preview').textContent=JSON.stringify(payload,null,2).substring(0,600)+'...';
   setWHStatus('','');
+  document.getElementById('post-send-box').style.display='none';
   document.getElementById('summary-overlay').classList.remove('open');
   document.getElementById('webhook-overlay').classList.add('open');
 }
@@ -797,45 +952,62 @@ function setWHStatus(type, msg){
 async function sendWebhook(){
   const url=document.getElementById('wh-url').value.trim();
   const secret=document.getElementById('wh-secret').value.trim();
-  if(!url){ alert('Webhook URL을 입력해주세요.'); return; }
-  if(!session.id){ alert('환자 코드가 설정되지 않았습니다. 세션 설정에서 환자 코드(PT-YYYY-NNN)를 입력하세요.'); return; }
+  const needChecklist=(sessionMode==='checklist'||sessionMode==='both');
+  const needAudio=(sessionMode==='audio'||sessionMode==='both');
 
-  // 저장
+  if(!session.id){ alert('환자 코드가 설정되지 않았습니다.'); return; }
+  if(needChecklist&&!url){ alert('설문지 Webhook URL을 입력해주세요.'); return; }
+  if(needAudio&&!audioWebhookUrl){ alert('음성 Webhook URL이 설정되지 않았습니다.\n세션 설정(⚙️)에서 입력해주세요.'); return; }
+  if(needAudio&&!selectedAudioFile){ alert('음성 파일을 선택해주세요.'); return; }
+
   webhookUrl=url; webhookSecret=secret; save();
 
   const btn=document.getElementById('wh-send-btn');
   btn.disabled=true; btn.textContent='전송 중...';
-  setWHStatus('sending', '⏳ n8n Webhook으로 전송 중...');
+  setWHStatus('sending','⏳ 전송 중...');
+  document.getElementById('post-send-box').style.display='none';
 
-  const payload=buildPayload();
-  const headers={'Content-Type':'application/json'};
-  if(secret) headers['X-Webhook-Secret']=secret;
+  const errors=[];
 
-  try{
-    const res=await fetch(url,{
-      method:'POST',
-      headers,
-      body:JSON.stringify(payload),
-      signal:AbortSignal.timeout(30000)
-    });
-
-    if(res.ok){
-      setWHStatus('ok', `✅ 전송 완료! (${res.status}) — n8n에서 워크플로우가 시작되었습니다.`);
-      btn.textContent='전송 완료 ✓';
-      setTimeout(()=>{btn.textContent='전송하기'; btn.disabled=false;}, 3000);
-    } else {
-      const errText=await res.text().catch(()=>'');
-      setWHStatus('err', `❌ 전송 실패 (${res.status}): ${errText.substring(0,100)}`);
-      btn.disabled=false; btn.textContent='재시도';
+  // ① 설문지 전송 (WF1-A)
+  if(needChecklist){
+    const headers={'Content-Type':'application/json'};
+    if(secret) headers['X-Webhook-Secret']=secret;
+    try{
+      const res=await fetch(url,{method:'POST',headers,body:JSON.stringify(buildPayload()),signal:AbortSignal.timeout(30000)});
+      if(!res.ok){ const t=await res.text().catch(()=>''); errors.push(`📋 설문지 전송 실패 (${res.status}): ${t.substring(0,80)}`); }
+    }catch(err){
+      if(err.name==='TimeoutError') errors.push('📋 설문지 타임아웃 (30초)');
+      else errors.push(`📋 설문지 오류: ${err.message}`);
     }
-  }catch(err){
-    if(err.name==='TimeoutError')
-      setWHStatus('err','❌ 타임아웃 (30초) — n8n URL과 네트워크 상태를 확인해주세요.');
-    else if(err.name==='TypeError')
-      setWHStatus('err','❌ 네트워크 오류 — URL 형식이나 CORS 설정을 확인해주세요.');
-    else
-      setWHStatus('err',`❌ 오류: ${err.message}`);
+  }
+
+  // ② 음성 전송 (WF1-B)
+  if(needAudio&&selectedAudioFile){
+    const fd=new FormData();
+    fd.append('audio',selectedAudioFile,selectedAudioFile.name);
+    fd.append('patient_code',session.id);
+    fd.append('interview_date',session.date);
+    fd.append('interviewer',session.dr||'');
+    fd.append('interview_type',session.type||'followup');
+    try{
+      const res=await fetch(audioWebhookUrl,{method:'POST',body:fd,signal:AbortSignal.timeout(120000)});
+      if(!res.ok){ const t=await res.text().catch(()=>''); errors.push(`🎙 음성 전송 실패 (${res.status}): ${t.substring(0,80)}`); }
+    }catch(err){
+      if(err.name==='TimeoutError') errors.push('🎙 음성 타임아웃 (2분) — 파일 크기나 서버 상태를 확인해주세요.');
+      else errors.push(`🎙 음성 오류: ${err.message}`);
+    }
+  }
+
+  if(errors.length>0){
+    setWHStatus('err','❌ '+errors.join('\n'));
     btn.disabled=false; btn.textContent='재시도';
+  } else {
+    const lbl={checklist:'📋 설문지 전송 완료',audio:'🎙 음성 전송 완료',both:'📋🎙 설문지 + 음성 전송 완료'}[sessionMode];
+    setWHStatus('ok',`✅ ${lbl}! n8n 워크플로우가 시작되었습니다.`);
+    btn.textContent='전송 완료 ✓';
+    document.getElementById('post-send-box').style.display='';
+    setTimeout(()=>{btn.textContent='전송하기'; btn.disabled=false;},4000);
   }
 }
 
