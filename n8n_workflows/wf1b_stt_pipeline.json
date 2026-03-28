@@ -86,9 +86,9 @@
         "bodyParameters": {
           "parameters": [
             {"parameterType": "formBinaryData", "name": "file", "inputDataFieldName": "audio"},
-            {"name": "model", "value": "whisper-1"},
+            {"name": "model", "value": "gpt-4o-transcribe"},
             {"name": "language", "value": "ko"},
-            {"name": "response_format", "value": "verbose_json"},
+            {"name": "response_format", "value": "json"},
             {"name": "prompt", "value": "정신건강의학과 임상 면담 녹음입니다. 의학 용어, 향정신성 약물명, 증상 및 진단명이 포함될 수 있습니다."}
           ]
         },
@@ -102,7 +102,7 @@
       "typeVersion": 2,
       "position": [960, 300],
       "parameters": {
-        "jsCode": "const w = $input.item.json;\nconst v = $('요청 검증').first().json;\n\nconst segs = (w.segments || []).map(s => ({\n  id: s.id,\n  start: s.start,\n  end: s.end,\n  text: (s.text || '').trim(),\n  speaker: 'unidentified',\n  avg_logprob: s.avg_logprob || 0,\n  no_speech_prob: s.no_speech_prob || 0\n}));\n\nconst sttResult = {\n  data_type: 'stt_transcript',\n  patient_code: v.patient_code,\n  interview_date: v.interview_date,\n  interviewer: v.interviewer,\n  interview_type: v.interview_type || 'followup',\n  created_at: $now.toISO(),\n  audio_file: v.audioFileName,\n  stt_engine: 'openai-whisper-1',\n  language: w.language || 'ko',\n  duration_seconds: w.duration || null,\n  full_text: w.text || '',\n  segments: segs,\n  word_count: (w.text || '').split(/\\s+/).filter(t => t.length > 0).length\n};\n\nreturn [{\n  json: {\n    patient_code: v.patient_code,\n    interview_date: v.interview_date,\n    interviewer: v.interviewer,\n    audioFileName: v.audioFileName,\n    sttFileName: v.sttFileName,\n    dateStr: v.dateStr,\n    sttResult\n  }\n}];"
+        "jsCode": "const w = $input.item.json;\nconst v = $('요청 검증').first().json;\n\n// gpt-4o-transcribe: response_format='json' → { text: '...' } only\n// verbose_json (segments, duration, language) 미지원\nconst sttResult = {\n  data_type: 'stt_transcript',\n  patient_code: v.patient_code,\n  interview_date: v.interview_date,\n  interviewer: v.interviewer,\n  interview_type: v.interview_type || 'followup',\n  created_at: $now.toISO(),\n  audio_file: v.audioFileName,\n  stt_engine: 'gpt-4o-transcribe',\n  language: 'ko',\n  duration_seconds: null,\n  full_text: w.text || '',\n  segments: [],\n  word_count: (w.text || '').split(/\\s+/).filter(t => t.length > 0).length\n};\n\nreturn [{\n  json: {\n    patient_code: v.patient_code,\n    interview_date: v.interview_date,\n    interviewer: v.interviewer,\n    audioFileName: v.audioFileName,\n    sttFileName: v.sttFileName,\n    dateStr: v.dateStr,\n    sttResult\n  }\n}];"
       }
     },
     {
