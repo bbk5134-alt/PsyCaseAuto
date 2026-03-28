@@ -89,7 +89,7 @@
             {"name": "model", "value": "gpt-4o-transcribe"},
             {"name": "language", "value": "ko"},
             {"name": "response_format", "value": "json"},
-            {"name": "prompt", "value": "정신건강의학과 임상 면담 녹음입니다. 의학 용어, 향정신성 약물명, 증상 및 진단명이 포함될 수 있습니다."}
+            {"name": "prompt", "value": "Korean audio recording. Transcribe only what is actually spoken. Do not add, infer, or complete sentences."}
           ]
         },
         "options": {"timeout": 120000}
@@ -251,6 +251,7 @@
       "position": [3120, 300],
       "parameters": {
         "name": "={{ $json.audioFileName }}",
+        "inputDataFieldName": "audio",
         "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
         "folderId": {"__rl": true, "value": "={{ $json.audioFolderId }}", "mode": "id"},
         "options": {}
