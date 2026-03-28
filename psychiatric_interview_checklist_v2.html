@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1117">
+<title>면담 체크리스트</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+:root{
+  --bg:#0f1117;--sf:#161b27;--sf2:#1e2535;--bd:#2a3348;--bdh:#3d4f6e;
+  --t1:#e8eaf0;--t2:#8b95a8;--t3:#4a5568;
+  --ac:#4f9cf9;--ac-bg:#1e3a5f;
+  --gr:#34d399;--gr-bg:#0d3328;--gr-bd:#1a5040;
+  --am:#fbbf24;--am-bg:#3d2e08;
+  --re:#f87171;--re-bg:#3d1515;
+  --pu:#a78bfa;--pu-bg:#2d1f5e;
+  --te:#2dd4bf;--te-bg:#0d3330;
+  --sans:'Noto Sans KR',sans-serif;
+  --nav:64px;--top:56px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--t1);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+
+/* ── TOP BAR ── */
+.top-bar{position:fixed;top:0;left:0;right:0;height:var(--top);background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 16px;gap:10px;z-index:50}
+.top-badge{font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 9px;border-radius:5px;background:var(--ac-bg);color:var(--ac);flex-shrink:0}
+.top-title{font-size:14px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-prog{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.top-pct{font-size:12px;color:var(--ac);font-weight:700;min-width:32px;text-align:right}
+.top-track{width:48px;height:3px;background:var(--bd);border-radius:2px;overflow:hidden}
+.top-fill{height:100%;background:var(--ac);border-radius:2px;transition:width .3s ease}
+
+/* ── SCROLL AREA ── */
+.scroll-area{position:fixed;top:var(--top);bottom:var(--nav);left:0;right:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.scroll-area::-webkit-scrollbar{width:3px}
+.scroll-area::-webkit-scrollbar-thumb{background:var(--bd);border-radius:2px}
+.content{padding:16px 16px 24px}
+
+/* ── SESSION BANNER ── */
+.session-banner{background:var(--am-bg);border:1px solid var(--am);border-radius:10px;padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.session-info{font-size:12px;color:var(--am);line-height:1.5}
+.session-id{font-weight:700;font-size:13px}
+.session-edit-btn{flex-shrink:0;padding:4px 10px;font-size:11px;font-family:var(--sans);background:transparent;border:1px solid var(--am);color:var(--am);border-radius:5px;cursor:pointer}
+
+/* ── SECTION INTRO ── */
+.sec-intro{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:12px;color:var(--t2);line-height:1.75}
+.sec-intro strong{color:var(--t1)}
+
+/* ── SECTION PILLS ── */
+.sec-switcher{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding-bottom:14px}
+.sec-switcher::-webkit-scrollbar{display:none}
+.sec-pill{flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--bdh);background:var(--sf2);color:var(--t2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.sec-pill.active{background:var(--ac-bg);border-color:var(--ac);color:var(--ac)}
+.sec-pill.done::after{content:'✓';margin-left:5px;color:var(--gr);font-size:11px}
+
+/* ── QUESTION GROUP ── */
+.q-group{margin-bottom:20px}
+.q-group-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-bottom:8px;border-bottom:1px solid var(--bd)}
+.gtag{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:3px}
+.tag-fact   {background:var(--sf2);color:var(--t2);border:1px solid var(--bdh)}
+.tag-cog    {background:var(--ac-bg);color:var(--ac);border:1px solid #1e3a5f}
+.tag-affect {background:var(--pu-bg);color:var(--pu);border:1px solid #3d2f7a}
+.tag-bx     {background:var(--te-bg);color:var(--te);border:1px solid #0d4040}
+.tag-general{background:var(--sf2);color:var(--am);border:1px solid #3d3010}
+.tag-risk   {background:var(--re-bg);color:var(--re);border:1px solid #5a1f1f}
+.tag-context{background:var(--gr-bg);color:var(--gr);border:1px solid #0d4030}
+.gtitle{font-size:12px;font-weight:500;color:var(--t2)}
+
+/* ── QUESTION CARD ── */
+.q-card{background:var(--sf);border:1px solid var(--bd);border-radius:10px;margin-bottom:7px;overflow:hidden;transition:border-color .15s}
+.q-card.checked{background:var(--gr-bg);border-color:var(--gr-bd)}
+.q-card.has-note{border-color:var(--ac-bg)}
+.q-card.checked.has-note{border-color:var(--gr-bd)}
+
+.q-main{display:flex;align-items:flex-start;gap:12px;padding:13px 14px;cursor:pointer;user-select:none;min-height:52px}
+.q-cb{width:22px;height:22px;border-radius:6px;border:2px solid var(--bdh);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .15s;background:transparent}
+.q-card.checked .q-cb{background:var(--gr);border-color:var(--gr)}
+.ck{display:none;color:#0d3328;font-size:13px;font-weight:700}
+.q-card.checked .ck{display:block}
+.q-body{flex:1;min-width:0}
+.q-text{font-size:14px;color:var(--t1);line-height:1.55;transition:color .15s}
+.q-card.checked .q-text{color:var(--t3);text-decoration:line-through}
+.q-intent{font-size:11px;color:var(--t3);font-style:italic;margin-top:3px}
+
+.q-actions{display:flex;gap:5px;flex-shrink:0;margin-top:2px;flex-direction:column;align-items:flex-end}
+.tip-btn,.memo-btn{flex-shrink:0;padding:4px 8px;font-size:11px;font-family:var(--sans);border-radius:5px;cursor:pointer;white-space:nowrap}
+.tip-btn{color:var(--t3);background:var(--sf2);border:1px solid var(--bd)}
+.memo-btn{color:var(--ac);background:var(--ac-bg);border:1px solid #2a4a7f}
+.memo-btn.active{color:var(--am);background:var(--am-bg);border-color:#5a4010}
+
+/* ── TIP PANEL ── */
+.q-tip{display:none;padding:10px 14px 12px 48px;background:var(--sf2);border-top:1px dashed var(--bd);font-size:12px;color:var(--t2);line-height:1.75}
+.q-tip.open{display:block}
+.tip-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--am);margin-bottom:4px}
+
+/* ── MEMO PANEL ── */
+.q-memo{display:none;padding:10px 14px 12px 14px;background:var(--sf2);border-top:1px solid var(--bd)}
+.q-memo.open{display:block}
+.memo-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.memo-saved-dot{width:6px;height:6px;border-radius:50%;background:var(--gr);display:none}
+.memo-lbl.saved .memo-saved-dot{display:inline-block}
+.memo-ta{width:100%;min-height:72px;background:var(--bg);border:1px solid var(--bdh);border-radius:7px;color:var(--t1);font-family:var(--sans);font-size:13px;line-height:1.6;padding:8px 10px;resize:vertical;outline:none;transition:border-color .15s}
+.memo-ta:focus{border-color:var(--ac)}
+.memo-ta::placeholder{color:var(--t3)}
+.memo-char{font-size:10px;color:var(--t3);text-align:right;margin-top:3px}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--sf);border-top:1px solid var(--bd);display:flex;align-items:stretch;z-index:50;padding-bottom:env(safe-area-inset-bottom)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;user-select:none;border:none;background:transparent;color:var(--t3);font-family:var(--sans);font-size:10px;transition:color .15s;position:relative;padding:8px 4px}
+.nav-btn.active{color:var(--ac)}
+.nav-btn.active::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:var(--ac);border-radius:0 0 2px 2px}
+.nav-icon{font-size:18px;line-height:1;position:relative}
+.done-dot{display:none;position:absolute;top:-2px;right:-5px;width:7px;height:7px;background:var(--gr);border-radius:50%;border:1.5px solid var(--sf)}
+.nav-btn.sec-done .done-dot{display:block}
+.nav-label{font-size:10px;line-height:1}
+
+/* ── BOTTOM SHEET (공통) ── */
+.sheet-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:80;align-items:flex-end}
+.sheet-overlay.open{display:flex}
+.sheet{width:100%;max-height:88vh;background:var(--sf);border-radius:16px 16px 0 0;border-top:1px solid var(--bdh);display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+.sheet-handle{width:36px;height:4px;background:var(--bdh);border-radius:2px;margin:12px auto 0;flex-shrink:0}
+.sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 12px;border-bottom:1px solid var(--bd);flex-shrink:0}
+.sheet-title{font-size:15px;font-weight:700}
+.sheet-close{background:var(--sf2);border:1px solid var(--bd);color:var(--t2);border-radius:6px;padding:5px 12px;font-size:12px;font-family:var(--sans);cursor:pointer}
+.sheet-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 18px}
+.sheet-foot{padding:12px 18px;border-top:1px solid var(--bd);flex-shrink:0;display:flex;gap:8px}
+
+/* ── SUMMARY SHEET ── */
+.sum-sec{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin:14px 0 5px}
+.sum-sec:first-child{margin-top:0}
+.sum-item{font-size:12px;padding:3px 0;line-height:1.6;border-bottom:1px solid var(--bd)}
+.sum-item:last-child{border-bottom:none}
+.sum-done{color:var(--gr)}
+.sum-todo{color:var(--t3)}
+.sum-note{font-size:11px;color:var(--t2);margin-top:2px;padding-left:16px;font-style:italic}
+
+/* ── SESSION SETUP SHEET ── */
+.field-lbl{font-size:11px;font-weight:700;color:var(--t2);margin-bottom:5px;letter-spacing:.04em;text-transform:uppercase}
+.field-inp{width:100%;background:var(--bg);border:1px solid var(--bdh);border-radius:8px;color:var(--t1);font-family:var(--sans);font-size:14px;padding:10px 12px;outline:none;transition:border-color .15s;margin-bottom:14px}
+.field-inp:focus{border-color:var(--ac)}
+.field-inp::placeholder{color:var(--t3)}
+.field-hint{font-size:11px;color:var(--t3);margin-top:-10px;margin-bottom:14px}
+
+/* ── WEBHOOK SHEET ── */
+.wh-status{padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;display:none}
+.wh-status.show{display:block}
+.wh-ok{background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr)}
+.wh-err{background:var(--re-bg);border:1px solid #5a1f1f;color:var(--re)}
+.wh-sending{background:var(--ac-bg);border:1px solid #2a4a7f;color:var(--ac)}
+
+/* ── BUTTONS ── */
+.btn-primary{flex:1;padding:13px;background:var(--ac);color:#fff;font-family:var(--sans);font-size:14px;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:opacity .15s}
+.btn-primary:active{opacity:.8}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-secondary{flex:1;padding:13px;background:var(--sf2);color:var(--t2);font-family:var(--sans);font-size:14px;font-weight:500;border:1px solid var(--bd);border-radius:10px;cursor:pointer}
+.btn-danger{flex:1;padding:13px;background:var(--re-bg);color:var(--re);font-family:var(--sans);font-size:14px;font-weight:500;border:1px solid #5a1f1f;border-radius:10px;cursor:pointer}
+
+.copy-btn{flex:1;padding:13px;background:var(--sf2);color:var(--t2);font-family:var(--sans);font-size:13px;font-weight:500;border:1px solid var(--bd);border-radius:10px;cursor:pointer}
+
+/* ── WEBHOOK URL FIELD IN SETTINGS ── */
+.wh-url-wrap{position:relative}
+.wh-url-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;font-size:16px;padding:4px}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <span class="top-badge" id="cur-roman">I</span>
+  <span class="top-title" id="cur-title">Identifying Data</span>
+  <div class="top-prog">
+    <div class="top-track"><div class="top-fill" id="prog-fill" style="width:0%"></div></div>
+    <span class="top-pct" id="prog-pct">0%</span>
+  </div>
+</div>
+
+<!-- SCROLL AREA -->
+<div class="scroll-area" id="scroll-area">
+  <div class="content" id="content"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottom-nav"></nav>
+
+<!-- ① 수집 현황 + 전송 SHEET -->
+<div class="sheet-overlay" id="summary-overlay" onclick="closeSummary(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hdr">
+      <span class="sheet-title">수집 현황</span>
+      <button class="sheet-close" onclick="toggleSummary()">닫기</button>
+    </div>
+    <div class="sheet-body" id="summary-body"></div>
+    <div class="sheet-foot">
+      <button class="copy-btn" id="copy-btn" onclick="copyAll()">복사</button>
+      <button class="btn-primary" id="send-btn" onclick="openWebhookSheet()">n8n 전송</button>
+    </div>
+  </div>
+</div>
+
+<!-- ② Webhook 전송 SHEET -->
+<div class="sheet-overlay" id="webhook-overlay" onclick="closeWebhook(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hdr">
+      <span class="sheet-title">n8n으로 전송</span>
+      <button class="sheet-close" onclick="closeWebhookSheet()">닫기</button>
+    </div>
+    <div class="sheet-body">
+      <div class="wh-status" id="wh-status"></div>
+      <div class="field-lbl">Webhook URL</div>
+      <div class="wh-url-wrap">
+        <input class="field-inp" id="wh-url" type="password" placeholder="https://your-n8n.com/webhook/..." autocomplete="off" style="padding-right:40px">
+        <button class="wh-url-eye" onclick="toggleWHVis()" id="wh-eye">👁</button>
+      </div>
+      <div class="field-hint">설정 후 자동 저장됩니다</div>
+      <div class="field-lbl">Webhook Secret (선택)</div>
+      <input class="field-inp" id="wh-secret" type="password" placeholder="X-Webhook-Secret 헤더값" autocomplete="off">
+      <div class="field-hint">PRD의 N8N_WEBHOOK_SECRET 값과 동일하게 입력</div>
+
+      <div style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--t2);line-height:1.75;margin-top:4px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--am);margin-bottom:6px">전송 데이터 미리보기</div>
+        <div id="payload-preview" style="font-family:monospace;font-size:11px;color:var(--t2);word-break:break-all;max-height:160px;overflow-y:auto"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-secondary" onclick="closeWebhookSheet()">취소</button>
+      <button class="btn-primary" id="wh-send-btn" onclick="sendWebhook()">전송하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ③ 세션 설정 SHEET -->
+<div class="sheet-overlay" id="session-overlay" onclick="closeSession(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-hdr">
+      <span class="sheet-title">환자 세션 설정</span>
+      <button class="sheet-close" onclick="closeSessionSheet()">닫기</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field-lbl">환자 코드 <span style="color:var(--re)">*</span> <span style="font-size:10px;color:var(--t3)">(PT-YYYY-NNN)</span></div>
+      <input class="field-inp" id="s-id" type="text" placeholder="PT-2024-001" maxlength="30">
+      <div class="field-hint">익명 식별자 권장. 실명 사용 금지.</div>
+      <div class="field-lbl">면담 날짜</div>
+      <input class="field-inp" id="s-date" type="date">
+      <div class="field-lbl">면담자 (레지던트)</div>
+      <input class="field-inp" id="s-dr" type="text" placeholder="예: R2 홍길동" maxlength="20">
+      <div class="field-lbl">면담 유형</div>
+      <select class="field-inp" id="s-type">
+        <option value="initial">초진 면담</option>
+        <option value="followup">추적 면담</option>
+        <option value="case_conference">케이스 컨퍼런스</option>
+        <option value="progress">경과 면담</option>
+      </select>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn-danger" onclick="resetAll()">전체 초기화</button>
+      <button class="btn-primary" onclick="saveSession()">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════ */
+const S=[
+  {roman:"I",title:"Identifying Data",icon:"👤",
+   intro:"환자의 기본 인구통계학적 정보입니다. 입원 기록지나 EMR에서 확인 가능하나, 직접 면담으로 교차 확인이 필요한 항목을 포함합니다.",
+   groups:[
+    {tag:"tag-general",label:"기본 정보",title:"인구통계학적 항목",questions:[
+      {text:"성별, 나이, 출생 순서를 확인한다",intent:"기본 인구 정보",tip:"출생 순서는 형제관계 역동 파악에 중요합니다. '형제가 있으신가요? 몇째이신가요?'로 자연스럽게 연결하세요.",placeholder:"예) F/31, 2녀 중 첫째"},
+      {text:"출생지 및 현재 거주지를 확인한다",intent:"생활 환경 파악",tip:"",placeholder:"예) 서울 은평구 출생 / 경기 김포 거주"},
+      {text:"최종 학력 및 전공을 확인한다",intent:"교육 수준, 지적 능력 배경 파악",tip:"이후 cognition 섹션의 abstract thinking 해석에도 참고됩니다.",placeholder:"예) 대졸, 글로벌서비스학부"},
+      {text:"현재 직업 또는 직업 상태를 확인한다 (주부/무직/재직)",intent:"사회적 기능 수준 기초 파악",tip:"",placeholder:"예) 주부, 이전 행사기획 직종"},
+      {text:"결혼 상태를 확인한다 (미혼/기혼/별거/이혼/사별)",intent:"가족 구조, 지지체계 파악",tip:"",placeholder:"예) 기혼, 남편·자녀 2명"},
+      {text:"종교를 확인한다",intent:"위기 시 대처 자원, 가치관 파악",tip:"자살 사고 평가 시 종교적 신념이 보호 요인이 될 수 있습니다.",placeholder:"예) 기독교"},
+      {text:"사회경제적 상태를 확인한다 (상/중/하)",intent:"스트레스 원인, 치료 접근성 파악",tip:"직접 묻기 어려우면 '생활하시는 데 경제적으로 어려운 점이 있으신가요?'로 우회합니다.",placeholder:"예) 상"},
+      {text:"병전 성격을 확인한다 (환자 및 보호자 모두에게)",intent:"현재 증상과 기저 성격의 구분",tip:"핵심 질문: '아프시기 전, 평소에 어떤 성격이셨나요?' 보호자에게도 동일하게 묻고 교차 확인하세요.",placeholder:"예) 밝고 외향적, 인정욕구 높음, 자기주장 강함"},
+      {text:"정보 제공자(informant) 및 신뢰도를 평가한다",intent:"Reliability 섹션 작성용",tip:"면담 태도(협조적/방어적/일관성/주관적 왜곡 여부) 관찰 후 Reliable/Partially reliable/Unreliable 판단.",placeholder:"예) 환자 Reliable, 남편 Reliable, 환모 Reliable"}
+    ]}
+  ]},
+  {roman:"II",title:"Chief Problems",icon:"📋",
+   intro:"환자가 현재 가장 힘들어하는 문제와 지속 기간입니다. DSM-5 기준에 맞는 용어로 정리하고, Remote/Recent onset을 구분해 기재합니다.",
+   groups:[
+    {tag:"tag-general",label:"주호소",title:"핵심 증상 확인",questions:[
+      {text:"주된 호소 증상을 환자의 언어 그대로 먼저 듣는다",intent:"라포 형성, 환자 중심 접근",tip:"'요즘 가장 힘드신 게 무엇인가요?' — 첫 질문은 열린 질문으로 시작합니다.",placeholder:"예) \"이유를 모르겠는데 그냥 눈물이 나요\""},
+      {text:"우울 기분 여부 및 하루 중 지속 시간을 확인한다",intent:"MDD A기준 1번 항목",tip:"'하루 중 대부분의 시간 동안 기분이 가라앉아 있나요?' 주관적 호소 + 객관적 관찰 모두 기록.",placeholder:"예) 하루 대부분, 거의 매일, Remote: 내원 1년 7개월 전"},
+      {text:"흥미/즐거움 저하 여부를 확인한다",intent:"MDD A기준 2번 항목(무쾌감증)",tip:"'이전에 좋아하던 것들을 지금도 즐기실 수 있나요?'",placeholder:"예) 필라테스, 요리 모두 흥미 저하"},
+      {text:"자살사고 여부, 구체성, 계획 여부를 확인한다",intent:"위험도 평가 (VII 섹션 연계)",tip:"단계적으로 접근: 소극적 소망 → 자살사고 → 계획 → 시도. 직접 물어도 됩니다.",placeholder:"예) 아침에 안 깨어났으면 하는 소망 + 달리는 차 핸들 꺾는 충동 (내원 5일 전)"},
+      {text:"각 증상의 Remote onset과 Recent onset 시점을 확인한다",intent:"경과 파악, 삽화 구분",tip:"'이 증상이 처음 생긴 건 언제였나요? 최근에 특히 악화된 건 언제부터인가요?'",placeholder:"예) Remote: 내원 1년 7개월 전, Recent: 내원 1개월 전"}
+    ]}
+  ]},
+  {roman:"III",title:"Present Illness",icon:"🔍",
+   intro:"<strong>케이스 컨퍼런스의 핵심 섹션.</strong> 모든 메모는 FCAB 구조(Fact→Cognition→Affect→Behavior)로 작성하세요. 나중에 Claude가 이 메모를 보고서로 변환합니다.",
+   groups:[
+    {tag:"tag-fact",label:"FACT",title:"객관적 사건 · 상황 파악",questions:[
+      {text:"증상이 처음 발생했을 당시 어떤 일이 있었는지 확인한다 (시간순으로)",intent:"Precipitant 파악",tip:"'처음 힘들어지기 시작하던 시절로 돌아가서, 당시 생활이 어떠셨나요?'",placeholder:"예) 내원 2년 2개월 전 퇴직, 취업 실패 반복, 남편의 내조 요구"},
+      {text:"주요 생활 사건(직업·관계·상실)의 구체적 시점을 확인한다",intent:"Timeline 구성",tip:"내원 기준 역산 시점으로 정리. '내원 N개월 전' 형식으로 기록.",placeholder:"예) 내원 1년 3개월 전 별거, 내원 7개월 전 귀가, 내원 1개월 전 상사와 연락 단절"},
+      {text:"증상 악화 직전의 구체적 사건을 확인한다",intent:"Precipitant → Perpetuant 구분",tip:"'가장 힘들었던 시점이 언제였나요? 그 직전에 특별한 일이 있었나요?'",placeholder:"예) 전 상사가 연락 끊자고 통보한 내원 2주 전부터 급격히 악화"},
+      {text:"현재 거주 환경 및 가족 구성 변화를 확인한다",intent:"생활 스트레스 원인",tip:"",placeholder:"예) 현재 남편·자녀 2명과 동거, 귀가 후 남편이 가사·육아 도맡음"}
+    ]},
+    {tag:"tag-cog",label:"COGNITION",title:"당시의 생각 · 해석 · 믿음",questions:[
+      {text:"각 사건 당시 어떤 생각이 들었는지 확인한다 ('~라는 생각에')",intent:"FCAB Cognition 핵심",tip:"핵심 질문: '그 때 어떤 생각이 드셨나요?' — 이 답변이 Present Illness 서술의 핵심입니다.",placeholder:"예) 남편이 자신의 능력을 무시한다는 생각, 취업 계획이 비현실적이었다는 자괴감"},
+      {text:"자신에 대한 핵심 믿음(무능·무가치·버려진다)을 탐색한다",intent:"인지 왜곡 패턴",tip:"'그 상황에서 본인 자신에 대해 어떤 생각이 드셨나요?'",placeholder:"예) \"집안일도 경제활동도 못하는 기생충 같다\""},
+      {text:"타인(배우자·부모·상사)에 대한 해석을 확인한다",intent:"대인관계 인지 패턴",tip:"'남편/가족이 그렇게 했을 때, 그 의도가 뭐라고 생각하셨나요?'",placeholder:"예) 남편이 자신에게 실망해 곧 버릴 것이라는 생각"},
+      {text:"미래에 대한 비관적 사고 여부를 확인한다",intent:"인지 삼원 (자신/세상/미래)",tip:"",placeholder:"예) 어디에도 도움이 안 된다, 나아질 수 없다는 생각"},
+      {text:"상황에 대한 귀인 방식(자기 탓 vs. 외부 탓)을 파악한다",intent:"죄책감, 수치심 평가",tip:"'이 상황이 왜 이렇게 됐다고 생각하세요?'",placeholder:"예) 자기 탓 우세 — 결혼을 너무 일찍 했다는 후회, 능력 부족 귀인"}
+    ]},
+    {tag:"tag-affect",label:"AFFECT",title:"당시 감정 · 정동 반응",questions:[
+      {text:"각 사건에서 느낀 감정을 구체적으로 확인한다 (우울/불안/분노/수치심/죄책감)",intent:"FCAB Affect 요소",tip:"'그 때 기분이 어떠셨나요?' — '슬펐다'에서 멈추지 말고 '어떤 종류의 슬픔이었나요?'로 심화.",placeholder:"예) 좌절감, 분함, 허망함, 우울 및 절망감, 서러움"},
+      {text:"감정의 강도 변화 시점을 시간순으로 파악한다",intent:"경과 추적 (악화/완화 인자)",tip:"",placeholder:"예) 별거 후 일시 완화 → 귀가 후 악화 → 내원 1개월 전부터 급격 악화"},
+      {text:"감정을 억제하거나 표현하는 방식을 확인한다",intent:"방어기제, coping 스타일",tip:"'그 감정을 어떻게 처리하셨나요? 누군가에게 표현하셨나요, 혼자 삭이셨나요?'",placeholder:"예) 남편에게 전화로 우울감 토로, 혼자 음주로 해소"},
+      {text:"분리불안·유기불안의 감정적 패턴이 반복되는지 확인한다",intent:"Psychodynamic 재료",tip:"'이 두려움이 이번이 처음인가요, 아니면 예전에도 비슷한 감정을 느꼈던 적이 있나요?'",placeholder:"예) 중3 따돌림 이후 버려질 것 같은 두려움이 반복된다고 진술"}
+    ]},
+    {tag:"tag-bx",label:"BEHAVIOR",title:"행동 · 대응 반응",questions:[
+      {text:"각 감정 이후 어떤 행동을 했는지 확인한다 (접근/회피/의존)",intent:"FCAB Behavior 요소",tip:"'그래서 실제로 어떻게 행동하셨나요?' — 생각과 행동의 불일치가 있으면 기록.",placeholder:"예) 가족 거부, 침대에만 있음, 이전 상사에게 위안 추구"},
+      {text:"수면 패턴 변화를 확인한다 (입면/유지/조기각성)",intent:"MDD neurovegetative",tip:"'잠드는 데 어려움이 있나요? 중간에 깨시나요? 너무 일찍 깨시나요?'",placeholder:"예) 약기운에 쓰러져 자고, 밤에 바람쐬러 나감"},
+      {text:"식욕 및 체중 변화를 확인한다",intent:"MDD neurovegetative",tip:"",placeholder:"예) 식욕 저하, 체중 변화 여부 확인"},
+      {text:"사회적 철수 행동 여부를 확인한다 (연락 끊기, 방에만 있기 등)",intent:"기능 저하 수준",tip:"",placeholder:"예) 출근한 남편에게 전화해 우울감 호소, 집안일·경제활동 모두 중단"},
+      {text:"음주, 흡연, 물질 사용 변화를 확인한다",intent:"Past History 연계",tip:"특히 음주량 변화: '힘드실 때 술을 마시는 편이신가요? 얼마나 드시나요?'",placeholder:"예) 매일 맥주 2-6캔 4년간 → 뱃살 후 절반으로 감소"},
+      {text:"자해 또는 자살 관련 행동을 확인한다",intent:"위험도 평가 — VII 이관",tip:"언제, 어떤 상황에서, 어떤 방법으로 — 구체적으로 기록하되 VII로 이관 처리.",placeholder:"예) 내원 5일 전 달리는 차 핸들 꺾으려는 충동 (실행 여부 확인)"},
+      {text:"치료 추구 행동의 타이밍을 확인한다",intent:"Treatment history 기초",tip:"",placeholder:"예) 내원 1년 7개월 전 local PY 외래 시작, 응급실 경유 본원 입원"}
+    ]}
+  ]},
+  {roman:"IV",title:"Past & Family Hx",icon:"🧬",
+   intro:"과거 정신건강의학과적 병력, 물질 사용 문제, 의학적 병력, 현재 약물, 가족력을 확인합니다.",
+   groups:[
+    {tag:"tag-general",label:"과거력",title:"정신건강의학과 과거력",questions:[
+      {text:"이전 정신건강의학과 입원력 여부 및 횟수를 확인한다",intent:"Past psychiatric admission",tip:"",placeholder:"예) 없음 (none)"},
+      {text:"외래 치료력 및 약물 복용력을 확인한다 (기관명, 기간, 약물명)",intent:"Treatment history",tip:"",placeholder:"예) 내원 1년 7개월 전부터 local PY 외래, 약물명 미상"},
+      {text:"과거 자살 시도 여부를 확인한다 (횟수, 방법, 입원 여부)",intent:"위험 요인 평가",tip:"",placeholder:"예) 없음 / 있음 시 방법·시점·입원여부 기록"}
+    ]},
+    {tag:"tag-risk",label:"RISK",title:"물질 사용 및 의학적 병력",questions:[
+      {text:"음주 빈도, 양, 기간을 구체적으로 확인한다",intent:"Alcohol issue",tip:"예시: '매일 맥주 2-6캔, 4년간' — 구체적 수치 기록이 중요합니다.",placeholder:"예) 매일 맥주 2-6캔, 4년간"},
+      {text:"다른 물질 사용 여부를 확인한다 (담배, 대마, 수면제 남용 등)",intent:"Substance use",tip:"",placeholder:"예) 없음"},
+      {text:"현재 및 과거 신체 질환력을 확인한다",intent:"Other medical issue",tip:"갑상선·신경계 질환을 특히 확인.",placeholder:"예) 허리디스크 파열 (내원 3년 2개월 전)"},
+      {text:"최근 주요 검사 결과 이상 소견을 확인한다",intent:"Lab finding issue",tip:"",placeholder:"예) Lipase 61 (정상 12-53) [2023-09-18]"},
+      {text:"현재 복용 중인 모든 약물을 확인한다 (정신과 + 내과)",intent:"Current medication",tip:"",placeholder:"예) escitalopram 10mg, lithium 450mg, trazodone 25mg, alprazolam 0.25mg, clonazepam 1mg"}
+    ]},
+    {tag:"tag-context",label:"FAMILY",title:"가족력 및 가계도",questions:[
+      {text:"부모, 형제, 자녀의 정신건강의학과적 병력을 확인한다",intent:"Genetic/familial risk factor",tip:"우울증, 양극성 장애, 자살 시도, 물질 사용장애를 특히 확인.",placeholder:"예) 없음 (none)"},
+      {text:"가계도(pedigree) 작성을 위한 가족 구성을 파악한다",intent:"Family pedigree 도식화",tip:"세대 수, 남녀, 사망 여부, 주요 질병을 표시. 필요 시 사회복지사에게 의뢰.",placeholder:"예) 환부(출판업), 환모(전업주부), 여동생 1명, 남편(9세 연상), 자녀 2명(남·남)"}
+    ]}
+  ]},
+  {roman:"V",title:"Personal History",icon:"📖",
+   intro:"출생부터 성인기까지 발달 과정을 시기별로 탐색합니다. 각 시기의 주요 대인관계 경험, 애착 패턴, 외상 여부를 파악합니다.",
+   groups:[
+    {tag:"tag-context",label:"PRENATAL",title:"출생 전후 / 영유아기",questions:[
+      {text:"원하던 임신이었는지, 임신 중 특이 사항이 있었는지 확인한다 (보호자에게)",intent:"Wanted/unwanted baby, prenatal stress",tip:"",placeholder:"예) Wanted baby, 환모 환조모와의 스트레스 있었으나 곧 적응"},
+      {text:"주 양육자가 누구였으며, 분리 경험이 있었는지 확인한다",intent:"초기 애착 패턴",tip:"보호자 질문: '어릴 때 아이가 낯가림이 심했나요? 엄마와 잘 분리됐나요?'",placeholder:"예) 전업주부 환모가 주 양육자, 분리 없음, 낯가림 심하고 환부에게 잘 가지 않음"},
+      {text:"기질적 특성을 확인한다 (순했는지, 까다로웠는지, 에너지 수준)",intent:"Temperament 파악",tip:"",placeholder:"예) 에너지 넘치고 탐색 욕구 높음, 자기주장 강하고 떼를 잘 씀"}
+    ]},
+    {tag:"tag-context",label:"CHILDHOOD",title:"아동기 (3–11세)",questions:[
+      {text:"또래 관계 양상을 확인한다 (사교적/위축/지도자 역할 등)",intent:"사회적 기능 기저선",tip:"",placeholder:"예) 먼저 다가가는 외향적 성격, 남녀 두루 친하고 인기 많음, 초등 6년 학급회장"},
+      {text:"학업 성취와 교사·타인에게 받은 인정 경험을 확인한다",intent:"자존감 형성 맥락",tip:"",placeholder:"예) 상위권 성적, 담임이 노트 필기 칭찬해 더욱 열심히 임함"},
+      {text:"부모의 양육 방식 및 훈육 방식을 확인한다 (엄격함, 체벌, 편애 여부)",intent:"대상관계 패턴 이해",tip:"'부모님은 어떤 분들이셨나요? 훈육 방식은 어떠셨나요?'",placeholder:"예) 환부는 원리원칙 중시, 환모는 헌신적·밝음. 첫째에게 체벌·엄격, 맏이 책임 강조"},
+      {text:"신체적·성적·정서적 학대나 방임 경험을 확인한다",intent:"외상 경험 탐색",tip:"직접 질문이 어려우면 '어린 시절에 많이 무서웠거나 힘드셨던 경험이 있으셨나요?'로 시작.",placeholder:"예) 특이사항 없음 / 있다면 구체적으로 기록"}
+    ]},
+    {tag:"tag-context",label:"ADOLESCENCE",title:"청소년기 (12–18세)",questions:[
+      {text:"중·고등학교 시절 또래 관계의 변화를 확인한다 (따돌림, 소속감 변화)",intent:"사회적 외상 경험",tip:"",placeholder:"예) 중3 때 선도부장 맡은 후 일진에게 따돌림 경험 → 버려지는 두려움 기원"},
+      {text:"첫 연애 경험 및 이별 경험을 확인한다",intent:"초기 낭만적 애착 패턴",tip:"",placeholder:"예) 고1 때 3년간 짝사랑한 남학생과 연애, 자신이 세상 중심인 느낌, 대학 입학 후 자연스럽게 이별"},
+      {text:"가족 내 갈등 또는 부모와의 관계 변화를 확인한다",intent:"Separation-individuation 과정",tip:"",placeholder:"예) 고교 때 스트레스 증가하며 환부와 갈등 잦아짐, 고3 때 환부가 행주 던지는 사건"}
+    ]},
+    {tag:"tag-context",label:"ADULT",title:"성인기",questions:[
+      {text:"연애 패턴 및 결혼 과정을 확인한다 (만난 경위, 결혼 결정 이유)",intent:"낭만적 대상관계 패턴",tip:"핵심: '어떤 점에 끌리셨나요?' — 반복되는 관계 패턴을 파악합니다.",placeholder:"예) 캐나다 어학연수 중 9세 연상 현 남편 만남, 결혼 전제 조건에 자신 있게 응함, 불안으로 2개월 만에 귀국"},
+      {text:"직업력 및 직장 관계의 주요 사건을 확인한다",intent:"사회적 기능, 성취 욕구",tip:"",placeholder:"예) 광고회사 → 허리디스크로 퇴직, 행사기획 → 직장 상사 고백 사건, 재취직 후 퇴직"},
+      {text:"출산 및 육아 경험과 그 당시 감정을 확인한다",intent:"역할 전환 스트레스",tip:"",placeholder:"예) 첫째 출산 시 남편 딸 선호로 상처, 둘째 젊을 때 끝내야겠다는 생각에 남편 반대에도 출산"},
+      {text:"현재 주요 대인관계 갈등을 확인한다 (부부, 부모, 자녀, 직장)",intent:"현재 스트레스원",tip:"",placeholder:"예) 남편과 정서적 교류 부족, 이전 상사와의 관계 단절이 최근 주요 스트레스"}
+    ]}
+  ]},
+  {roman:"VI",title:"MSE",icon:"🧠",
+   intro:"면담 당일의 정신 상태를 직접 관찰하고 검사합니다. 별도 질문보다 면담 전반에 걸친 관찰과 표준화된 검사 항목으로 채워집니다.",
+   groups:[
+    {tag:"tag-general",label:"OBSERVE",title:"외모 · 태도 · 행동",questions:[
+      {text:"신체 특성 (키, 몸무게, 외모, 영양 상태, 위생, 의복)을 기록한다",intent:"General appearance",tip:"",placeholder:"예) 키 157cm, 45kg, 나이 적합 외모, 영양·위생 양호, 갈색 염색머리 단정"},
+      {text:"면담 태도 (eye contact, 협조 여부, 방어적 태도, 정신운동 변화)를 기록한다",intent:"Attitude & behavior",tip:"",placeholder:"예) Eye contact 양호, 협조적, monotonous 목소리, 방어적 태도, 무표정"}
+    ]},
+    {tag:"tag-affect",label:"MSE",title:"기분 · 정동 · 언어",questions:[
+      {text:"Mood를 직접 물어본다 ('지금 기분이 어떠신가요?')",intent:"Subjective mood",tip:"환자의 언어 그대로 기록 후 임상 용어로 변환.",placeholder:"예) depressed, not irritable, sl. anxious"},
+      {text:"Affect의 적절성, 범위, 안정성을 관찰한다",intent:"Objective affect",tip:"appropriate/inappropriate, broad/restricted/flat, stable/labile",placeholder:"예) appropriate, inadequate, broad"},
+      {text:"언어의 속도, 음량, 양, 자발성을 관찰한다",intent:"Speech characteristics",tip:"",placeholder:"예) 속도 보통, 음량 보통, 양 보통, spontaneity (-)"}
+    ]},
+    {tag:"tag-cog",label:"COGNITION",title:"인지 기능 검사",questions:[
+      {text:"지남력을 확인한다 (시간/장소/사람)",intent:"Orientation T/P/P",tip:"날짜, 병원 이름, 본인이 누구를 만나고 있는지 확인.",placeholder:"예) intact/intact/intact"},
+      {text:"기억력을 확인한다 (즉각/최근/원격)",intent:"Memory I/R/R",tip:"숫자 3-5개 반복 → 5분 후 재확인 / 최근 사건 / 오래된 개인 정보",placeholder:"예) intact/intact/intact (1,4,9,2,5 / 나무,자동차,모자 / 생일)"},
+      {text:"주의집중력 및 계산력을 확인한다 (100-7 serial subtraction)",intent:"Concentration & calculation",tip:"93, 86, 79, 72, 65 — 오류 수와 소요 시간을 기록.",placeholder:"예) intact (93, 86, 79, 72, 65)"},
+      {text:"추상적 사고를 확인한다 (공통점 찾기, 속담 해석)",intent:"Abstract thinking",tip:"'사과와 오렌지의 공통점은?' / '돌다리도 두드려보고 건너라'의 의미",placeholder:"예) intact ('가위와 연필의 공통점? 필기구')"}
+    ]},
+    {tag:"tag-risk",label:"RISK",title:"충동성 · 자살 위험도",questions:[
+      {text:"자살사고의 빈도, 강도, 수동적/능동적 여부를 확인한다",intent:"Suicidal ideation 세분화",tip:"수동적 소망(안 깨어났으면) → 능동적 자살사고 → 계획 → 준비",placeholder:"예) 자살사고 (+), 수동적 소망 + 내원 5일 전 능동적 충동, plan (-), attempt (-)"},
+      {text:"자살 계획 및 수단 접근성을 확인한다",intent:"Suicide plan & lethality",tip:"",placeholder:"예) plan (-), 수단 접근성: 운전 중 핸들 조작"},
+      {text:"타해 충동 여부를 확인한다",intent:"Homicidal ideation",tip:"",placeholder:"예) homicidal ideation (-)"},
+      {text:"판단력 및 병식 수준을 평가한다",intent:"Judgment & insight",tip:"현실 판단력(testing) + 사회적 판단력(social) / 병식 6단계 중 어디에 해당하는지.",placeholder:"예) Judgment: testing intact / social impaired. Insight: 원인 모르겠다 (level 2)"}
+    ]}
+  ]},
+  {roman:"VII",title:"Mood Chart",icon:"📊",
+   intro:"입원 기간 동안의 기분 변화를 시점별로 기록합니다. 각 면담일의 기분 상태를 0(최악)~10(최상) 척도로 평가하고, 주요 사건과 연결합니다. 보고서의 Mood Chart 시각화에 사용됩니다.",
+   groups:[
+    {tag:"tag-affect",label:"MOOD",title:"시점별 기분 평가",questions:[
+      {text:"입원일(HD#1)의 기분 상태를 0~10 척도로 기록한다",intent:"Baseline mood level",tip:"0=극도의 우울/절망, 5=보통, 10=매우 좋음. 환자에게 직접 숫자로 물어도 됩니다.",placeholder:"예) 2/10 — 극도의 우울, 자살사고 동반"},
+      {text:"오늘 면담일의 기분 상태를 0~10 척도로 기록한다",intent:"현재 mood level",tip:"'오늘 기분을 숫자로 표현하면 몇 점 정도인가요?'",placeholder:"예) 4/10 — 우울하지만 어제보다 약간 나음"},
+      {text:"기분이 가장 좋았던 시점과 그 때의 점수를 확인한다",intent:"Peak mood 파악",tip:"",placeholder:"예) HD#5, 6/10 — 남편이 점심 같이 먹자는 규칙 제안한 날"},
+      {text:"기분이 가장 나빴던 시점과 그 때의 점수를 확인한다",intent:"Nadir mood 파악",tip:"",placeholder:"예) HD#1, 1/10 — 입원 직후, 핸들 꺾으려던 충동 직후"}
+    ]},
+    {tag:"tag-fact",label:"EVENT",title:"기분 변화 연관 사건",questions:[
+      {text:"기분 변화와 연관된 주요 사건(보호자 면회, 약물 변경, 외부 연락 등)을 기록한다",intent:"Mood 변동 원인 추적",tip:"기분 그래프에 사건을 매핑하면 촉발 요인 패턴이 보입니다.",placeholder:"예) HD#3 환모 면회 후 일시 호전, HD#7 전 상사 연락 단절 통보 후 악화"},
+      {text:"약물 변경 시점과 기분 변화의 시간적 관계를 기록한다",intent:"약물 반응 추적",tip:"",placeholder:"예) HD#5 escitalopram 10→20mg 증량, HD#7부터 기분 소폭 개선"}
+    ]}
+  ]},
+  {roman:"VIII",title:"Progress Note",icon:"📝",
+   intro:"입원 중 매일 또는 주요 면담 시 작성하는 경과 기록입니다. S(Subjective) / O(Objective) / P(Plan) 형식.",
+   groups:[
+    {tag:"tag-general",label:"S",title:"Subjective — 환자 발화 수집",questions:[
+      {text:"오늘 가장 힘든 것이 무엇인지 개방형 질문으로 시작한다",intent:"주호소 파악",tip:"",placeholder:"예) \"이유 모르겠는데 울음이 나와요. 남편이 한숨만 쉬어도 내 탓 같아요\""},
+      {text:"전날 대비 증상 변화를 확인한다 (수면, 식욕, 기분, 자살사고)",intent:"일일 경과 추적",tip:"",placeholder:"예) 수면 일부 개선, 식욕 저하 지속, 기분 fluctuation, 자살사고 감소"},
+      {text:"보호자가 동석 시, 보호자의 관찰도 별도로 기록한다",intent:"다중 정보원 확보",tip:"환자와 보호자의 진술이 다를 경우 반드시 양쪽 모두 기록.",placeholder:"예) 남편: \"전화로 계속 죽고 싶다 해서 잘 들어주려 노력 중\""}
+    ]},
+    {tag:"tag-cog",label:"O",title:"Objective — 관찰 소견 및 임상 해석",questions:[
+      {text:"면담 당일의 Mood/Affect를 기록한다",intent:"O 섹션 필수 항목",tip:"",placeholder:"예) Mood: depressed, not irritable, not anxious / Affect: appropriate, inadequate, broad"},
+      {text:"면담에서 관찰된 임상적으로 유의미한 패턴을 기술한다",intent:"레지던트의 임상적 해석 기록",tip:"예: '전체적이고 모호한 인지 양상' / '심리적 마음챙김(psychological mindedness) 부재'",placeholder:"예) 사랑받았던 경험 강조하며 과거 긍정적 묘사, 구체적 내용 결여 → 전체적·모호한 인지 양상"}
+    ]},
+    {tag:"tag-bx",label:"P",title:"Plan — 처방 및 계획",questions:[
+      {text:"약물 변경 사항을 기록한다 (용량, 추가, 중단)",intent:"Medication plan",tip:"",placeholder:"예) escitalopram 10→20mg 증량, trazodone 유지"},
+      {text:"추가 검사 또는 협진 계획을 기록한다",intent:"Workup plan",tip:"",placeholder:"예) 심리검사 의뢰 (MMPI-2, Rorschach), 사회복지팀 협진"}
+    ]}
+  ]}
+];
+
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+let checked={}, notes={}, cur=0;
+let session={ id:'', date: new Date().toISOString().slice(0,10), dr:'', type:'initial' };
+let webhookUrl='', webhookSecret='';
+
+/* ═══════════════════════════════════════════════════
+   STORAGE
+═══════════════════════════════════════════════════ */
+function save(){
+  try{
+    localStorage.setItem('cl_v3_checked', JSON.stringify(checked));
+    localStorage.setItem('cl_v3_notes',   JSON.stringify(notes));
+    localStorage.setItem('cl_v3_session', JSON.stringify(session));
+    localStorage.setItem('cl_v3_wh_url',  webhookUrl);
+    localStorage.setItem('cl_v3_wh_sec',  webhookSecret);
+  }catch(e){}
+}
+
+function load(){
+  try{
+    const c=localStorage.getItem('cl_v3_checked'); if(c) checked=JSON.parse(c);
+    const n=localStorage.getItem('cl_v3_notes');   if(n) notes=JSON.parse(n);
+    const s=localStorage.getItem('cl_v3_session'); if(s) session=JSON.parse(s);
+    webhookUrl    = localStorage.getItem('cl_v3_wh_url') || '';
+    webhookSecret = localStorage.getItem('cl_v3_wh_sec') || '';
+  }catch(e){}
+}
+
+/* ═══════════════════════════════════════════════════
+   BUILD NAV
+═══════════════════════════════════════════════════ */
+function buildNav(){
+  const nav=document.getElementById('bottom-nav');
+  S.slice(0,4).forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='nav-btn'+(i===0?' active':'');
+    b.id='nb-'+i;
+    b.onclick=()=>go(i);
+    b.innerHTML=`<span class="nav-icon">${s.icon}<span class="done-dot"></span></span><span class="nav-label">${s.roman}</span>`;
+    nav.appendChild(b);
+  });
+  // 세션 설정 버튼
+  const sb=document.createElement('button');
+  sb.className='nav-btn';
+  sb.onclick=openSessionSheet;
+  sb.innerHTML=`<span class="nav-icon">⚙️</span><span class="nav-label">세션</span>`;
+  nav.appendChild(sb);
+  // 현황/전송 버튼
+  const mb=document.createElement('button');
+  mb.className='nav-btn';
+  mb.onclick=toggleSummary;
+  mb.innerHTML=`<span class="nav-icon">📤</span><span class="nav-label">전송</span>`;
+  nav.appendChild(mb);
+}
+
+/* ═══════════════════════════════════════════════════
+   RENDER SECTION
+═══════════════════════════════════════════════════ */
+function go(idx){
+  cur=idx;
+  const s=S[idx];
+  document.getElementById('cur-roman').textContent=s.roman;
+  document.getElementById('cur-title').textContent=s.title;
+  document.querySelectorAll('.nav-btn[id^="nb-"]').forEach((el,i)=>el.classList.toggle('active',i===idx));
+  const c=document.getElementById('content');
+  c.innerHTML='';
+
+  // Session banner
+  const bn=document.createElement('div');
+  bn.className='session-banner';
+  const sid=session.id||'세션 미설정';
+  bn.innerHTML=`
+    <div class="session-info">
+      <div class="session-id">${sid}</div>
+      <div>${session.date} · ${session.dr||'면담자 미입력'} · ${{initial:'초진',followup:'추적',case_conference:'케이스컨퍼런스',progress:'경과'}[session.type]||''}</div>
+    </div>
+    <button class="session-edit-btn" onclick="openSessionSheet()">편집</button>`;
+  c.appendChild(bn);
+
+  // Section switcher pills
+  const sw=document.createElement('div');
+  sw.className='sec-switcher';
+  S.forEach((sec,i)=>{
+    const p=document.createElement('div');
+    p.className='sec-pill'+(i===idx?' active':'')+(isDone(i)?' done':'');
+    p.textContent=sec.roman+' '+sec.title;
+    p.onclick=()=>go(i);
+    sw.appendChild(p);
+  });
+  c.appendChild(sw);
+
+  // Intro
+  const intro=document.createElement('div');
+  intro.className='sec-intro';
+  intro.innerHTML=s.intro;
+  c.appendChild(intro);
+
+  // Groups & cards
+  s.groups.forEach((g,gi)=>{
+    const grp=document.createElement('div');
+    grp.className='q-group';
+    const hdr=document.createElement('div');
+    hdr.className='q-group-hdr';
+    hdr.innerHTML=`<span class="gtag ${g.tag}">${g.label}</span><span class="gtitle">${g.title}</span>`;
+    grp.appendChild(hdr);
+
+    g.questions.forEach((q,qi)=>{
+      const key=`${idx}-${gi}-${qi}`;
+      const noteVal=notes[key]||'';
+      const isChecked=!!checked[key];
+      const hasNote=noteVal.trim().length>0;
+
+      const card=document.createElement('div');
+      card.className='q-card'+(isChecked?' checked':'')+(hasNote?' has-note':'');
+      card.id='c-'+key;
+      const ht=q.tip&&q.tip.trim().length>0;
+
+      card.innerHTML=`
+        <div class="q-main" onclick="toggle('${key}')">
+          <div class="q-cb"><span class="ck">✓</span></div>
+          <div class="q-body">
+            <div class="q-text">${q.text}</div>
+            <div class="q-intent">→ ${q.intent}</div>
+          </div>
+          <div class="q-actions">
+            <button class="memo-btn${hasNote?' active':''}" id="mbtn-${key}" onclick="event.stopPropagation();toggleMemo('${key}')">📝${hasNote?' ✓':''}</button>
+            ${ht?`<button class="tip-btn" onclick="event.stopPropagation();showTip('t-${key}')">팁</button>`:''}
+          </div>
+        </div>
+        ${ht?`<div class="q-tip" id="t-${key}"><div class="tip-lbl">면담 팁</div>${q.tip}</div>`:''}
+        <div class="q-memo${hasNote?' open':''}" id="m-${key}">
+          <div class="memo-lbl${hasNote?' saved':''}">
+            <span>면담 메모</span>
+            <span class="memo-saved-dot"></span>
+            <span id="ml-${key}" style="color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0">${hasNote?'저장됨':'입력 후 자동 저장'}</span>
+          </div>
+          <textarea class="memo-ta" id="ta-${key}" placeholder="${q.placeholder||'면담 내용을 입력하세요'}" oninput="onNote('${key}',this.value)" rows="3">${noteVal}</textarea>
+          <div class="memo-char" id="mc-${key}">${noteVal.length}자</div>
+        </div>`;
+      grp.appendChild(card);
+    });
+    c.appendChild(grp);
+  });
+
+  document.getElementById('scroll-area').scrollTop=0;
+  updateProg();
+}
+
+/* ═══════════════════════════════════════════════════
+   INTERACTIONS
+═══════════════════════════════════════════════════ */
+function toggle(key){
+  checked[key]=!checked[key];
+  const card=document.getElementById('c-'+key);
+  if(card)card.classList.toggle('checked',checked[key]);
+  save(); updateProg();
+}
+
+function toggleMemo(key){
+  const panel=document.getElementById('m-'+key);
+  if(!panel)return;
+  const isOpen=panel.classList.toggle('open');
+  if(isOpen){
+    const ta=document.getElementById('ta-'+key);
+    if(ta) setTimeout(()=>ta.focus(),50);
+  }
+}
+
+function showTip(id){
+  const el=document.getElementById(id);
+  if(el)el.classList.toggle('open');
+}
+
+let noteTimers={};
+function onNote(key, val){
+  notes[key]=val;
+  const mc=document.getElementById('mc-'+key);
+  if(mc) mc.textContent=val.length+'자';
+  const card=document.getElementById('c-'+key);
+  if(card) card.classList.toggle('has-note', val.trim().length>0);
+  const btn=document.getElementById('mbtn-'+key);
+  if(btn){ btn.classList.toggle('active', val.trim().length>0); btn.textContent='📝'+(val.trim().length>0?' ✓':''); }
+  // 저장 상태 표시 (debounce 800ms)
+  const lbl=document.getElementById('ml-'+key);
+  if(lbl) lbl.textContent='입력 중...';
+  clearTimeout(noteTimers[key]);
+  noteTimers[key]=setTimeout(()=>{
+    save();
+    const lbl2=document.getElementById('ml-'+key);
+    const ml=document.getElementById('m-'+key)?.querySelector('.memo-lbl');
+    if(lbl2) lbl2.textContent=val.trim().length>0?'저장됨':'입력 후 자동 저장';
+    if(ml) ml.classList.toggle('saved', val.trim().length>0);
+  }, 800);
+}
+
+/* ═══════════════════════════════════════════════════
+   PROGRESS
+═══════════════════════════════════════════════════ */
+function isDone(idx){
+  const s=S[idx]; let t=0,d=0;
+  s.groups.forEach((g,gi)=>g.questions.forEach((_,qi)=>{t++;if(checked[`${idx}-${gi}-${qi}`])d++;}));
+  return t>0&&d===t;
+}
+
+function updateProg(){
+  let t=0,d=0;
+  S.forEach((s,idx)=>{
+    let st=0,sd=0;
+    s.groups.forEach((g,gi)=>g.questions.forEach((_,qi)=>{t++;st++;if(checked[`${idx}-${gi}-${qi}`]){d++;sd++;}}));
+    const btn=document.getElementById('nb-'+idx);
+    if(btn)btn.classList.toggle('sec-done',st>0&&sd===st);
+  });
+  const pct=t>0?Math.round(d/t*100):0;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.querySelectorAll('.sec-pill').forEach((p,i)=>p.classList.toggle('done',isDone(i)));
+}
+
+/* ═══════════════════════════════════════════════════
+   SESSION SHEET
+═══════════════════════════════════════════════════ */
+function openSessionSheet(){
+  document.getElementById('s-id').value=session.id||'';
+  document.getElementById('s-date').value=session.date||new Date().toISOString().slice(0,10);
+  document.getElementById('s-dr').value=session.dr||'';
+  document.getElementById('s-type').value=session.type||'initial';
+  document.getElementById('session-overlay').classList.add('open');
+}
+function closeSessionSheet(){ document.getElementById('session-overlay').classList.remove('open'); }
+function closeSession(e){ if(e.target===document.getElementById('session-overlay'))closeSessionSheet(); }
+
+function saveSession(){
+  const id=document.getElementById('s-id').value.trim();
+  if(!id){ alert('환자 코드를 입력해주세요.'); return; }
+  if(!/^PT-\d{4}-\d{3}$/.test(id)){ alert('환자 코드 형식: PT-YYYY-NNN\n예: PT-2024-001'); return; }
+  session={
+    id, date:document.getElementById('s-date').value,
+    dr:document.getElementById('s-dr').value.trim(),
+    type:document.getElementById('s-type').value
+  };
+  save(); closeSessionSheet(); go(cur);
+}
+
+function resetAll(){
+  if(!confirm('모든 체크, 메모, 세션 데이터를 초기화할까요? 이 작업은 되돌릴 수 없습니다.')) return;
+  checked={}; notes={};
+  session={id:'',date:new Date().toISOString().slice(0,10),dr:'',type:'initial'};
+  try{ localStorage.removeItem('cl_v3_checked'); localStorage.removeItem('cl_v3_notes'); localStorage.removeItem('cl_v3_session'); }catch(e){}
+  closeSessionSheet(); go(cur);
+}
+
+/* ═══════════════════════════════════════════════════
+   SUMMARY SHEET
+═══════════════════════════════════════════════════ */
+function toggleSummary(){
+  const o=document.getElementById('summary-overlay');
+  o.classList.toggle('open');
+  if(o.classList.contains('open')) buildSummary();
+}
+function closeSummary(e){ if(e.target===document.getElementById('summary-overlay'))toggleSummary(); }
+
+function buildSummary(){
+  let h='';
+  S.forEach((s,idx)=>{
+    let secDone=0, secTotal=0;
+    s.groups.forEach((g,gi)=>g.questions.forEach((_,qi)=>{secTotal++;if(checked[`${idx}-${gi}-${qi}`])secDone++;}));
+    h+=`<div class="sum-sec">${s.roman}. ${s.title} (${secDone}/${secTotal})</div>`;
+    s.groups.forEach((g,gi)=>g.questions.forEach((q,qi)=>{
+      const k=`${idx}-${gi}-${qi}`,dn=!!checked[k],note=notes[k]||'';
+      h+=`<div class="sum-item ${dn?'sum-done':'sum-todo'}">
+        ${dn?'✓':'○'} ${q.text}
+        ${note?`<div class="sum-note">"${note.substring(0,80)}${note.length>80?'…':''}"</div>`:''}
+      </div>`;
+    }));
+  });
+  document.getElementById('summary-body').innerHTML=h;
+}
+
+function copyAll(){
+  let txt=`정신건강의학과 면담 체크리스트\n세션: ${session.id||'미설정'} | 날짜: ${session.date} | ${session.dr||''}\n${'─'.repeat(40)}\n\n`;
+  S.forEach((s,idx)=>{
+    txt+=`[${s.roman}. ${s.title}]\n`;
+    s.groups.forEach((g,gi)=>g.questions.forEach((q,qi)=>{
+      const k=`${idx}-${gi}-${qi}`;
+      txt+=`${checked[k]?'[완료]':'[  ]'} ${q.text}\n`;
+      if(notes[k]) txt+=`       메모: ${notes[k]}\n`;
+    }));
+    txt+='\n';
+  });
+  navigator.clipboard.writeText(txt).then(()=>{
+    const b=document.getElementById('copy-btn');
+    b.textContent='복사 완료 ✓';
+    setTimeout(()=>{b.textContent='복사';},2000);
+  }).catch(()=>alert('복사 실패 — 브라우저 권한을 확인해주세요.'));
+}
+
+/* ═══════════════════════════════════════════════════
+   WEBHOOK SHEET
+═══════════════════════════════════════════════════ */
+function buildPayload(){
+  const checklist_data={};
+  S.forEach((s,idx)=>{
+    const secKey=`${s.roman}_${s.title.replace(/\s+/g,'_')}`;
+    checklist_data[secKey]=[];
+    s.groups.forEach((g,gi)=>g.questions.forEach((q,qi)=>{
+      const k=`${idx}-${gi}-${qi}`;
+      checklist_data[secKey].push({
+        section: s.roman,
+        group: g.label,
+        question: q.text,
+        intent: q.intent,
+        checked: !!checked[k],
+        note: notes[k]||''
+      });
+    }));
+  });
+  return {
+    data_type: "form_interview",
+    patient_code: session.id||'UNKNOWN',
+    interview_date: session.date,
+    interviewer: session.dr,
+    interview_type: session.type,
+    submitted_at: new Date().toISOString(),
+    source: "html_checklist",
+    checklist_data,
+    summary: {
+      total_items: Object.values(checklist_data).flat().length,
+      checked_items: Object.values(checklist_data).flat().filter(i=>i.checked).length,
+      items_with_notes: Object.values(checklist_data).flat().filter(i=>i.note.trim().length>0).length,
+      completion_pct: Math.round(Object.values(checklist_data).flat().filter(i=>i.checked).length / Object.values(checklist_data).flat().length * 100)
+    }
+  };
+}
+
+function openWebhookSheet(){
+  document.getElementById('wh-url').value=webhookUrl;
+  document.getElementById('wh-secret').value=webhookSecret;
+  const payload=buildPayload();
+  document.getElementById('payload-preview').textContent=JSON.stringify(payload,null,2).substring(0,600)+'...';
+  setWHStatus('','');
+  document.getElementById('summary-overlay').classList.remove('open');
+  document.getElementById('webhook-overlay').classList.add('open');
+}
+function closeWebhookSheet(){ document.getElementById('webhook-overlay').classList.remove('open'); }
+function closeWebhook(e){ if(e.target===document.getElementById('webhook-overlay'))closeWebhookSheet(); }
+
+function toggleWHVis(){
+  const inp=document.getElementById('wh-url');
+  const eye=document.getElementById('wh-eye');
+  if(inp.type==='password'){ inp.type='text'; eye.textContent='🙈'; }
+  else{ inp.type='password'; eye.textContent='👁'; }
+}
+
+function setWHStatus(type, msg){
+  const el=document.getElementById('wh-status');
+  el.className='wh-status';
+  if(!type){ el.classList.remove('show'); return; }
+  el.classList.add('show', `wh-${type}`);
+  el.textContent=msg;
+}
+
+async function sendWebhook(){
+  const url=document.getElementById('wh-url').value.trim();
+  const secret=document.getElementById('wh-secret').value.trim();
+  if(!url){ alert('Webhook URL을 입력해주세요.'); return; }
+  if(!session.id){ alert('환자 코드가 설정되지 않았습니다. 세션 설정에서 환자 코드(PT-YYYY-NNN)를 입력하세요.'); return; }
+
+  // 저장
+  webhookUrl=url; webhookSecret=secret; save();
+
+  const btn=document.getElementById('wh-send-btn');
+  btn.disabled=true; btn.textContent='전송 중...';
+  setWHStatus('sending', '⏳ n8n Webhook으로 전송 중...');
+
+  const payload=buildPayload();
+  const headers={'Content-Type':'application/json'};
+  if(secret) headers['X-Webhook-Secret']=secret;
+
+  try{
+    const res=await fetch(url,{
+      method:'POST',
+      headers,
+      body:JSON.stringify(payload),
+      signal:AbortSignal.timeout(30000)
+    });
+
+    if(res.ok){
+      setWHStatus('ok', `✅ 전송 완료! (${res.status}) — n8n에서 워크플로우가 시작되었습니다.`);
+      btn.textContent='전송 완료 ✓';
+      setTimeout(()=>{btn.textContent='전송하기'; btn.disabled=false;}, 3000);
+    } else {
+      const errText=await res.text().catch(()=>'');
+      setWHStatus('err', `❌ 전송 실패 (${res.status}): ${errText.substring(0,100)}`);
+      btn.disabled=false; btn.textContent='재시도';
+    }
+  }catch(err){
+    if(err.name==='TimeoutError')
+      setWHStatus('err','❌ 타임아웃 (30초) — n8n URL과 네트워크 상태를 확인해주세요.');
+    else if(err.name==='TypeError')
+      setWHStatus('err','❌ 네트워크 오류 — URL 형식이나 CORS 설정을 확인해주세요.');
+    else
+      setWHStatus('err',`❌ 오류: ${err.message}`);
+    btn.disabled=false; btn.textContent='재시도';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════ */
+load(); buildNav(); go(0);
+
+// 세션 미설정 시 자동으로 설정 시트 오픈
+if(!session.id) setTimeout(openSessionSheet, 600);
+</script>
+</body>
+</html>

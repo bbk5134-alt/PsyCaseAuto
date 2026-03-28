@@ -1,0 +1,242 @@
+{
+  "meta": {
+    "workflow_id": "Tj0ScafoDJtKDiMA",
+    "name": "PsyCaseAuto — WF1-A 설문지 면담 저장",
+    "created_at": "2026-03-28",
+    "n8n_instance": "https://primary-production-b48fc.up.railway.app"
+  },
+  "name": "PsyCaseAuto — WF1-A 설문지 면담 저장",
+  "nodes": [
+    {
+      "id": "f1a00001-0000-4000-8000-000000000001",
+      "name": "Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [240, 300],
+      "webhookId": "psycaseauto-wf1a-interview-form",
+      "parameters": {
+        "formTitle": "정신건강의학과 면담 기록",
+        "formDescription": "PsyCaseAuto 면담 입력 양식",
+        "responseMode": "lastNode",
+        "formFields": {
+          "values": [
+            {"fieldLabel": "patient_code",          "fieldType": "text",     "requiredField": true,  "placeholder": "PT-YYYY-NNN"},
+            {"fieldLabel": "interview_date",         "fieldType": "date",     "requiredField": true},
+            {"fieldLabel": "interview_number",       "fieldType": "number",   "requiredField": true},
+            {"fieldLabel": "interviewer",            "fieldType": "dropdown", "requiredField": true,  "fieldOptions": {"values": [{"option": "R1"}, {"option": "R2"}, {"option": "R3"}, {"option": "R4"}]}},
+            {"fieldLabel": "sex",                   "fieldType": "dropdown", "requiredField": true,  "fieldOptions": {"values": [{"option": "M"}, {"option": "F"}]}},
+            {"fieldLabel": "age",                   "fieldType": "number",   "requiredField": true},
+            {"fieldLabel": "birth_place",           "fieldType": "text"},
+            {"fieldLabel": "residence",             "fieldType": "text"},
+            {"fieldLabel": "education",             "fieldType": "text"},
+            {"fieldLabel": "occupation",            "fieldType": "text"},
+            {"fieldLabel": "marital_status",        "fieldType": "dropdown", "fieldOptions": {"values": [{"option": "미혼"}, {"option": "기혼"}, {"option": "이혼"}, {"option": "사별"}]}},
+            {"fieldLabel": "religion",              "fieldType": "text"},
+            {"fieldLabel": "chief_problems",        "fieldType": "textarea", "requiredField": true,  "placeholder": "주호소 및 기간을 기술"},
+            {"fieldLabel": "present_illness_notes", "fieldType": "textarea", "requiredField": true,  "placeholder": "현병력 — 시간순으로 기술"},
+            {"fieldLabel": "past_history",          "fieldType": "textarea", "placeholder": "정신과 병력, 투약력, 내과 병력"},
+            {"fieldLabel": "personal_history",      "fieldType": "textarea", "placeholder": "개인력 — 발달 단계별"},
+            {"fieldLabel": "mse_observations",      "fieldType": "textarea", "placeholder": "정신상태검사 관찰 내용"},
+            {"fieldLabel": "informants",            "fieldType": "text",     "placeholder": "환자, 환자의 남편 등"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "f1a00002-0000-4000-8000-000000000002",
+      "name": "입력 검증",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nconst ptCodePattern = /^PT-\\d{4}-\\d{3}$/;\nif (!ptCodePattern.test(data.patient_code)) {\n  throw new Error(`환자 코드 형식 오류: \"${data.patient_code}\" — PT-YYYY-NNN 형식이어야 합니다`);\n}\n\nconst required = ['patient_code', 'interview_date', 'interview_number', 'interviewer', 'sex', 'age', 'chief_problems', 'present_illness_notes'];\nconst missing = required.filter(f => !data[f] && data[f] !== 0);\nif (missing.length > 0) {\n  throw new Error(`필수 필드 누락: ${missing.join(', ')}`);\n}\n\nif (Number(data.age) < 1 || Number(data.age) > 120) {\n  throw new Error(`나이 범위 오류: ${data.age}`);\n}\n\nreturn [{ json: data }];"
+      }
+    },
+    {
+      "id": "f1a00003-0000-4000-8000-000000000003",
+      "name": "데이터 정규화",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "parameters": {
+        "jsCode": "const raw = $input.first().json;\n\nconst normalized = {\n  data_type: 'form_interview',\n  patient_code: raw.patient_code.toUpperCase().trim(),\n  interview_number: Number(raw.interview_number),\n  interview_date: raw.interview_date,\n  interviewer: raw.interviewer,\n  created_at: $now.toISO(),\n  sections: {\n    identifying_data: {\n      sex: raw.sex,\n      age: Number(raw.age),\n      birth_place: raw.birth_place || null,\n      residence: raw.residence || null,\n      education: raw.education || null,\n      occupation: raw.occupation || null,\n      marital_status: raw.marital_status || null,\n      religion: raw.religion || null,\n      informants: raw.informants || null\n    },\n    chief_problems_notes: raw.chief_problems,\n    present_illness_notes: raw.present_illness_notes,\n    past_history: raw.past_history || null,\n    personal_history: raw.personal_history || null,\n    mse_observations: raw.mse_observations || null\n  }\n};\n\nconst datePart = String(raw.interview_date).replace(/-/g, '');\nconst fileName = `form_${datePart}.json`;\n\nreturn [{ json: {\n  normalized,\n  fileName,\n  patient_code: normalized.patient_code\n} }];"
+      }
+    },
+    {
+      "id": "f1a00004-0000-4000-8000-000000000004",
+      "name": "환자 폴더 존재 확인",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [960, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "={{ \"name = '\" + $json.patient_code + \"' and '1awOFEQ8U2gjCdUWv6BXN3OGUe9CeeVv' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}",
+        "returnAll": false,
+        "limit": 1
+      },
+      "credentials": {"googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}}
+    },
+    {
+      "id": "f1a00005-0000-4000-8000-000000000005",
+      "name": "폴더 없으면 생성?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [{"id": "cond-folder-001", "leftValue": "={{ $json.id ?? '' }}", "rightValue": "", "operator": {"type": "string", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "f1a00006-0000-4000-8000-000000000006",
+      "name": "환자 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1440, 120],
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "={{ $('데이터 정규화').first().json.patient_code }}",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "1awOFEQ8U2gjCdUWv6BXN3OGUe9CeeVv", "mode": "id"},
+        "options": {}
+      },
+      "credentials": {"googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}}
+    },
+    {
+      "id": "f1a00007-0000-4000-8000-000000000007",
+      "name": "폴더 ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "parameters": {
+        "jsCode": "const folderId = $input.first().json.id;\nconst norm = $('데이터 정규화').first().json;\nreturn [{ json: {\n  folderId,\n  normalizedData: norm.normalized,\n  fileName: norm.fileName,\n  patient_code: norm.patient_code\n} }];"
+      }
+    },
+    {
+      "id": "f1a00008-0000-4000-8000-000000000008",
+      "name": "interviews 서브폴더 조회",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1920, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "operation": "search",
+        "queryString": "={{ \"name = 'interviews' and '\" + $json.folderId + \"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}",
+        "returnAll": false,
+        "limit": 1
+      },
+      "credentials": {"googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}}
+    },
+    {
+      "id": "f1a00009-0000-4000-8000-000000000009",
+      "name": "interviews 없으면 생성?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2160, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [{"id": "cond-interviews-001", "leftValue": "={{ $json.id ?? '' }}", "rightValue": "", "operator": {"type": "string", "operation": "equals"}}],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "f1a0000a-0000-4000-8000-000000000010",
+      "name": "interviews 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2400, 120],
+      "parameters": {
+        "resource": "folder",
+        "operation": "create",
+        "name": "interviews",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "={{ $('폴더 ID 확정').first().json.folderId }}", "mode": "id"},
+        "options": {}
+      },
+      "credentials": {"googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}}
+    },
+    {
+      "id": "f1a0000b-0000-4000-8000-000000000011",
+      "name": "interviews ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 300],
+      "parameters": {
+        "jsCode": "const interviewsFolderId = $input.first().json.id;\nconst prev = $('폴더 ID 확정').first().json;\nreturn [{ json: {\n  interviewsFolderId,\n  normalizedData: prev.normalizedData,\n  fileName: prev.fileName,\n  patient_code: prev.patient_code\n} }];"
+      }
+    },
+    {
+      "id": "f1a0000c-0000-4000-8000-000000000012",
+      "name": "JSON to Binary 변환",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 300],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst jsonStr = JSON.stringify(data.normalizedData, null, 2);\nconst buffer = Buffer.from(jsonStr, 'utf-8');\nreturn [{\n  json: {\n    fileName: data.fileName,\n    interviewsFolderId: data.interviewsFolderId,\n    patient_code: data.patient_code\n  },\n  binary: {\n    data: {\n      data: buffer.toString('base64'),\n      mimeType: 'application/json',\n      fileName: data.fileName\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "f1a0000d-0000-4000-8000-000000000013",
+      "name": "JSON 파일 저장",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3120, 300],
+      "parameters": {
+        "resource": "file",
+        "operation": "upload",
+        "name": "={{ $json.fileName }}",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "={{ $json.interviewsFolderId }}", "mode": "id"},
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "credentials": {"googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}}
+    },
+    {
+      "id": "f1a0000e-0000-4000-8000-000000000014",
+      "name": "완료 응답",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [3360, 300],
+      "parameters": {
+        "operation": "completion",
+        "respondWith": "text",
+        "completionTitle": "면담 기록 저장 완료",
+        "completionMessage": "={{ '환자 코드 ' + $('데이터 정규화').first().json.patient_code + '의 면담 기록이 저장되었습니다.' }}"
+      }
+    }
+  ],
+  "connections": {
+    "Form Trigger":                {"main": [[{"node": "입력 검증",                  "type": "main", "index": 0}]]},
+    "입력 검증":                   {"main": [[{"node": "데이터 정규화",               "type": "main", "index": 0}]]},
+    "데이터 정규화":               {"main": [[{"node": "환자 폴더 존재 확인",          "type": "main", "index": 0}]]},
+    "환자 폴더 존재 확인":         {"main": [[{"node": "폴더 없으면 생성?",            "type": "main", "index": 0}]]},
+    "폴더 없으면 생성?":           {"main": [[{"node": "환자 폴더 생성",              "type": "main", "index": 0}], [{"node": "폴더 ID 확정", "type": "main", "index": 0}]]},
+    "환자 폴더 생성":              {"main": [[{"node": "폴더 ID 확정",               "type": "main", "index": 0}]]},
+    "폴더 ID 확정":               {"main": [[{"node": "interviews 서브폴더 조회",    "type": "main", "index": 0}]]},
+    "interviews 서브폴더 조회":    {"main": [[{"node": "interviews 없으면 생성?",    "type": "main", "index": 0}]]},
+    "interviews 없으면 생성?":     {"main": [[{"node": "interviews 폴더 생성",       "type": "main", "index": 0}], [{"node": "interviews ID 확정", "type": "main", "index": 0}]]},
+    "interviews 폴더 생성":        {"main": [[{"node": "interviews ID 확정",        "type": "main", "index": 0}]]},
+    "interviews ID 확정":          {"main": [[{"node": "JSON to Binary 변환",       "type": "main", "index": 0}]]},
+    "JSON to Binary 변환":         {"main": [[{"node": "JSON 파일 저장",            "type": "main", "index": 0}]]},
+    "JSON 파일 저장":              {"main": [[{"node": "완료 응답",                  "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true,
+    "maxConcurrency": 1,
+    "errorWorkflow": "4ox2lxKl1st6pUkY"
+  }
+}

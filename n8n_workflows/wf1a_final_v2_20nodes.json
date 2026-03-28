@@ -1,0 +1,1575 @@
+{
+  "updatedAt": "2026-03-28T17:19:56.673Z",
+  "createdAt": "2026-03-28T16:20:15.854Z",
+  "id": "4BVLV65DL1FYqbAk",
+  "name": "PsyCaseAuto — WF1-A 설문지 데이터 수신 (HTML + Form 이중)",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "psycase-checklist",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "wf1a-0001-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        208
+      ],
+      "webhookId": "psycase-checklist"
+    },
+    {
+      "parameters": {
+        "formTitle": "PsyCaseAuto 면담 기록 (백업)",
+        "formDescription": "HTML 체크리스트를 사용할 수 없을 때 사용",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "patient_code",
+              "placeholder": "PT-YYYY-NNN",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "interview_date",
+              "fieldType": "date",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "interviewer"
+            },
+            {
+              "fieldLabel": "interview_type",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "initial"
+                  },
+                  {
+                    "option": "followup"
+                  },
+                  {
+                    "option": "progress"
+                  },
+                  {
+                    "option": "case_conference"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "chief_problems_notes",
+              "fieldType": "textarea",
+              "placeholder": "주호소 및 기간"
+            },
+            {
+              "fieldLabel": "present_illness_notes",
+              "fieldType": "textarea",
+              "placeholder": "현병력 메모"
+            },
+            {
+              "fieldLabel": "past_history",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "personal_history",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "mse_observations",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "additional_notes",
+              "fieldType": "textarea",
+              "placeholder": "기타 메모"
+            }
+          ]
+        },
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "wf1a-0002-4000-8000-000000000002",
+      "name": "Form Trigger",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        240,
+        448
+      ],
+      "webhookId": "psycase-form"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nlet raw, source;\nif (input.body) {\n  raw = typeof input.body === 'string' ? JSON.parse(input.body) : input.body;\n  source = 'html_checklist';\n} else {\n  raw = {\n    patient_code: (input.patient_code || '').toUpperCase().trim(),\n    interview_date: input.interview_date || '',\n    interviewer: input.interviewer || '',\n    interview_type: input.interview_type || 'initial',\n    submitted_at: $now.toISO(),\n    checklist_data: null,\n    free_text: {\n      chief_problems: input.chief_problems_notes || null,\n      present_illness: input.present_illness_notes || null,\n      past_history: input.past_history || null,\n      personal_history: input.personal_history || null,\n      mse_observations: input.mse_observations || null,\n      additional_notes: input.additional_notes || null\n    },\n    summary: null\n  };\n  source = 'n8n_form';\n}\nraw.patient_code = (raw.patient_code || '').toUpperCase().trim();\nraw.source = source;\nreturn [{ json: { raw, source } }];"
+      },
+      "id": "wf1a-0003-4000-8000-000000000003",
+      "name": "입력 소스 통일",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nif (data.source === 'n8n_form') return [{ json: data }];\ntry {\n  const expected = $env.WEBHOOK_SECRET_WF1A || '';\n  const headers = $('Webhook').first().json.headers || {};\n  const received = headers['x-webhook-secret'] || '';\n  if (expected && received !== expected) throw new Error('UNAUTHORIZED: Webhook secret mismatch');\n} catch (e) { if (e.message.includes('UNAUTHORIZED')) throw e; }\nreturn [{ json: data }];"
+      },
+      "id": "wf1a-0004-4000-8000-000000000004",
+      "name": "시크릿 검증",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const { raw } = $input.first().json;\nif (!/^PT-\\d{4}-\\d{3}$/.test(raw.patient_code)) throw new Error(`VALIDATION: 환자코드 형식 오류 \"${raw.patient_code}\"`);\nif (!raw.interview_date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(raw.interview_date)) throw new Error(`VALIDATION: 날짜 형식 오류 \"${raw.interview_date}\"`);\nif (raw.source === 'html_checklist' && raw.checklist_data) {\n  let ok = false;\n  for (const items of Object.values(raw.checklist_data)) {\n    if (Array.isArray(items) && items.some(i => i.checked || (i.note && i.note.trim()))) { ok = true; break; }\n  }\n  if (!ok) throw new Error('VALIDATION: 체크리스트 입력 없음');\n}\nreturn [{ json: { raw, source: raw.source } }];"
+      },
+      "id": "wf1a-0005-4000-8000-000000000005",
+      "name": "입력 검증",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        960,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv",
+            "mode": "list",
+            "cachedResultName": "PsyCaseAuto",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv"
+          }
+        },
+        "options": {}
+      },
+      "id": "wf1a-0006-4000-8000-000000000006",
+      "name": "환자 폴더 존재 확인",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1184,
+        320
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fcKtWyui68XESQND",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "wf1a-0007-4000-8000-000000000007",
+      "name": "폴더 없으면 생성?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1408,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('입력 검증').first().json.raw.patient_code }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv",
+          "mode": "list",
+          "cachedResultName": "PsyCaseAuto",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv"
+        },
+        "options": {}
+      },
+      "id": "wf1a-0008-4000-8000-000000000008",
+      "name": "환자 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1632,
+        144
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fcKtWyui68XESQND",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const folderId = $input.first().json.id;\nconst { raw, source } = $('입력 검증').first().json;\nreturn [{ json: { folderId, raw, source } }];"
+      },
+      "id": "wf1a-0009-4000-8000-000000000009",
+      "name": "폴더 ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "={{ \"name = 'interviews' and '\" + $json.folderId + \"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}",
+        "limit": 1,
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "My Drive"
+          }
+        },
+        "options": {}
+      },
+      "id": "wf1a-000a-4000-8000-000000000010",
+      "name": "interviews 서브폴더 조회",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2064,
+        320
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fcKtWyui68XESQND",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "wf1a-000b-4000-8000-000000000011",
+      "name": "interviews 없으면 생성?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2288,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "interviews",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $('폴더 ID 확정').first().json.folderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "wf1a-000c-4000-8000-000000000012",
+      "name": "interviews 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2512,
+        144
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fcKtWyui68XESQND",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const interviewsFolderId = $input.first().json.id;\nconst { raw, source } = $('입력 검증').first().json;\nreturn [{ json: { interviewsFolderId, raw, source } }];"
+      },
+      "id": "wf1a-000d-4000-8000-000000000013",
+      "name": "interviews ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2720,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "={{ \"name contains 'interview_' and '\" + $json.interviewsFolderId + \"' in parents and trashed = false\" }}",
+        "returnAll": true,
+        "filter": {
+          "driveId": {
+            "__rl": true,
+            "mode": "list",
+            "value": "My Drive"
+          }
+        },
+        "options": {}
+      },
+      "id": "wf1a-000e-4000-8000-000000000014",
+      "name": "기존 파일 조회",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2944,
+        320
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fcKtWyui68XESQND",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allFiles = $input.all();\nconst cnt = allFiles.filter(f => f.json.name && f.json.name.startsWith('interview_')).length;\nconst num = cnt + 1;\nconst { raw, source } = $('입력 검증').first().json;\nconst fId = $('interviews ID 확정').first().json.interviewsFolderId;\nconst sd = {\n  data_type:'form_interview', patient_code:raw.patient_code,\n  interview_number:num, interview_date:raw.interview_date,\n  interviewer:raw.interviewer||'', interview_type:raw.interview_type||'initial',\n  source, created_at:$now.toISO(),\n  checklist_data:raw.checklist_data||null, free_text:raw.free_text||null,\n  summary:raw.summary||null,\n  sections:(()=>{\n    if(source==='html_checklist'&&raw.checklist_data){\n      const n=[];\n      for(const[s,its]of Object.entries(raw.checklist_data)){\n        if(Array.isArray(its))its.forEach(i=>{if(i.note&&i.note.trim())n.push({section:s,group:i.group||'',question:i.question||'',checked:!!i.checked,note:i.note});});\n      }\n      return{_raw_notes:n};\n    }\n    if(raw.free_text)return{chief_problems_notes:raw.free_text.chief_problems,present_illness_notes:raw.free_text.present_illness,past_history:raw.free_text.past_history,personal_history:raw.free_text.personal_history,mse_observations:raw.free_text.mse_observations,additional_notes:raw.free_text.additional_notes};\n    return{};\n  })()\n};\nconst fn=`interview_${raw.interview_date.replace(/-/g,'')}.json`;\nconst buf=Buffer.from(JSON.stringify(sd,null,2),'utf-8');\nreturn[{json:{interviewsFolderId:fId,fileName:fn,patientCode:raw.patient_code,interviewNumber:num,source},binary:{data:{data:buf.toString('base64'),mimeType:'application/json',fileName:fn}}}];"
+      },
+      "id": "wf1a-000f-4000-8000-000000000015",
+      "name": "JSON 직렬화",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3168,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.interviewsFolderId }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "id": "wf1a-0010-4000-8000-000000000016",
+      "name": "JSON 파일 저장",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3392,
+        320
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "fcKtWyui68XESQND",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ $('JSON 직렬화').first().json.source }}",
+              "rightValue": "html_checklist",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "wf1a-0011-4000-8000-000000000017",
+      "name": "소스 분기",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ JSON.stringify({status:'ok',patient_code:$('JSON 직렬화').first().json.patientCode,interview_number:$('JSON 직렬화').first().json.interviewNumber,file_name:$('JSON 직렬화').first().json.fileName,message:'면담 데이터가 저장되었습니다.'}) }}",
+        "options": {
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "id": "wf1a-0012-4000-8000-000000000018",
+      "name": "Webhook 응답",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3824,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "completion",
+        "completionTitle": "면담 기록 저장 완료",
+        "completionMessage": "={{ '환자 코드 ' + $('JSON 직렬화').first().json.patientCode + ' / 인터뷰 #' + $('JSON 직렬화').first().json.interviewNumber + ' 이 저장되었습니다.' }}",
+        "options": {}
+      },
+      "id": "wf1a-0013-4000-8000-000000000019",
+      "name": "폼 완료",
+      "type": "n8n-nodes-base.form",
+      "typeVersion": 2.5,
+      "position": [
+        3824,
+        464
+      ],
+      "webhookId": "3bb4c238-6c5b-4311-bcb8-573c10740747"
+    },
+    {
+      "id": "wf1a-0014-4000-8000-000000000020",
+      "name": "Telegram 알림",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        3600,
+        560
+      ],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "7833910433",
+        "text": "={{ \"✅ <b>면담 기록 저장 완료</b>\\n\\n\" + \"👤 환자: <code>\" + $('JSON 직렬화').first().json.patientCode + \"</code>\\n\" + \"📋 회차: #\" + $('JSON 직렬화').first().json.interviewNumber + \"\\n\" + \"📅 날짜: \" + $('입력 검증').first().json.raw.interview_date + \"\\n\" + \"👨\\u200d⚕️ 면담자: \" + ($('입력 검증').first().json.raw.interviewer || '미입력') + \"\\n\" + \"📁 파일: <code>\" + $('JSON 직렬화').first().json.fileName + \"</code>\\n\" + \"☑️ 체크: \" + ($('입력 검증').first().json.raw.summary?.checked_items ?? 0) + \"/\" + ($('입력 검증').first().json.raw.summary?.total_items ?? 0) + \"개\\n\" + \"⏰ \" + $now.setZone('Asia/Seoul').toFormat('yyyy-MM-dd HH:mm') + \" KST\" }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "8T0Q83WRhTEEdvSL",
+          "name": "Telegram account 4"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "입력 소스 통일",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form Trigger": {
+      "main": [
+        [
+          {
+            "node": "입력 소스 통일",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "입력 소스 통일": {
+      "main": [
+        [
+          {
+            "node": "시크릿 검증",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "시크릿 검증": {
+      "main": [
+        [
+          {
+            "node": "입력 검증",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "입력 검증": {
+      "main": [
+        [
+          {
+            "node": "환자 폴더 존재 확인",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "환자 폴더 존재 확인": {
+      "main": [
+        [
+          {
+            "node": "폴더 없으면 생성?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "폴더 없으면 생성?": {
+      "main": [
+        [
+          {
+            "node": "환자 폴더 생성",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "폴더 ID 확정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "환자 폴더 생성": {
+      "main": [
+        [
+          {
+            "node": "폴더 ID 확정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "폴더 ID 확정": {
+      "main": [
+        [
+          {
+            "node": "interviews 서브폴더 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "interviews 서브폴더 조회": {
+      "main": [
+        [
+          {
+            "node": "interviews 없으면 생성?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "interviews 없으면 생성?": {
+      "main": [
+        [
+          {
+            "node": "interviews 폴더 생성",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "interviews ID 확정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "interviews 폴더 생성": {
+      "main": [
+        [
+          {
+            "node": "interviews ID 확정",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "interviews ID 확정": {
+      "main": [
+        [
+          {
+            "node": "기존 파일 조회",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "기존 파일 조회": {
+      "main": [
+        [
+          {
+            "node": "JSON 직렬화",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON 직렬화": {
+      "main": [
+        [
+          {
+            "node": "JSON 파일 저장",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON 파일 저장": {
+      "main": [
+        [
+          {
+            "node": "소스 분기",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Telegram 알림",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "소스 분기": {
+      "main": [
+        [
+          {
+            "node": "Webhook 응답",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "폼 완료",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true,
+    "errorWorkflow": "4ox2lxKl1st6pUkY",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "versionId": "9f72d333-b753-4cc4-850a-2c35203fb732",
+  "activeVersionId": "9f72d333-b753-4cc4-850a-2c35203fb732",
+  "versionCounter": 46,
+  "triggerCount": 2,
+  "shared": [
+    {
+      "updatedAt": "2026-03-28T16:20:15.854Z",
+      "createdAt": "2026-03-28T16:20:15.854Z",
+      "role": "workflow:owner",
+      "workflowId": "4BVLV65DL1FYqbAk",
+      "projectId": "qJtDiXo4CquLEDID",
+      "project": {
+        "updatedAt": "2026-03-26T18:50:43.333Z",
+        "createdAt": "2026-03-26T18:46:56.410Z",
+        "id": "qJtDiXo4CquLEDID",
+        "name": "병관 부 <bbk5134@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "7c578861-abec-4061-8076-8202bed9fb7c"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-03-28T17:19:56.686Z",
+    "createdAt": "2026-03-28T17:19:56.686Z",
+    "versionId": "9f72d333-b753-4cc4-850a-2c35203fb732",
+    "workflowId": "4BVLV65DL1FYqbAk",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "psycase-checklist",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "wf1a-0001-4000-8000-000000000001",
+        "name": "Webhook",
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "position": [
+          240,
+          208
+        ],
+        "webhookId": "psycase-checklist"
+      },
+      {
+        "parameters": {
+          "formTitle": "PsyCaseAuto 면담 기록 (백업)",
+          "formDescription": "HTML 체크리스트를 사용할 수 없을 때 사용",
+          "formFields": {
+            "values": [
+              {
+                "fieldLabel": "patient_code",
+                "placeholder": "PT-YYYY-NNN",
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "interview_date",
+                "fieldType": "date",
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "interviewer"
+              },
+              {
+                "fieldLabel": "interview_type",
+                "fieldType": "dropdown",
+                "fieldOptions": {
+                  "values": [
+                    {
+                      "option": "initial"
+                    },
+                    {
+                      "option": "followup"
+                    },
+                    {
+                      "option": "progress"
+                    },
+                    {
+                      "option": "case_conference"
+                    }
+                  ]
+                }
+              },
+              {
+                "fieldLabel": "chief_problems_notes",
+                "fieldType": "textarea",
+                "placeholder": "주호소 및 기간"
+              },
+              {
+                "fieldLabel": "present_illness_notes",
+                "fieldType": "textarea",
+                "placeholder": "현병력 메모"
+              },
+              {
+                "fieldLabel": "past_history",
+                "fieldType": "textarea"
+              },
+              {
+                "fieldLabel": "personal_history",
+                "fieldType": "textarea"
+              },
+              {
+                "fieldLabel": "mse_observations",
+                "fieldType": "textarea"
+              },
+              {
+                "fieldLabel": "additional_notes",
+                "fieldType": "textarea",
+                "placeholder": "기타 메모"
+              }
+            ]
+          },
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "wf1a-0002-4000-8000-000000000002",
+        "name": "Form Trigger",
+        "type": "n8n-nodes-base.formTrigger",
+        "typeVersion": 2.2,
+        "position": [
+          240,
+          448
+        ],
+        "webhookId": "psycase-form"
+      },
+      {
+        "parameters": {
+          "jsCode": "const input = $input.first().json;\nlet raw, source;\nif (input.body) {\n  raw = typeof input.body === 'string' ? JSON.parse(input.body) : input.body;\n  source = 'html_checklist';\n} else {\n  raw = {\n    patient_code: (input.patient_code || '').toUpperCase().trim(),\n    interview_date: input.interview_date || '',\n    interviewer: input.interviewer || '',\n    interview_type: input.interview_type || 'initial',\n    submitted_at: $now.toISO(),\n    checklist_data: null,\n    free_text: {\n      chief_problems: input.chief_problems_notes || null,\n      present_illness: input.present_illness_notes || null,\n      past_history: input.past_history || null,\n      personal_history: input.personal_history || null,\n      mse_observations: input.mse_observations || null,\n      additional_notes: input.additional_notes || null\n    },\n    summary: null\n  };\n  source = 'n8n_form';\n}\nraw.patient_code = (raw.patient_code || '').toUpperCase().trim();\nraw.source = source;\nreturn [{ json: { raw, source } }];"
+        },
+        "id": "wf1a-0003-4000-8000-000000000003",
+        "name": "입력 소스 통일",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          528,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const data = $input.first().json;\nif (data.source === 'n8n_form') return [{ json: data }];\ntry {\n  const expected = $env.WEBHOOK_SECRET_WF1A || '';\n  const headers = $('Webhook').first().json.headers || {};\n  const received = headers['x-webhook-secret'] || '';\n  if (expected && received !== expected) throw new Error('UNAUTHORIZED: Webhook secret mismatch');\n} catch (e) { if (e.message.includes('UNAUTHORIZED')) throw e; }\nreturn [{ json: data }];"
+        },
+        "id": "wf1a-0004-4000-8000-000000000004",
+        "name": "시크릿 검증",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          752,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "jsCode": "const { raw } = $input.first().json;\nif (!/^PT-\\d{4}-\\d{3}$/.test(raw.patient_code)) throw new Error(`VALIDATION: 환자코드 형식 오류 \"${raw.patient_code}\"`);\nif (!raw.interview_date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(raw.interview_date)) throw new Error(`VALIDATION: 날짜 형식 오류 \"${raw.interview_date}\"`);\nif (raw.source === 'html_checklist' && raw.checklist_data) {\n  let ok = false;\n  for (const items of Object.values(raw.checklist_data)) {\n    if (Array.isArray(items) && items.some(i => i.checked || (i.note && i.note.trim()))) { ok = true; break; }\n  }\n  if (!ok) throw new Error('VALIDATION: 체크리스트 입력 없음');\n}\nreturn [{ json: { raw, source: raw.source } }];"
+        },
+        "id": "wf1a-0005-4000-8000-000000000005",
+        "name": "입력 검증",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          960,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "fileFolder",
+          "filter": {
+            "folderId": {
+              "__rl": true,
+              "value": "1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv",
+              "mode": "list",
+              "cachedResultName": "PsyCaseAuto",
+              "cachedResultUrl": "https://drive.google.com/drive/folders/1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv"
+            }
+          },
+          "options": {}
+        },
+        "id": "wf1a-0006-4000-8000-000000000006",
+        "name": "환자 폴더 존재 확인",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          1184,
+          320
+        ],
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "fcKtWyui68XESQND",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "c1",
+                "leftValue": "={{ $json.id ?? '' }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "wf1a-0007-4000-8000-000000000007",
+        "name": "폴더 없으면 생성?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          1408,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "folder",
+          "name": "={{ $('입력 검증').first().json.raw.patient_code }}",
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive",
+            "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv",
+            "mode": "list",
+            "cachedResultName": "PsyCaseAuto",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1awOFEQ8U2gjCdUWv6BXN3_OGUe9CeeVv"
+          },
+          "options": {}
+        },
+        "id": "wf1a-0008-4000-8000-000000000008",
+        "name": "환자 폴더 생성",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          1632,
+          144
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "fcKtWyui68XESQND",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const folderId = $input.first().json.id;\nconst { raw, source } = $('입력 검증').first().json;\nreturn [{ json: { folderId, raw, source } }];"
+        },
+        "id": "wf1a-0009-4000-8000-000000000009",
+        "name": "폴더 ID 확정",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          1840,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "fileFolder",
+          "searchMethod": "query",
+          "queryString": "={{ \"name = 'interviews' and '\" + $json.folderId + \"' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false\" }}",
+          "limit": 1,
+          "filter": {
+            "driveId": {
+              "__rl": true,
+              "mode": "list",
+              "value": "My Drive"
+            }
+          },
+          "options": {}
+        },
+        "id": "wf1a-000a-4000-8000-000000000010",
+        "name": "interviews 서브폴더 조회",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          2064,
+          320
+        ],
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "fcKtWyui68XESQND",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "c2",
+                "leftValue": "={{ $json.id ?? '' }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "wf1a-000b-4000-8000-000000000011",
+        "name": "interviews 없으면 생성?",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          2288,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "folder",
+          "name": "interviews",
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $('폴더 ID 확정').first().json.folderId }}",
+            "mode": "id"
+          },
+          "options": {}
+        },
+        "id": "wf1a-000c-4000-8000-000000000012",
+        "name": "interviews 폴더 생성",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          2512,
+          144
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "fcKtWyui68XESQND",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const interviewsFolderId = $input.first().json.id;\nconst { raw, source } = $('입력 검증').first().json;\nreturn [{ json: { interviewsFolderId, raw, source } }];"
+        },
+        "id": "wf1a-000d-4000-8000-000000000013",
+        "name": "interviews ID 확정",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          2720,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "resource": "fileFolder",
+          "searchMethod": "query",
+          "queryString": "={{ \"name contains 'interview_' and '\" + $json.interviewsFolderId + \"' in parents and trashed = false\" }}",
+          "returnAll": true,
+          "filter": {
+            "driveId": {
+              "__rl": true,
+              "mode": "list",
+              "value": "My Drive"
+            }
+          },
+          "options": {}
+        },
+        "id": "wf1a-000e-4000-8000-000000000014",
+        "name": "기존 파일 조회",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          2944,
+          320
+        ],
+        "alwaysOutputData": true,
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "fcKtWyui68XESQND",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "const allFiles = $input.all();\nconst cnt = allFiles.filter(f => f.json.name && f.json.name.startsWith('interview_')).length;\nconst num = cnt + 1;\nconst { raw, source } = $('입력 검증').first().json;\nconst fId = $('interviews ID 확정').first().json.interviewsFolderId;\nconst sd = {\n  data_type:'form_interview', patient_code:raw.patient_code,\n  interview_number:num, interview_date:raw.interview_date,\n  interviewer:raw.interviewer||'', interview_type:raw.interview_type||'initial',\n  source, created_at:$now.toISO(),\n  checklist_data:raw.checklist_data||null, free_text:raw.free_text||null,\n  summary:raw.summary||null,\n  sections:(()=>{\n    if(source==='html_checklist'&&raw.checklist_data){\n      const n=[];\n      for(const[s,its]of Object.entries(raw.checklist_data)){\n        if(Array.isArray(its))its.forEach(i=>{if(i.note&&i.note.trim())n.push({section:s,group:i.group||'',question:i.question||'',checked:!!i.checked,note:i.note});});\n      }\n      return{_raw_notes:n};\n    }\n    if(raw.free_text)return{chief_problems_notes:raw.free_text.chief_problems,present_illness_notes:raw.free_text.present_illness,past_history:raw.free_text.past_history,personal_history:raw.free_text.personal_history,mse_observations:raw.free_text.mse_observations,additional_notes:raw.free_text.additional_notes};\n    return{};\n  })()\n};\nconst fn=`interview_${raw.interview_date.replace(/-/g,'')}.json`;\nconst buf=Buffer.from(JSON.stringify(sd,null,2),'utf-8');\nreturn[{json:{interviewsFolderId:fId,fileName:fn,patientCode:raw.patient_code,interviewNumber:num,source},binary:{data:{data:buf.toString('base64'),mimeType:'application/json',fileName:fn}}}];"
+        },
+        "id": "wf1a-000f-4000-8000-000000000015",
+        "name": "JSON 직렬화",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3168,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "name": "={{ $json.fileName }}",
+          "driveId": {
+            "__rl": true,
+            "value": "My Drive",
+            "mode": "list",
+            "cachedResultName": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "={{ $json.interviewsFolderId }}",
+            "mode": "id"
+          },
+          "options": {}
+        },
+        "id": "wf1a-0010-4000-8000-000000000016",
+        "name": "JSON 파일 저장",
+        "type": "n8n-nodes-base.googleDrive",
+        "typeVersion": 3,
+        "position": [
+          3392,
+          320
+        ],
+        "credentials": {
+          "googleDriveOAuth2Api": {
+            "id": "fcKtWyui68XESQND",
+            "name": "Google Drive account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose"
+            },
+            "conditions": [
+              {
+                "id": "c3",
+                "leftValue": "={{ $('JSON 직렬화').first().json.source }}",
+                "rightValue": "html_checklist",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "id": "wf1a-0011-4000-8000-000000000017",
+        "name": "소스 분기",
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2,
+        "position": [
+          3600,
+          320
+        ]
+      },
+      {
+        "parameters": {
+          "respondWith": "text",
+          "responseBody": "={{ JSON.stringify({status:'ok',patient_code:$('JSON 직렬화').first().json.patientCode,interview_number:$('JSON 직렬화').first().json.interviewNumber,file_name:$('JSON 직렬화').first().json.fileName,message:'면담 데이터가 저장되었습니다.'}) }}",
+          "options": {
+            "responseCode": 200,
+            "responseHeaders": {
+              "entries": [
+                {
+                  "name": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "name": "Access-Control-Allow-Origin",
+                  "value": "*"
+                }
+              ]
+            }
+          }
+        },
+        "id": "wf1a-0012-4000-8000-000000000018",
+        "name": "Webhook 응답",
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1,
+        "position": [
+          3824,
+          192
+        ]
+      },
+      {
+        "parameters": {
+          "operation": "completion",
+          "completionTitle": "면담 기록 저장 완료",
+          "completionMessage": "={{ '환자 코드 ' + $('JSON 직렬화').first().json.patientCode + ' / 인터뷰 #' + $('JSON 직렬화').first().json.interviewNumber + ' 이 저장되었습니다.' }}",
+          "options": {}
+        },
+        "id": "wf1a-0013-4000-8000-000000000019",
+        "name": "폼 완료",
+        "type": "n8n-nodes-base.form",
+        "typeVersion": 2.5,
+        "position": [
+          3824,
+          464
+        ],
+        "webhookId": "3bb4c238-6c5b-4311-bcb8-573c10740747"
+      },
+      {
+        "id": "wf1a-0014-4000-8000-000000000020",
+        "name": "Telegram 알림",
+        "type": "n8n-nodes-base.telegram",
+        "typeVersion": 1.2,
+        "position": [
+          3600,
+          560
+        ],
+        "parameters": {
+          "resource": "message",
+          "operation": "sendMessage",
+          "chatId": "7833910433",
+          "text": "={{ \"✅ <b>면담 기록 저장 완료</b>\\n\\n\" + \"👤 환자: <code>\" + $('JSON 직렬화').first().json.patientCode + \"</code>\\n\" + \"📋 회차: #\" + $('JSON 직렬화').first().json.interviewNumber + \"\\n\" + \"📅 날짜: \" + $('입력 검증').first().json.raw.interview_date + \"\\n\" + \"👨\\u200d⚕️ 면담자: \" + ($('입력 검증').first().json.raw.interviewer || '미입력') + \"\\n\" + \"📁 파일: <code>\" + $('JSON 직렬화').first().json.fileName + \"</code>\\n\" + \"☑️ 체크: \" + ($('입력 검증').first().json.raw.summary?.checked_items ?? 0) + \"/\" + ($('입력 검증').first().json.raw.summary?.total_items ?? 0) + \"개\\n\" + \"⏰ \" + $now.setZone('Asia/Seoul').toFormat('yyyy-MM-dd HH:mm') + \" KST\" }}",
+          "additionalFields": {
+            "parse_mode": "HTML"
+          }
+        },
+        "credentials": {
+          "telegramApi": {
+            "id": "8T0Q83WRhTEEdvSL",
+            "name": "Telegram account 4"
+          }
+        }
+      }
+    ],
+    "connections": {
+      "Webhook": {
+        "main": [
+          [
+            {
+              "node": "입력 소스 통일",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Form Trigger": {
+        "main": [
+          [
+            {
+              "node": "입력 소스 통일",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "입력 소스 통일": {
+        "main": [
+          [
+            {
+              "node": "시크릿 검증",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "시크릿 검증": {
+        "main": [
+          [
+            {
+              "node": "입력 검증",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "입력 검증": {
+        "main": [
+          [
+            {
+              "node": "환자 폴더 존재 확인",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "환자 폴더 존재 확인": {
+        "main": [
+          [
+            {
+              "node": "폴더 없으면 생성?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "폴더 없으면 생성?": {
+        "main": [
+          [
+            {
+              "node": "환자 폴더 생성",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "폴더 ID 확정",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "환자 폴더 생성": {
+        "main": [
+          [
+            {
+              "node": "폴더 ID 확정",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "폴더 ID 확정": {
+        "main": [
+          [
+            {
+              "node": "interviews 서브폴더 조회",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "interviews 서브폴더 조회": {
+        "main": [
+          [
+            {
+              "node": "interviews 없으면 생성?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "interviews 없으면 생성?": {
+        "main": [
+          [
+            {
+              "node": "interviews 폴더 생성",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "interviews ID 확정",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "interviews 폴더 생성": {
+        "main": [
+          [
+            {
+              "node": "interviews ID 확정",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "interviews ID 확정": {
+        "main": [
+          [
+            {
+              "node": "기존 파일 조회",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "기존 파일 조회": {
+        "main": [
+          [
+            {
+              "node": "JSON 직렬화",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "JSON 직렬화": {
+        "main": [
+          [
+            {
+              "node": "JSON 파일 저장",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "JSON 파일 저장": {
+        "main": [
+          [
+            {
+              "node": "소스 분기",
+              "type": "main",
+              "index": 0
+            },
+            {
+              "node": "Telegram 알림",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "소스 분기": {
+        "main": [
+          [
+            {
+              "node": "Webhook 응답",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "폼 완료",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "authors": "병관 부",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-03-28T17:19:57.167Z",
+        "id": 107,
+        "workflowId": "4BVLV65DL1FYqbAk",
+        "versionId": "9f72d333-b753-4cc4-850a-2c35203fb732",
+        "event": "deactivated",
+        "userId": "7c578861-abec-4061-8076-8202bed9fb7c"
+      },
+      {
+        "createdAt": "2026-03-28T17:19:57.341Z",
+        "id": 108,
+        "workflowId": "4BVLV65DL1FYqbAk",
+        "versionId": "9f72d333-b753-4cc4-850a-2c35203fb732",
+        "event": "activated",
+        "userId": "7c578861-abec-4061-8076-8202bed9fb7c"
+      }
+    ]
+  }
+}

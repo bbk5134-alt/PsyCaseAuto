@@ -1,0 +1,39 @@
+{
+  "meta": {
+    "workflow_id": "4BVLV65DL1FYqbAk",
+    "name": "PsyCaseAuto — WF1-A 설문지 데이터 수신 (HTML + Form 이중)",
+    "created_at": "2026-03-29",
+    "replaces": "Tj0ScafoDJtKDiMA (old WF1-A, deactivated)",
+    "n8n_instance": "https://primary-production-b48fc.up.railway.app"
+  },
+  "endpoints": {
+    "webhook_url": "https://primary-production-b48fc.up.railway.app/webhook/psycase-checklist",
+    "form_url": "https://primary-production-b48fc.up.railway.app/form/psycase-form"
+  },
+  "node_summary": [
+    {"name": "Webhook", "type": "webhook v2", "path": "psycase-checklist"},
+    {"name": "Form Trigger", "type": "formTrigger v2.2", "path": "psycase-form"},
+    {"name": "입력 소스 통일", "type": "code v2"},
+    {"name": "시크릿 검증", "type": "code v2"},
+    {"name": "입력 검증", "type": "code v2"},
+    {"name": "환자 폴더 존재 확인", "type": "googleDrive v3 search"},
+    {"name": "폴더 없으면 생성?", "type": "if v2"},
+    {"name": "환자 폴더 생성", "type": "googleDrive v3 create"},
+    {"name": "폴더 ID 확정", "type": "code v2"},
+    {"name": "interviews 서브폴더 조회", "type": "googleDrive v3 search"},
+    {"name": "interviews 없으면 생성?", "type": "if v2"},
+    {"name": "interviews 폴더 생성", "type": "googleDrive v3 create"},
+    {"name": "interviews ID 확정", "type": "code v2"},
+    {"name": "기존 파일 조회", "type": "googleDrive v3 search"},
+    {"name": "JSON 직렬화", "type": "code v2"},
+    {"name": "JSON 파일 저장", "type": "googleDrive v3 upload"},
+    {"name": "소스 분기", "type": "if v2"},
+    {"name": "Webhook 응답", "type": "respondToWebhook v1.1"},
+    {"name": "폼 완료", "type": "form v2.5 completion"}
+  ],
+  "settings": {
+    "errorWorkflow": "4ox2lxKl1st6pUkY",
+    "timezone": "Asia/Seoul",
+    "maxConcurrency": 1
+  }
+}
