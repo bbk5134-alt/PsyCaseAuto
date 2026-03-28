@@ -150,6 +150,69 @@ Telegram Trigger → 입력 파싱 (Code) → ping 여부 (IF)
 
 ---
 
+### 세션 2B — WF1-B STT 파이프라인 등록 (2026-03-29)
+
+#### FFmpeg 환경 체크 결과
+
+| 방법 | 결과 | 비고 |
+|------|------|------|
+| Code node `require('child_process')` | ❌ 차단 | @n8n/task-runner sandbox: "Module 'child_process' is disallowed" |
+| `n8n-nodes-base.executeCommand` 노드 | ❌ 차단 | Railway 보안: "Unrecognized node type" (활성화 시 오류) |
+
+**결론: Railway n8n에서 FFmpeg 사용 불가 → 단일 파일(≤24MB) 경로만 구현**
+
+#### WF1-B 등록
+
+| 항목 | 값 |
+|------|-----|
+| **ID** | `l0jeHQosObPlaUce` |
+| **이름** | PsyCaseAuto — WF1-B STT 녹음 파이프라인 |
+| **노드 수** | 19개 |
+| **상태** | 비활성 (테스트 후 활성화 필요) |
+| **Webhook URL** | `https://primary-production-b48fc.up.railway.app/webhook/psycase-audio` |
+| **JSON 백업** | `n8n_workflows/wf1b_stt_pipeline.json` |
+
+#### WF1-B 노드 구조
+
+```
+Webhook (psycase-audio)
+  → 요청 검증 (Code) — PT-YYYY-NNN, audio binary 존재, 파일크기 계산
+  → 파일 크기 분기 (IF)
+      ├─ true (>24MB) → 크기 초과 오류 응답 (413)
+      │                 [FFmpeg 청크 분할 — 자체 호스팅 환경에서 활성화 예정]
+      └─ false (≤24MB) → Whisper API (openai-whisper-1, verbose_json, ko)
+                        → STT 결과 정리 (Code) — segments + speaker:'unidentified'
+                        → 환자 폴더 존재 확인 (GDrive, searchMethod:name)
+                        → 폴더 없으면 생성? (IF)
+                            ├─ true → 환자 폴더 생성 → 폴더 ID 확정
+                            └─ false ──────────────→ 폴더 ID 확정
+                        → audio 서브폴더 조회 (GDrive, searchMethod:name)
+                        → audio 없으면 생성? (IF)
+                            ├─ true → audio 폴더 생성 → audio ID 확정
+                            └─ false ─────────────→ audio ID 확정
+                        → 원본 오디오 저장 (GDrive upload, binary 복원)
+                        → STT JSON 직렬화 (Code)
+                        → STT JSON 저장 (GDrive upload)
+                            ├─ Telegram 알림 (🎙 STT 변환 완료)
+                            └─ Webhook 응답 (200 + 결과 JSON)
+```
+
+#### Drive 저장 구조 (WF1-B)
+```
+PsyCaseAuto/
+  └── {patient_code}/
+        └── audio/
+              ├── audio_{YYYYMMDD}.{ext}   ← 원본 오디오
+              └── stt_{YYYYMMDD}.json      ← STT 결과 (full_text + segments)
+```
+
+#### WF1-B 활성화 전 필수 체크
+- [ ] Railway 환경변수 `OPENAI_API_KEY` 설정
+- [ ] Railway 환경변수 `N8N_PAYLOAD_SIZE_MAX=50` 설정 (16MB 기본값 초과 대비)
+- [ ] 소규모 오디오 파일로 end-to-end 테스트
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |

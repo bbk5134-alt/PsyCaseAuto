@@ -1,0 +1,350 @@
+{
+  "updatedAt": "2026-03-28T17:40:21.966Z",
+  "createdAt": "2026-03-28T17:40:21.966Z",
+  "id": "l0jeHQosObPlaUce",
+  "name": "PsyCaseAuto — WF1-B STT 녹음 파이프라인",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "wf1b-n01",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "psycase-audio",
+        "responseMode": "responseNode",
+        "options": {"binaryData": true}
+      },
+      "webhookId": "7aac28c2-9b63-45c1-8490-81d8e7b7aa9d"
+    },
+    {
+      "id": "wf1b-n02",
+      "name": "요청 검증",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "jsCode": "const body = $input.item.json.body || $input.item.json;\nconst binary = $input.item.binary || {};\n\nconst patient_code = (body.patient_code || '').trim();\nconst interview_date = (body.interview_date || '').trim();\nconst interviewer = (body.interviewer || '').trim();\n\nif (!patient_code || !/^PT-\\d{4}-\\d{3}$/.test(patient_code)) {\n  throw new Error(`유효하지 않은 환자 코드: \"${patient_code}\". 형식: PT-YYYY-NNN`);\n}\nif (!interview_date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(interview_date)) {\n  throw new Error(`유효하지 않은 면담 날짜: \"${interview_date}\". 형식: YYYY-MM-DD`);\n}\nif (!interviewer) {\n  throw new Error('면담자(interviewer) 정보가 없습니다.');\n}\nif (!binary.audio) {\n  throw new Error('오디오 파일이 없습니다. Form-data 필드명 \"audio\"로 전송하세요.');\n}\n\nconst fileSizeBytes = binary.audio.fileSize || 0;\nconst fileSizeMB = fileSizeBytes / (1024 * 1024);\nconst needs_chunking = fileSizeMB > 24;\n\nconst dateStr = interview_date.replace(/-/g, '');\nconst origExt = ((binary.audio.fileName || 'recording.m4a').split('.').pop() || 'm4a').toLowerCase();\nconst audioFileName = `audio_${dateStr}.${origExt}`;\nconst sttFileName = `stt_${dateStr}.json`;\n\nreturn [{\n  json: {\n    patient_code,\n    interview_date,\n    interviewer,\n    interview_type: body.interview_type || 'followup',\n    fileSizeMB: Math.round(fileSizeMB * 100) / 100,\n    needs_chunking,\n    audioFileName,\n    sttFileName,\n    dateStr\n  },\n  binary\n}];"
+      }
+    },
+    {
+      "id": "wf1b-n03",
+      "name": "파일 크기 분기",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "size-check",
+              "leftValue": "={{ $json.needs_chunking }}",
+              "rightValue": true,
+              "operator": {"type": "boolean", "operation": "equal"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf1b-n04",
+      "name": "크기 초과 오류 응답",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 100],
+      "notes": "FFmpeg 청크 분할 기능은 자체 호스팅 환경에서 활성화 예정 (Railway sandbox에서 executeCommand 차단됨)",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ error: '파일 크기 초과', message: '24MB 이하 파일만 지원됩니다. 현재 파일: ' + $json.fileSizeMB + 'MB', hint: 'FFmpeg 청크 분할은 자체 호스팅 n8n 환경에서 활성화 예정입니다.' }) }}",
+        "options": {"responseCode": 413}
+      }
+    },
+    {
+      "id": "wf1b-n05",
+      "name": "Whisper API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/audio/transcriptions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {"name": "Authorization", "value": "={{ 'Bearer ' + $env.OPENAI_API_KEY }}"}
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {"parameterType": "formBinaryData", "name": "file", "inputDataFieldName": "audio"},
+            {"name": "model", "value": "whisper-1"},
+            {"name": "language", "value": "ko"},
+            {"name": "response_format", "value": "verbose_json"},
+            {"name": "prompt", "value": "정신건강의학과 임상 면담 녹음입니다. 의학 용어, 향정신성 약물명, 증상 및 진단명이 포함될 수 있습니다."}
+          ]
+        },
+        "options": {"timeout": 120000}
+      }
+    },
+    {
+      "id": "wf1b-n06",
+      "name": "STT 결과 정리",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "parameters": {
+        "jsCode": "const w = $input.item.json;\nconst v = $('요청 검증').first().json;\n\nconst segs = (w.segments || []).map(s => ({\n  id: s.id,\n  start: s.start,\n  end: s.end,\n  text: (s.text || '').trim(),\n  speaker: 'unidentified',\n  avg_logprob: s.avg_logprob || 0,\n  no_speech_prob: s.no_speech_prob || 0\n}));\n\nconst sttResult = {\n  data_type: 'stt_transcript',\n  patient_code: v.patient_code,\n  interview_date: v.interview_date,\n  interviewer: v.interviewer,\n  interview_type: v.interview_type || 'followup',\n  created_at: $now.toISO(),\n  audio_file: v.audioFileName,\n  stt_engine: 'openai-whisper-1',\n  language: w.language || 'ko',\n  duration_seconds: w.duration || null,\n  full_text: w.text || '',\n  segments: segs,\n  word_count: (w.text || '').split(/\\s+/).filter(t => t.length > 0).length\n};\n\nreturn [{\n  json: {\n    patient_code: v.patient_code,\n    interview_date: v.interview_date,\n    interviewer: v.interviewer,\n    audioFileName: v.audioFileName,\n    sttFileName: v.sttFileName,\n    dateStr: v.dateStr,\n    sttResult\n  }\n}];"
+      }
+    },
+    {
+      "id": "wf1b-n07",
+      "name": "환자 폴더 존재 확인",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1200, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "name",
+        "queryString": "={{ $json.patient_code }}",
+        "filter": {
+          "folderId": {"__rl": true, "value": "1awOFEQ8U2gjCdUWv6BXN3OGUe9CeeVv", "mode": "id"}
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}
+      }
+    },
+    {
+      "id": "wf1b-n08",
+      "name": "폴더 없으면 생성?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1440, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "folder-check",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {"type": "string", "operation": "equals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf1b-n09",
+      "name": "환자 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1680, 100],
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('STT 결과 정리').first().json.patient_code }}",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "1awOFEQ8U2gjCdUWv6BXN3OGUe9CeeVv", "mode": "id"},
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}
+      }
+    },
+    {
+      "id": "wf1b-n10",
+      "name": "폴더 ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 300],
+      "parameters": {
+        "jsCode": "const s = $('STT 결과 정리').first().json;\nlet folderId;\ntry {\n  folderId = $('환자 폴더 생성').first().json.id;\n} catch(e) {\n  folderId = $('환자 폴더 존재 확인').first().json.id;\n}\nreturn [{ json: { ...s, folderId } }];"
+      }
+    },
+    {
+      "id": "wf1b-n11",
+      "name": "audio 서브폴더 조회",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2160, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "name",
+        "queryString": "audio",
+        "filter": {
+          "folderId": {"__rl": true, "value": "={{ $json.folderId }}", "mode": "id"}
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}
+      }
+    },
+    {
+      "id": "wf1b-n12",
+      "name": "audio 없으면 생성?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2400, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "audio-folder-check",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {"type": "string", "operation": "equals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf1b-n13",
+      "name": "audio 폴더 생성",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2640, 100],
+      "parameters": {
+        "resource": "folder",
+        "name": "audio",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "={{ $('폴더 ID 확정').first().json.folderId }}", "mode": "id"},
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}
+      }
+    },
+    {
+      "id": "wf1b-n14",
+      "name": "audio ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 300],
+      "parameters": {
+        "jsCode": "const p = $('폴더 ID 확정').first().json;\nlet audioFolderId;\ntry {\n  audioFolderId = $('audio 폴더 생성').first().json.id;\n} catch(e) {\n  audioFolderId = $('audio 서브폴더 조회').first().json.id;\n}\nconst audioBinary = $('요청 검증').first().binary;\nreturn [{ json: { ...p, audioFolderId }, binary: audioBinary }];"
+      }
+    },
+    {
+      "id": "wf1b-n15",
+      "name": "원본 오디오 저장",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3120, 300],
+      "parameters": {
+        "name": "={{ $json.audioFileName }}",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "={{ $json.audioFolderId }}", "mode": "id"},
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}
+      }
+    },
+    {
+      "id": "wf1b-n16",
+      "name": "STT JSON 직렬화",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3360, 300],
+      "parameters": {
+        "jsCode": "const d = $('audio ID 확정').first().json;\nconst buf = Buffer.from(JSON.stringify(d.sttResult, null, 2), 'utf-8');\nreturn [{\n  json: {\n    audioFolderId: d.audioFolderId,\n    sttFileName: d.sttFileName,\n    patient_code: d.patient_code,\n    interview_date: d.interview_date,\n    interviewer: d.interviewer,\n    audioFileName: d.audioFileName,\n    wordCount: d.sttResult.word_count,\n    duration: d.sttResult.duration_seconds\n  },\n  binary: {\n    data: {\n      data: buf.toString('base64'),\n      mimeType: 'application/json',\n      fileName: d.sttFileName\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "wf1b-n17",
+      "name": "STT JSON 저장",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3600, 300],
+      "parameters": {
+        "name": "={{ $json.sttFileName }}",
+        "driveId": {"__rl": true, "value": "My Drive", "mode": "list", "cachedResultName": "My Drive"},
+        "folderId": {"__rl": true, "value": "={{ $json.audioFolderId }}", "mode": "id"},
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "Google Drive account"}
+      }
+    },
+    {
+      "id": "wf1b-n18",
+      "name": "Telegram 알림",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [3840, 100],
+      "parameters": {
+        "chatId": "7833910433",
+        "text": "={{ '🎙 STT 변환 완료\\n\\n👤 환자: <b>' + $('STT JSON 직렬화').first().json.patient_code + '</b>\\n📅 면담일: ' + $('STT JSON 직렬화').first().json.interview_date + '\\n👨‍⚕️ 면담자: ' + $('STT JSON 직렬화').first().json.interviewer + '\\n🔊 원본: ' + $('STT JSON 직렬화').first().json.audioFileName + '\\n📄 STT: ' + $('STT JSON 직렬화').first().json.sttFileName + '\\n📝 단어수: ' + $('STT JSON 직렬화').first().json.wordCount + '개\\n⏱ 재생시간: ' + ($('STT JSON 직렬화').first().json.duration ? Math.round($('STT JSON 직렬화').first().json.duration) + '초' : '알 수 없음') + '\\n⏰ ' + $now.setZone('Asia/Seoul').toFormat('yyyy-MM-dd HH:mm') + ' KST' }}",
+        "additionalFields": {"parse_mode": "HTML"}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "Telegram account 4"}
+      }
+    },
+    {
+      "id": "wf1b-n19",
+      "name": "Webhook 응답",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3840, 500],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, patient_code: $('STT JSON 직렬화').first().json.patient_code, stt_file: $('STT JSON 직렬화').first().json.sttFileName, audio_file: $('STT JSON 직렬화').first().json.audioFileName, word_count: $('STT JSON 직렬화').first().json.wordCount, duration_seconds: $('STT JSON 직렬화').first().json.duration }) }}",
+        "options": {"responseCode": 200}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {"main": [[{"node": "요청 검증", "type": "main", "index": 0}]]},
+    "요청 검증": {"main": [[{"node": "파일 크기 분기", "type": "main", "index": 0}]]},
+    "파일 크기 분기": {"main": [
+      [{"node": "크기 초과 오류 응답", "type": "main", "index": 0}],
+      [{"node": "Whisper API", "type": "main", "index": 0}]
+    ]},
+    "Whisper API": {"main": [[{"node": "STT 결과 정리", "type": "main", "index": 0}]]},
+    "STT 결과 정리": {"main": [[{"node": "환자 폴더 존재 확인", "type": "main", "index": 0}]]},
+    "환자 폴더 존재 확인": {"main": [[{"node": "폴더 없으면 생성?", "type": "main", "index": 0}]]},
+    "폴더 없으면 생성?": {"main": [
+      [{"node": "환자 폴더 생성", "type": "main", "index": 0}],
+      [{"node": "폴더 ID 확정", "type": "main", "index": 0}]
+    ]},
+    "환자 폴더 생성": {"main": [[{"node": "폴더 ID 확정", "type": "main", "index": 0}]]},
+    "폴더 ID 확정": {"main": [[{"node": "audio 서브폴더 조회", "type": "main", "index": 0}]]},
+    "audio 서브폴더 조회": {"main": [[{"node": "audio 없으면 생성?", "type": "main", "index": 0}]]},
+    "audio 없으면 생성?": {"main": [
+      [{"node": "audio 폴더 생성", "type": "main", "index": 0}],
+      [{"node": "audio ID 확정", "type": "main", "index": 0}]
+    ]},
+    "audio 폴더 생성": {"main": [[{"node": "audio ID 확정", "type": "main", "index": 0}]]},
+    "audio ID 확정": {"main": [[{"node": "원본 오디오 저장", "type": "main", "index": 0}]]},
+    "원본 오디오 저장": {"main": [[{"node": "STT JSON 직렬화", "type": "main", "index": 0}]]},
+    "STT JSON 직렬화": {"main": [[{"node": "STT JSON 저장", "type": "main", "index": 0}]]},
+    "STT JSON 저장": {"main": [[
+      {"node": "Telegram 알림", "type": "main", "index": 0},
+      {"node": "Webhook 응답", "type": "main", "index": 0}
+    ]]}
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul"
+  }
+}
