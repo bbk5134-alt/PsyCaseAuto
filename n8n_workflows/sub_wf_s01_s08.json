@@ -1,0 +1,91 @@
+{
+  "_comment": "PsyCaseAuto Stage 3-2 Phase 1 — Sub-WF S01~S08 ID 참조 파일",
+  "_generated": "2026-04-01",
+  "_wf2_main_id": "LiN5bKslyWtZX6yG",
+  "sub_workflows": [
+    {
+      "id": "S01",
+      "section_id": 1,
+      "section_name": "identifying_data",
+      "name": "PsyCaseAuto — S01 Identifying Data",
+      "n8n_id": "nJLVKGu1Ngh9C3pl",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S02",
+      "section_id": 2,
+      "section_name": "chief_problems",
+      "name": "PsyCaseAuto — S02 Chief Problems",
+      "n8n_id": "TifgZTXdSNW9Gtlh",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S03",
+      "section_id": 3,
+      "section_name": "informants_reliability",
+      "name": "PsyCaseAuto — S03 Informants",
+      "n8n_id": "J0EvW4lNbKGLo157",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S04",
+      "section_id": 4,
+      "section_name": "past_family_history",
+      "name": "PsyCaseAuto — S04 Past-Family History",
+      "n8n_id": "StjkISptQwFHl5Ws",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S05",
+      "section_id": 5,
+      "section_name": "personal_history",
+      "name": "PsyCaseAuto — S05 Personal History",
+      "n8n_id": "SmR2paPpXEYTuWZO",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S06",
+      "section_id": 6,
+      "section_name": "mental_status_examination",
+      "name": "PsyCaseAuto — S06 MSE",
+      "n8n_id": "Qp0IXqsbounP2X1l",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S07",
+      "section_id": 7,
+      "section_name": "mood_chart",
+      "name": "PsyCaseAuto — S07 Mood Chart",
+      "n8n_id": "5wWj9DLBB1z1r9Fr",
+      "status": "created_inactive"
+    },
+    {
+      "id": "S08",
+      "section_id": 8,
+      "section_name": "progress_notes",
+      "name": "PsyCaseAuto — S08 Progress Notes",
+      "n8n_id": "lbr2QAXPhX80MuZG",
+      "status": "created_inactive"
+    }
+  ],
+  "wf2_main_nodes": {
+    "s01_relay": "S01 입력 전달",
+    "s01_exec": "섹션1 보고서 생성",
+    "s02_relay": "S02 입력 전달",
+    "s02_exec": "섹션2 보고서 생성",
+    "s03_relay": "S03 입력 전달",
+    "s03_exec": "섹션3 보고서 생성",
+    "s04_relay": "S04 입력 전달",
+    "s04_exec": "섹션4 보고서 생성",
+    "s05_relay": "S05 입력 전달",
+    "s05_exec": "섹션5 보고서 생성",
+    "s06_relay": "S06 입력 전달",
+    "s06_exec": "섹션6 보고서 생성",
+    "s07_relay": "S07 입력 전달",
+    "s07_exec": "섹션7 보고서 생성",
+    "s08_relay": "S08 입력 전달",
+    "s08_exec": "섹션8 보고서 생성",
+    "phase1_merge": "Phase 1 결과 병합",
+    "phase2_noop": "Phase 2 연결 지점 (Stage 3-3 이후)"
+  }
+}

@@ -366,19 +366,65 @@ Telegram Trigger (wf2-n01)
 
 ---
 
+### 세션 5B — Stage 3-2 Phase 1 구현 (2026-04-01, 컨텍스트 이어서)
+
+#### 완료 항목
+
+| 항목 | 내용 |
+|------|------|
+| Sub-WF S01~S08 생성 | n8n_create_workflow × 8, 모두 비활성 |
+| WF2 Main 업데이트 | NoOp 제거 → 8×(릴레이 Code + Execute WF) + Phase 1 병합 + Phase 2 NoOp (40노드) |
+
+#### 생성된 Sub-WF ID 목록
+
+| Sub-WF | 이름 | n8n ID |
+|--------|------|--------|
+| S01 | Identifying Data | `nJLVKGu1Ngh9C3pl` |
+| S02 | Chief Problems | `TifgZTXdSNW9Gtlh` |
+| S03 | Informants | `J0EvW4lNbKGLo157` |
+| S04 | Past-Family History | `StjkISptQwFHl5Ws` |
+| S05 | Personal History | `SmR2paPpXEYTuWZO` |
+| S06 | MSE | `Qp0IXqsbounP2X1l` |
+| S07 | Mood Chart | `5wWj9DLBB1z1r9Fr` |
+| S08 | Progress Notes | `lbr2QAXPhX80MuZG` |
+
+#### WF2 Main 구조 변경
+
+| 변경 | 내용 |
+|------|------|
+| 기존 NoOp 제거 | `Sub-WF 연결 지점 (Stage 3-2 이후)` 삭제 |
+| 새 노드 18개 추가 | S01~S08 입력 전달(Code) + 섹션1~8 보고서 생성(Execute WF) + Phase 1 결과 병합(Code) + Phase 2 연결 지점(NoOp) |
+| 총 노드 수 | 23 → 40 |
+| 데이터 전달 방식 | 각 Execute WF 앞 Code 릴레이 노드가 `$('면담 데이터 병합').first().json` 직접 참조 |
+
+#### 확정 기술 결정
+
+| 결정 | 내용 |
+|------|------|
+| D-17 | Execute Workflow typeVersion 1에서 입력 데이터는 연결된 이전 노드 출력 그대로 전달 → 각 Sub-WF 앞에 릴레이 Code 노드로 `면담 데이터 병합` JSON 재전달 |
+| D-18 | Phase 1 결과 병합: `$('섹션X 보고서 생성').first().json`으로 8개 섹션 결과 직접 수집 |
+
+#### Sub-WF 공통 구조
+
+- 4노드: `Execute Workflow Trigger` → `입력 준비` (Code, Anti-Hallucination 헤더 + 섹션별 프롬프트) → `Claude API 호출` (HTTP Request, claude-sonnet-4-20250514) → `출력 파싱 및 검증` (Code)
+- 모든 Sub-WF: `onError: continueRegularOutput`, `errorWorkflow: 4ox2lxKl1st6pUkY`
+
+#### WF2 Stage 3-2 Phase 1 상태: ✅ 완료
+
+#### 다음 단계 (Stage 3-2 Phase 2)
+- S09 Formulation, S10 Diagnosis (DSM-5), S11 Treatment Plan, S12 Summary Sub-WF 생성
+- WF2 Main Phase 2 연결 지점에 섹션9~12 Execute WF 체인 추가
+- DOCX 변환 + Google Drive 저장 + Telegram 완료 알림
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |
 |------|------|------|
-| 2 | WF1-A | 설문지 경로: Form Trigger → 입력 검증 → Google Drive JSON 저장 |
-| 3 | WF1-B | 녹음 경로: Webhook → FFmpeg 청크 분할 → Whisper STT → 용어 교정 → Drive 저장 |
-| 4 | WF2 | 보고서 생성: Telegram 트리거 → 12섹션 순차 생성 → DOCX → Drive → Telegram 응답 |
-
-Session 5 과제 (우선순위 순)
-WF2 Stage 3-2 — 12개 섹션 Sub-WF 설계 및 구현
-WF2 활성화 전 end-to-end 테스트 (환자 폴더 존재/없음 분기 확인)
-HTML UI 개선 — 음성만 모드 시 체크리스트 탭 숨기고 바로 전송 화면, 탭 수 정리
-STT 정확도 검증 — 실제 임상 면담 녹음(5분↑)으로 테스트
+| 3-2 P2 | Stage 3-2 Phase 2 | S09~S12 Sub-WF 생성 + WF2 Phase 2 연결 |
+| 3-3 | Stage 3-3 | DOCX 변환 + GDrive 저장 + Telegram 완료 알림 |
+| WF1-A | 설문지 경로 | Form Trigger → 입력 검증 → Google Drive JSON 저장 |
 
 ---
 

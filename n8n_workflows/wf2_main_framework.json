@@ -1,5 +1,8 @@
 {
-  "updatedAt": "2026-03-31T14:36:31.325Z",
+  "_local_snapshot": "2026-04-01 — Stage 3-2 Phase 1 완료 (40노드). 상세 파라미터는 n8n 인스턴스 LiN5bKslyWtZX6yG 참조. Sub-WF ID 목록은 sub_wf_s01_s08.json 참조.",
+  "_node_count": 40,
+  "_stage": "3-2 Phase 1 완료 / Phase 2 미착수",
+  "updatedAt": "2026-04-01T00:00:00.000Z",
   "createdAt": "2026-03-31T14:34:13.809Z",
   "id": "LiN5bKslyWtZX6yG",
   "name": "PsyCaseAuto — WF2 보고서 생성 메인",
