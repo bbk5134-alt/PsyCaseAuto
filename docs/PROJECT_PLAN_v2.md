@@ -991,36 +991,10 @@ HTML → n8n 연결:
 
 ---
 
-## 14. 실수 방지 체크리스트
+## 14. 실수 방지 및 테스트
 
-### 개발 단계
-
-- [ ] Error Workflow(WF3) 가장 먼저 생성
-- [ ] 모든 워크플로우 Settings에 `errorWorkflow` ID 연결
-- [ ] 환경변수로 API 키, 폴더 ID 관리 (`$env` 사용)
-- [ ] 하드코딩된 chatId, 파일 경로 없는지 확인
-- [ ] 타임존 설정 (`Asia/Seoul`)
-- [ ] 동시성 제한 (`maxConcurrency: 1`) — 환자 데이터 혼선 방지
-- [ ] 모든 AI 프롬프트에 Anti-Hallucination 규칙 포함
-- [ ] STT 전처리 노드에 빈 입력 처리 (`alwaysOutputData: true`)
-- [ ] Sub-workflow에 `executeWorkflowTrigger` v1 사용 (v1.1 아님)
-- [ ] 노드 참조 시 `.first().json` 사용 (`.item` 아님)
-- [ ] 타임스탬프는 `$now.toISO()` 사용 (`new Date()` 아님)
-
-### 배포 단계
-
-- [ ] Railway Webhook URL 고정 확인
-- [ ] Google Drive 토큰 refresh 설정
-- [ ] Telegram Bot Webhook 정상 연결
-- [ ] Error Workflow 테스트 (의도적 에러 발생 → Telegram 알림 확인)
-- [ ] 워크플로우 JSON 정기 백업 설정
-
-### 운영 단계
-
-- [ ] 워크플로우 JSON을 매주 Google Drive에 Export
-- [ ] Hallucination 검증 결과 주간 리뷰
-- [ ] STT 용어 교정 사전 월간 업데이트
-- [ ] CHANGELOG 매 수정 시 업데이트
+> **n8n 공통 실수 방지 규칙**: `~/.claude/skills/n8n-design/SKILL.md` 참조 (하드코딩 금지, `.first()` 사용, Error WF 우선 생성 등)
+> **프로젝트 고유 주의사항**: 모든 AI 프롬프트에 Anti-Hallucination 규칙 포함, 동시성 제한(`maxConcurrency: 1`) — 환자 데이터 혼선 방지
 
 ### 테스트 시나리오 (구현 완료 후 전수 검증)
 
@@ -1137,36 +1111,18 @@ HTML → n8n 연결:
 
 ---
 
-## 부록 A: n8n 노드 타입 참조
+## 부록: 참조 파일 목록
 
-| 용도 | 노드 타입 | 비고 |
-|------|----------|------|
-| Webhook | `n8n-nodes-base.webhook` | Railway 고정 URL |
-| Telegram 수신 | `n8n-nodes-base.telegramTrigger` | Bot Token 필요 |
-| Telegram 발송 | `n8n-nodes-base.telegram` | |
-| Google Drive | `n8n-nodes-base.googleDrive` | OAuth2 |
-| AI Agent | `@n8n/n8n-nodes-langchain.agent` | Claude/GPT 모두 지원 |
-| LLM (직접 호출) | `@n8n/n8n-nodes-langchain.lmChatAnthropic` | Claude Sonnet 4 |
-| HTTP Request | `n8n-nodes-base.httpRequest` | Whisper API 호출용 |
-| Code | `n8n-nodes-base.code` | JS 실행 |
-| Switch | `n8n-nodes-base.switch` | 분기 |
-| IF | `n8n-nodes-base.if` | 조건 |
-| Loop | `n8n-nodes-base.splitInBatches` | 반복 |
-| Sub-WF 트리거 | `n8n-nodes-base.executeWorkflowTrigger` | v1 사용 |
-| Sub-WF 호출 | `n8n-nodes-base.executeWorkflow` | |
-| Error Trigger | `n8n-nodes-base.errorTrigger` | |
-| Form Trigger | `n8n-nodes-base.formTrigger` | 자체 설문 |
+| 파일 | 위치 | 용도 |
+|------|------|------|
+| `PROJECT_PLAN_v2.md` | `docs/` | 이 문서 — 종합 기획안 (Single Source of Truth) |
+| `PROGRESS_LOG.md` | `docs/` | 세션별 작업 진척 기록 |
+| `system_prompt_case_conference.md` | `docs/` | Mode A/B 시스템 프롬프트 상세 |
+| `psychiatric_interview_checklist_v2.html` | `frontend/` | 면담 체크리스트 (Netlify 배포, FCAB 태깅, Webhook 전송) |
+| `psych_terms_dictionary.json` | `config/` | 정신과 용어 교정 사전 (STT 후처리용) |
+| `20230927_Case_conference_R2_임지원_mdd_.docx` | (외부) | 원본 보고서 샘플 (보고서 구조 참조용) |
 
-## 부록 B: 참조 파일 목록
-
-| 파일 | 용도 |
-|------|------|
-| `PROJECT_PLAN.md` | 이 문서 — 종합 기획안 (Single Source of Truth) |
-| `system_prompt_case_conference.md` | Mode A/B 시스템 프롬프트 상세 |
-| `psychiatric_interview_checklist.html` | 면담 체크리스트 (Netlify 배포, FCAB 태깅, Webhook 전송) |
-| `20230927_Case_conference_R2_임지원_mdd_.docx` | 원본 보고서 샘플 (보고서 구조 참조용) |
-| `config/psych_terms_dictionary.json` | 정신과 용어 교정 사전 (STT 후처리용) |
-| `PROGRESS_LOG.md` | 세션별 작업 진척 기록 |
+> **n8n 노드 타입, 연결 형식, 표현식 참조**: `~/.claude/skills/n8n-design/SKILL.md` 참조
 
 ---
 

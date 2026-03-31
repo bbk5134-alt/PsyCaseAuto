@@ -14,3 +14,6 @@ Thumbs.db
 # 임시 파일
 *.tmp
 *.log
+
+# Claude Code 로컬 설정 (개인 환경별 — 추적 제외)
+.claude/

@@ -663,45 +663,5 @@
 
 ---
 
-## n8n 워크플로우 아키텍처 권장안
-
-```
-[전체 흐름]
-
-                     ┌─ Mode A: 면담 체크리스트 ─┐
-[Webhook/Form] ──→ [입력 판별 Switch] ──────────────→ [AI Agent: 체크리스트] → [Google Sheets 저장] → [응답 반환]
-                     │                           
-                     └─ Mode B: 보고서 생성 ────→ [전처리: STT 정제] → [AI Agent: 보고서] → [JSON→DOCX 변환] → [Google Drive 저장] → [응답 반환]
-                                                                                              ↓
-                                                                                    [누락 항목 알림 (이메일/Slack)]
-
-[Error Workflow]
-[Error Trigger] → [에러 메시지 구성] → [Slack/Email 알림]
-```
-
-### 핵심 노드 구성
-
-| 노드 | 타입 | 설명 |
-|------|------|------|
-| Webhook | n8n-nodes-base.webhook | Railway 배포 후 고정 URL 사용 |
-| 입력 판별 Switch | n8n-nodes-base.switch | `mode` 필드로 A/B 분기 |
-| AI Agent (체크리스트) | @n8n/n8n-nodes-langchain.agent | Mode A 시스템 프롬프트 적용 |
-| AI Agent (보고서) | @n8n/n8n-nodes-langchain.agent | Mode B 시스템 프롬프트 적용 |
-| 전처리 (STT 정제) | n8n-nodes-base.code | STT 텍스트 정제, 발화자 분리 |
-| JSON→DOCX 변환 | n8n-nodes-base.code | docx 라이브러리로 보고서 생성 |
-| Google Sheets | n8n-nodes-base.googleSheets | 체크리스트/면담기록 저장 |
-| Google Drive | n8n-nodes-base.googleDrive | 완성 보고서 저장 |
-| Error Workflow | 별도 워크플로우 | 에러 발생 시 Slack/Email 알림 |
-
-### 실수 방지 체크리스트
-
-- [ ] Error Workflow 연결 (Settings → errorWorkflow)
-- [ ] 환경변수로 API 키, 시트 ID 관리 ($env 사용)
-- [ ] 타임존 설정 (Asia/Seoul)
-- [ ] 동시성 제한 (maxConcurrency: 1) — 환자 데이터 혼선 방지
-- [ ] AI 프롬프트에 예시 20개 이상 포함
-- [ ] STT 전처리 노드에 빈 입력 처리 (alwaysOutputData: true)
-- [ ] Google Drive 토큰 만료 대비 refresh 설정
-- [ ] 워크플로우 JSON 정기 백업 (Export)
-- [ ] 로깅 노드 추가 (입력/출력 기록)
-- [ ] Railway 배포 후 Webhook URL 고정 확인
+> **n8n 워크플로우 아키텍처 및 노드 구성**: `docs/PROJECT_PLAN_v2.md` §3-6 참조
+> **n8n 실수 방지 체크리스트**: `~/.claude/skills/n8n-design/SKILL.md` 참조

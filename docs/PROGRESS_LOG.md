@@ -245,33 +245,11 @@ PsyCaseAuto/
 | 3 | WF1-B | 녹음 경로: Webhook → FFmpeg 청크 분할 → Whisper STT → 용어 교정 → Drive 저장 |
 | 4 | WF2 | 보고서 생성: Telegram 트리거 → 12섹션 순차 생성 → DOCX → Drive → Telegram 응답 |
 
+Session 4 과제 (우선순위 순)
+HTML UI 개선 — 음성만 모드 시 체크리스트 탭 숨기고 바로 전송 화면, 탭 수 정리
+STT 정확도 검증 — 실제 임상 면담 녹음(5분↑)으로 테스트
+WF2 보고서 생성 워크플로우 설계 및 구현
+
 ---
 
-## 환경변수 전체 목록 (Railway Variables에 입력할 것)
-
-```bash
-# n8n 인증
-N8N_BASIC_AUTH_USER=
-N8N_BASIC_AUTH_PASSWORD=
-
-# n8n 설정
-N8N_ENCRYPTION_KEY=
-GENERIC_TIMEZONE=Asia/Seoul
-N8N_DEFAULT_BINARY_DATA_MODE=filesystem
-N8N_BLOCK_ENV_ACCESS_IN_NODE=false
-
-# AI API
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-
-# Telegram (PsyCaseAuto 전용)
-TELEGRAM_BOT_TOKEN_PSYCH=
-TELEGRAM_ADMIN_CHAT_ID=
-
-# Google Drive
-GOOGLE_DRIVE_CREDENTIALS=
-PATIENT_DRIVE_ROOT_FOLDER_ID=
-
-# 배포 후 채울 것
-ERROR_WORKFLOW_ID=
-```
+> **환경변수 전체 목록**: `.env.example` 파일 참조 (Single Source — 이 파일에서 중복 관리하지 않음)
