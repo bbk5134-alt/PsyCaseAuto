@@ -478,13 +478,92 @@ const mergedData = $('면담 데이터 병합').first().json;
 
 ---
 
+### 세션 5D — Stage 3-3: Phase 2 Sub-WF S09~S12 생성 + WF2 Main 업데이트 (2026-04-01)
+
+#### 생성된 Sub-WF
+
+| Sub-WF | 이름 | n8n ID | 의존 입력 |
+|--------|------|--------|----------|
+| S09 | Present Illness (FCAB) | `4VyEFSX0H0FD2ilK` | `dep_chief_problems` |
+| S10 | Diagnostic Formulation (DSM-5-TR) | `6sRG5BX5uBhcRtj1` | `dep_chief_problems`, `dep_mse`, `dep_present_illness` |
+| S11 | Case Formulation (4P 모델) | `xnJZXam1BZB7Iypu` | `dep_phase1_summary` |
+| S12 | Psychodynamic Formulation | `Hq4QhEKT48aPShWb` | `dep_personal_history`, `dep_present_illness`, `dep_case_formulation` |
+
+#### Phase 2 vs Phase 1 차이점
+
+| 항목 | Phase 1 (S01~S08) | Phase 2 (S09~S12) |
+|------|-------------------|-------------------|
+| 실행 방식 | 병렬 팬아웃 | **직렬 순차** (의존 관계) |
+| max_tokens | 4096 | **6144** |
+| Anti-Hallucination | 기본 | **강화** (추론/사실 구분 필수) |
+| confidence 기본값 | medium | **draft** (S11, S12) |
+| 의존 데이터 | 없음 (독립) | dep_* 필드로 이전 섹션 참조 |
+| 토큰 절단 | 없음 | S11: 8000자, S12: 6000자 |
+
+#### WF2 Main 구조 변경
+
+| 변경 | 내용 |
+|------|------|
+| NoOp 삭제 | `Phase 2 연결 지점 (Stage 3-3 이후)` 제거 |
+| 새 노드 10개 추가 | S09~S12 릴레이(Code) × 4 + 실행(Execute WF) × 4 + Phase 2 결과 병합(Code) + Stage 3-4 NoOp |
+| Phase 1 결과 병합 업데이트 | `phase1_results` (section_name 기준 keyed 객체) 추가 — Phase 2 의존 접근용 |
+| 총 노드 수 | 41 → **50** |
+| 적용된 operations | 22개 (removeNode 1 + updateNode 1 + addNode 10 + addConnection 10) |
+
+#### Phase 2 직렬 체인 레이아웃
+
+```
+Phase 1 결과 병합 [4720,352]
+  → S09 입력 전달 [4944,352] → 섹션9 생성 [5168,352]
+  → S10 입력 전달 [5392,352] → 섹션10 생성 [5616,352]
+  → S11 입력 전달 [5840,352] → 섹션11 생성 [6064,352]
+  → S12 입력 전달 [6288,352] → 섹션12 생성 [6512,352]
+  → Phase 2 결과 병합 [6736,352] → Stage 3-4 연결 지점 [6960,352]
+```
+
+#### Phase 2 결과 병합 출력 주요 필드
+
+- `all_sections`: 12개 섹션 전부 (Phase 1 + Phase 2)
+- `quality_metrics`: complete/partial/missing 카운트, completeness_score (0~1)
+- `alert`: `HIGH_SUICIDE_RISK` 플래그 (MSE impulsivity 기반)
+
+#### 확정 기술 결정
+
+| 결정 | 내용 |
+|------|------|
+| D-21 | Phase 2 직렬 연결: S09→S10→S11→S12. 각 섹션이 이전 섹션 결과에 의존하므로 병렬 불가 |
+| D-22 | 릴레이 Code 노드 패턴: Execute Workflow typeVersion 1은 fields.values 미지원 → Phase 1과 동일하게 릴레이 Code 노드에서 데이터 조립 후 전달 |
+| D-23 | Phase 1 결과 병합에 `phase1_results` keyed 객체 추가: Phase 2 릴레이 노드가 `$('Phase 1 결과 병합').first().json.phase1_results.chief_problems` 형식으로 접근 |
+
+#### Stage 3-3 Phase 2 상태: ✅ 완료
+
+---
+
+## ⚠️ 기술 부채 — 프로젝트 완료 후 최적화 항목
+
+### [PERF-01] n8n Queue Mode 전환 (병렬 실행 진짜 병렬화)
+
+| 항목 | 내용 |
+|------|------|
+| **발견일** | 2026-04-01 (세션 5C E2E 테스트) |
+| **현상** | Phase 1 팬아웃 구조(병렬)임에도 실제 실행은 S01→S02→…→S08 순차 처리 |
+| **원인** | n8n **Regular Mode** 기본 동작 — 팬아웃 브랜치를 순차적으로 처리 |
+| **현재 소요 시간** | ~37초 (8섹션 순차 Claude API 호출) |
+| **Queue Mode 전환 시 예상** | ~4~6초 (8섹션 진짜 병렬 실행) |
+| **전환 조건** | Railway에 Redis 추가 + `EXECUTIONS_MODE=queue` 환경변수 + `n8n worker` 프로세스 추가 배포 |
+| **현재 결정** | 37초는 케이스 컨퍼런스 용도로 허용 가능 → 프로젝트 완성 후 성능 최적화 단계에서 적용 |
+| **우선순위** | 🟡 낮음 (기능 정상, 속도만 이슈) |
+
+> **프로젝트 완료 시 알림**: Queue Mode 전환 검토. 워크플로우 구조는 이미 병렬 팬아웃으로 설계되어 있어 인프라 변경만으로 즉시 적용 가능.
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |
 |------|------|------|
-| **[최우선]** 테스트 | Phase 1 병렬 E2E | `PT-2026-001 보고서` 전송 → 8섹션 병렬 실행 + Merge 동작 확인 |
-| 3-2 P2 | Stage 3-2 Phase 2 | S09~S12 Sub-WF 생성 + WF2 Phase 2 연결 |
-| 3-3 | Stage 3-3 | DOCX 변환 + GDrive 저장 + Telegram 완료 알림 |
+| **[최우선]** 테스트 | Phase 1+2 E2E | `PT-2026-001 보고서` 전송 → 8섹션 병렬 + 4섹션 직렬 실행 + 12섹션 통합 확인 |
+| 3-4 | Stage 3-4 | Hallucination 검증 + DOCX 변환 + GDrive 저장 + Telegram 완료 알림 |
 | WF1-A | 설문지 경로 | Form Trigger → 입력 검증 → Google Drive JSON 저장 |
 
 ---

@@ -1,0 +1,61 @@
+{
+  "_comment": "PsyCaseAuto Stage 3-3 — Sub-WF S09~S12 ID 참조 파일",
+  "_generated": "2026-04-01",
+  "_wf2_main_id": "LiN5bKslyWtZX6yG",
+  "sub_workflows": [
+    {
+      "id": "S09",
+      "section_id": 9,
+      "section_name": "present_illness",
+      "name": "PsyCaseAuto — Sub-WF-S09 Present Illness",
+      "n8n_id": "4VyEFSX0H0FD2ilK",
+      "status": "created_inactive",
+      "dependencies": ["dep_chief_problems"],
+      "max_tokens": 6144
+    },
+    {
+      "id": "S10",
+      "section_id": 10,
+      "section_name": "diagnostic_formulation",
+      "name": "PsyCaseAuto — Sub-WF-S10 Diagnostic Formulation",
+      "n8n_id": "6sRG5BX5uBhcRtj1",
+      "status": "created_inactive",
+      "dependencies": ["dep_chief_problems", "dep_mse", "dep_present_illness"],
+      "max_tokens": 6144
+    },
+    {
+      "id": "S11",
+      "section_id": 11,
+      "section_name": "case_formulation",
+      "name": "PsyCaseAuto — Sub-WF-S11 Case Formulation",
+      "n8n_id": "xnJZXam1BZB7Iypu",
+      "status": "created_inactive",
+      "dependencies": ["dep_phase1_summary"],
+      "max_tokens": 6144,
+      "input_truncation": "fullText.substring(0, 8000)"
+    },
+    {
+      "id": "S12",
+      "section_id": 12,
+      "section_name": "psychodynamic_formulation",
+      "name": "PsyCaseAuto — Sub-WF-S12 Psychodynamic Formulation",
+      "n8n_id": "Hq4QhEKT48aPShWb",
+      "status": "created_inactive",
+      "dependencies": ["dep_personal_history", "dep_present_illness", "dep_case_formulation"],
+      "max_tokens": 6144,
+      "input_truncation": "fullText.substring(0, 6000)"
+    }
+  ],
+  "wf2_main_nodes_phase2": {
+    "s09_relay": "S09 입력 전달",
+    "s09_exec": "섹션9 생성 (Present Illness)",
+    "s10_relay": "S10 입력 전달",
+    "s10_exec": "섹션10 생성 (Diagnostic Formulation)",
+    "s11_relay": "S11 입력 전달",
+    "s11_exec": "섹션11 생성 (Case Formulation)",
+    "s12_relay": "S12 입력 전달",
+    "s12_exec": "섹션12 생성 (Psychodynamic Formulation)",
+    "phase2_merge": "Phase 2 결과 병합",
+    "stage34_noop": "Stage 3-4 연결 지점 (Hallucination 검증)"
+  }
+}
