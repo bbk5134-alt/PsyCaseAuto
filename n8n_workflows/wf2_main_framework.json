@@ -1,0 +1,436 @@
+{
+  "updatedAt": "2026-03-31T14:36:31.325Z",
+  "createdAt": "2026-03-31T14:34:13.809Z",
+  "id": "LiN5bKslyWtZX6yG",
+  "name": "PsyCaseAuto — WF2 보고서 생성 메인",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "wf2-n01",
+      "name": "Telegram Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [250, 300],
+      "parameters": {
+        "updates": ["message"],
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {
+          "id": "8T0Q83WRhTEEdvSL",
+          "name": "PsyCaseAuto Telegram Bot"
+        }
+      }
+    },
+    {
+      "id": "wf2-n02",
+      "name": "메시지 파싱",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [550, 300],
+      "parameters": {
+        "jsCode": "const msg = $input.first().json;\nconst text = (msg.message?.text || '').trim();\nconst chatId = msg.message?.chat?.id?.toString() || '';\nconst match = text.match(/^(PT-\\d{4}-\\d{3})\\s*(보고서|report)/i);\n\nreturn [{\n  json: {\n    raw_text: text,\n    chat_id: chatId,\n    patient_code: match ? match[1] : null,\n    is_valid_command: !!match,\n    parsed_at: $now.toISO(),\n    root_folder_id: $env.PATIENT_DRIVE_ROOT_FOLDER_ID\n  }\n}];"
+      }
+    },
+    {
+      "id": "wf2-n03",
+      "name": "유효성 검사",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [850, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "valid-check",
+              "leftValue": "={{ $json.is_valid_command }}",
+              "operator": {"type": "boolean", "operation": "true", "singleValue": true}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf2-n04",
+      "name": "명령 형식 오류 응답",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [850, 480],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('메시지 파싱').first().json.chat_id }}",
+        "text": "={{ '❌ 명령 형식 오류\\n올바른 형식: PT-YYYY-NNN 보고서\\n예시: PT-2024-001 보고서' }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "PsyCaseAuto Telegram Bot"}
+      }
+    },
+    {
+      "id": "wf2-n05",
+      "name": "환자 폴더 검색",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [1150, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "name",
+        "queryString": "={{ $('메시지 파싱').first().json.patient_code }}",
+        "filter": {
+          "folderId": {"__rl": true, "value": "={{ $('메시지 파싱').first().json.root_folder_id }}", "mode": "id"}
+        },
+        "options": {}
+      },
+      "_comment": "PATIENT_DRIVE_ROOT_FOLDER_ID = 1awOFEQ8U2gjCdUWv6BXN3OGUe9CeeVv (WF1-B 실제 사용 ID)",
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "PsyCaseAuto Google Drive"}
+      }
+    },
+    {
+      "id": "wf2-n06",
+      "name": "환자 폴더 존재 확인",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1450, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "folder-exists",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {"type": "string", "operation": "notEquals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf2-n07",
+      "name": "환자 데이터 없음 응답",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1450, 480],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('메시지 파싱').first().json.chat_id }}",
+        "text": "={{ '❌ 데이터 없음\\n' + $('메시지 파싱').first().json.patient_code + ' 환자의 면담 데이터가 없습니다.\\nWF1으로 면담 데이터를 먼저 등록하세요.' }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "PsyCaseAuto Telegram Bot"}
+      }
+    },
+    {
+      "id": "wf2-n08",
+      "name": "환자 폴더 ID 확정",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 300],
+      "parameters": {
+        "jsCode": "const folder = $input.first().json;\nconst patientCode = $('메시지 파싱').first().json.patient_code;\n\nreturn [{\n  json: {\n    patient_code: patientCode,\n    chat_id: $('메시지 파싱').first().json.chat_id,\n    patient_folder_id: folder.id,\n    patient_folder_name: folder.name\n  }\n}];"
+      }
+    },
+    {
+      "id": "wf2-n09",
+      "name": "interviews 서브폴더 검색",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2050, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "name",
+        "queryString": "interviews",
+        "filter": {
+          "folderId": {"__rl": true, "value": "={{ $json.patient_folder_id }}", "mode": "id"}
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "PsyCaseAuto Google Drive"}
+      }
+    },
+    {
+      "id": "wf2-n10",
+      "name": "interviews 폴더 존재 확인",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2350, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "interviews-exists",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {"type": "string", "operation": "notEquals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf2-n11",
+      "name": "면담 없음 응답",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2350, 480],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('메시지 파싱').first().json.chat_id }}",
+        "text": "={{ '❌ 면담 데이터 없음\\n' + $('환자 폴더 ID 확정').first().json.patient_code + '의 interviews 폴더가 비어 있거나 없습니다.\\nWF1-A 또는 WF1-B로 면담 데이터를 먼저 등록하세요.' }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "PsyCaseAuto Telegram Bot"}
+      }
+    },
+    {
+      "id": "wf2-n12",
+      "name": "면담 파일 목록 조회",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [2650, 300],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "name",
+        "queryString": ".json",
+        "filter": {
+          "folderId": {"__rl": true, "value": "={{ $json.id }}", "mode": "id"}
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "PsyCaseAuto Google Drive"}
+      }
+    },
+    {
+      "id": "wf2-n13",
+      "name": "파일 존재 확인",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2950, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "files-exist",
+              "leftValue": "={{ $json.id ?? '' }}",
+              "rightValue": "",
+              "operator": {"type": "string", "operation": "notEquals"}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf2-n13b",
+      "name": "면담 JSON 파일 없음 응답",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [2950, 480],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('메시지 파싱').first().json.chat_id }}",
+        "text": "={{ '❌ 면담 JSON 파일 없음\\n' + $('환자 폴더 ID 확정').first().json.patient_code + '의 interviews 폴더에 JSON 파일이 없습니다.\\nWF1-A 또는 WF1-B로 면담 데이터를 먼저 등록하세요.' }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "PsyCaseAuto Telegram Bot"}
+      }
+    },
+    {
+      "id": "wf2-n14",
+      "name": "파일 목록 수집",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3250, 300],
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\nconst files = allItems.map(item => ({\n  id: item.json.id,\n  name: item.json.name,\n  createdTime: item.json.createdTime\n}));\n\nconst patientCode = $('환자 폴더 ID 확정').first().json.patient_code;\nconst chatId = $('환자 폴더 ID 확정').first().json.chat_id;\n\nreturn [{\n  json: {\n    patient_code: patientCode,\n    chat_id: chatId,\n    patient_folder_id: $('환자 폴더 ID 확정').first().json.patient_folder_id,\n    interview_files: files,\n    file_count: files.length\n  }\n}];"
+      }
+    },
+    {
+      "id": "wf2-n14b",
+      "name": "파일 목록 펼치기",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3400, 300],
+      "parameters": {
+        "jsCode": "const files = $input.first().json.interview_files;\nconst patientCode = $input.first().json.patient_code;\nconst chatId = $input.first().json.chat_id;\nconst patientFolderId = $input.first().json.patient_folder_id;\n\nreturn files.map(file => ({\n  json: {\n    id: file.id,\n    name: file.name,\n    createdTime: file.createdTime,\n    patient_code: patientCode,\n    chat_id: chatId,\n    patient_folder_id: patientFolderId\n  }\n}));"
+      }
+    },
+    {
+      "id": "wf2-n16",
+      "name": "파일 내용 로드",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [3850, 300],
+      "parameters": {
+        "resource": "file",
+        "operation": "download",
+        "fileId": {"__rl": true, "value": "={{ $json.id }}", "mode": "id"},
+        "binaryPropertyName": "data",
+        "options": {}
+      },
+      "credentials": {
+        "googleDriveOAuth2Api": {"id": "fcKtWyui68XESQND", "name": "PsyCaseAuto Google Drive"}
+      }
+    },
+    {
+      "id": "wf2-n17",
+      "name": "JSON 파싱",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [4150, 300],
+      "parameters": {
+        "operation": "fromJson",
+        "binaryPropertyName": "data",
+        "destinationKey": "interview_data",
+        "options": {}
+      }
+    },
+    {
+      "id": "wf2-n18",
+      "name": "면담 데이터 병합",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [4450, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// extractFromFile이 binary 데이터를 내장 처리\n// 결과: item.json.interview_data = 파싱된 JSON 오브젝트\nconst allItems = $input.all();\n\n// interview_data 필드가 있는 아이템만 유효\nconst interviews = allItems\n  .filter(item => item.json.interview_data)\n  .map(item => item.json.interview_data);\n\nconst parseErrors = allItems.length - interviews.length;\n\n// 전체 텍스트 추출 (토큰 추정용)\nconst fullText = interviews.map(iv => {\n  // STT 트랜스크립트 형식 (WF1-B)\n  if (iv.transcript?.full_text) return iv.transcript.full_text;\n  // 체크리스트 형식 (WF1-A form_interview)\n  if (iv.checklist_data) {\n    const notes = Object.values(iv.checklist_data)\n      .flat()\n      .filter(q => q.note)\n      .map(q => `[${q.section}/${q.group}] ${q.question}: ${q.note}`)\n      .join('\\n');\n    return notes || `면담 기록 (날짜: ${iv.interview_date || 'unknown'})`;\n  }\n  if (iv.sections) return JSON.stringify(iv.sections);\n  return JSON.stringify(iv);\n}).join('\\n\\n---\\n\\n');\n\n// 한국어 토큰 추정: 글자수 / 1.5 ≈ 토큰 수\nconst estimatedTokens = Math.ceil(fullText.length / 1.5);\n\nconst patientCode = $('파일 목록 수집').first().json.patient_code;\nconst chatId = $('파일 목록 수집').first().json.chat_id;\n\nreturn [{\n  json: {\n    patient_code: patientCode,\n    chat_id: chatId,\n    merged_at: $now.toISO(),\n    interview_count: interviews.length,\n    parse_error_count: parseErrors,\n    estimated_tokens: estimatedTokens,\n    token_limit: 80000,\n    needs_pre_summary: estimatedTokens > 80000,\n    merged_interviews: interviews,\n    full_text_for_ai: fullText.substring(0, 500000)\n  }\n}];"
+      }
+    },
+    {
+      "id": "wf2-n19",
+      "name": "토큰 초과 확인",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [4750, 300],
+      "parameters": {
+        "conditions": {
+          "options": {"caseSensitive": true, "leftValue": "", "typeValidation": "loose"},
+          "conditions": [
+            {
+              "id": "token-check",
+              "leftValue": "={{ $json.needs_pre_summary }}",
+              "operator": {"type": "boolean", "operation": "false", "singleValue": true}
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "wf2-n20",
+      "name": "토큰 초과 알림",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [4750, 480],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('면담 데이터 병합').first().json.chat_id }}",
+        "text": "={{ '⚠️ ' + $('면담 데이터 병합').first().json.patient_code + '\\n면담 데이터가 너무 많습니다 (추정 ' + $('면담 데이터 병합').first().json.estimated_tokens + '토큰).\\n사전 요약 기능은 추후 구현 예정입니다.\\n면담 데이터 수를 줄인 후 다시 시도하세요.' }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "PsyCaseAuto Telegram Bot"}
+      }
+    },
+    {
+      "id": "wf2-n21",
+      "name": "생성 시작 알림",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [5050, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
+        "chatId": "={{ $('면담 데이터 병합').first().json.chat_id }}",
+        "text": "={{ '🔄 보고서 생성 시작\\n환자: ' + $('면담 데이터 병합').first().json.patient_code + '\\n면담 수: ' + $('면담 데이터 병합').first().json.interview_count + '건\\n추정 토큰: ' + $('면담 데이터 병합').first().json.estimated_tokens + '\\n시작 시각: ' + $now.toFormat('HH:mm') + '\\n섹션 생성 Sub-WF 연결 대기 중...' }}",
+        "additionalFields": {}
+      },
+      "credentials": {
+        "telegramApi": {"id": "8T0Q83WRhTEEdvSL", "name": "PsyCaseAuto Telegram Bot"}
+      }
+    },
+    {
+      "id": "wf2-n22",
+      "name": "Sub-WF 연결 지점 (Stage 3-2 이후)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [5350, 300],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Telegram Trigger": {"main": [[{"node": "메시지 파싱", "type": "main", "index": 0}]]},
+    "메시지 파싱": {"main": [[{"node": "유효성 검사", "type": "main", "index": 0}]]},
+    "유효성 검사": {"main": [
+      [{"node": "환자 폴더 검색", "type": "main", "index": 0}],
+      [{"node": "명령 형식 오류 응답", "type": "main", "index": 0}]
+    ]},
+    "환자 폴더 검색": {"main": [[{"node": "환자 폴더 존재 확인", "type": "main", "index": 0}]]},
+    "환자 폴더 존재 확인": {"main": [
+      [{"node": "환자 폴더 ID 확정", "type": "main", "index": 0}],
+      [{"node": "환자 데이터 없음 응답", "type": "main", "index": 0}]
+    ]},
+    "환자 폴더 ID 확정": {"main": [[{"node": "interviews 서브폴더 검색", "type": "main", "index": 0}]]},
+    "interviews 서브폴더 검색": {"main": [[{"node": "interviews 폴더 존재 확인", "type": "main", "index": 0}]]},
+    "interviews 폴더 존재 확인": {"main": [
+      [{"node": "면담 파일 목록 조회", "type": "main", "index": 0}],
+      [{"node": "면담 없음 응답", "type": "main", "index": 0}]
+    ]},
+    "면담 파일 목록 조회": {"main": [[{"node": "파일 존재 확인", "type": "main", "index": 0}]]},
+    "파일 존재 확인": {"main": [
+      [{"node": "파일 목록 수집", "type": "main", "index": 0}],
+      [{"node": "면담 JSON 파일 없음 응답", "type": "main", "index": 0}]
+    ]},
+    "파일 목록 수집": {"main": [[{"node": "파일 목록 펼치기", "type": "main", "index": 0}]]},
+    "파일 목록 펼치기": {"main": [[{"node": "파일 내용 로드", "type": "main", "index": 0}]]},
+    "파일 내용 로드": {"main": [[{"node": "JSON 파싱", "type": "main", "index": 0}]]},
+    "JSON 파싱": {"main": [[{"node": "면담 데이터 병합", "type": "main", "index": 0}]]},
+    "면담 데이터 병합": {"main": [[{"node": "토큰 초과 확인", "type": "main", "index": 0}]]},
+    "토큰 초과 확인": {"main": [
+      [{"node": "생성 시작 알림", "type": "main", "index": 0}],
+      [{"node": "토큰 초과 알림", "type": "main", "index": 0}]
+    ]},
+    "생성 시작 알림": {"main": [[{"node": "Sub-WF 연결 지점 (Stage 3-2 이후)", "type": "main", "index": 0}]]}
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Seoul",
+    "saveDataErrorExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "errorWorkflow": "4ox2lxKl1st6pUkY",
+    "maxConcurrency": 1
+  },
+  "_notes": {
+    "validate_workflow_false_positives": "Telegram 노드 6개 'Invalid operation' 에러는 false positive. validate_node 개별 검증 통과 확인. WF3 동일 포맷 프로덕션 정상 동작 중.",
+    "google_drive_search_known_limit": "searchMethod:name은 contains 방식. PT-YYYY-NNN 형식 고유성 덕분에 실제 충돌 위험 낮음. 향후 searchMethod:query 전환 고려."
+  },
+  "tags": []
+}

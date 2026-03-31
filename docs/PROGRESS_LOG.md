@@ -1,6 +1,6 @@
 # PsyCaseAuto — 진척 로그
 
-> 최종 수정: 2026-03-27
+> 최종 수정: 2026-04-01
 
 ---
 
@@ -237,6 +237,135 @@ PsyCaseAuto/
 
 ---
 
+### 세션 4 — WF2 보고서 생성 메인 프레임워크 등록 (2026-03-31)
+
+#### 생성 파일
+
+| 파일 | 설명 |
+|------|------|
+| `n8n_workflows/wf2_main_framework.json` | WF2 메인 프레임워크 JSON 백업 |
+
+#### WF2 등록 정보
+
+| 항목 | 값 |
+|------|-----|
+| **ID** | `LiN5bKslyWtZX6yG` |
+| **이름** | PsyCaseAuto — WF2 보고서 생성 메인 |
+| **노드 수** | 24개 |
+| **상태** | 비활성 (테스트 후 활성화 필요) |
+| **Trigger** | Telegram Trigger (메시지 업데이트 수신) |
+| **JSON 백업** | `n8n_workflows/wf2_main_framework.json` |
+| **validate 결과** | 에러 0, 경고 37 (모두 비필수 권고사항) |
+
+#### WF2 노드 구조 (24개)
+
+```
+Telegram Trigger (wf2-n01)
+  → 메시지 파싱 (Code) — PT-YYYY-NNN 보고서 패턴 추출
+  → 유효성 검사 (IF) — is_valid_command boolean
+      ├─ true  → 환자 폴더 검색 (GDrive, alwaysOutputData)
+      │            → 환자 폴더 존재 확인 (IF)
+      │                ├─ true  → 환자 폴더 ID 확정 (Code)
+      │                │           → interviews 서브폴더 검색 (GDrive, alwaysOutputData)
+      │                │               → interviews 폴더 존재 확인 (IF)
+      │                │                   ├─ true  → 면담 파일 목록 조회 (GDrive, alwaysOutputData)
+      │                │                   │           → 파일 존재 확인 (IF)
+      │                │                   │               ├─ true  → 파일 목록 수집 (Code)
+      │                │                   │               │           → 파일 목록 펼치기 (Code)
+      │                │                   │               │           → 파일 순회 (SplitInBatches, batchSize:1)
+      │                │                   │               │               ├─ loop → 파일 내용 로드 (GDrive download)
+      │                │                   │               │               │         → JSON 파싱 (Code)
+      │                │                   │               │               │         → [파일 순회로 복귀]
+      │                │                   │               │               └─ done → 면담 데이터 병합 (Code)
+      │                │                   │               │                          → 토큰 초과 확인 (IF)
+      │                │                   │               │                              ├─ false(≤80K) → 생성 시작 알림 (Telegram)
+      │                │                   │               │                              │                → Sub-WF 연결 지점 (NoOp) ← Stage 3-2 교체 예정
+      │                │                   │               │                              └─ true(>80K) → 토큰 초과 알림 (Telegram) → 종료
+      │                │                   │               └─ false → 면담 JSON 파일 없음 응답 → 종료
+      │                │                   └─ false → 면담 없음 응답 → 종료
+      │                └─ false → 환자 데이터 없음 응답 → 종료
+      └─ false → 명령 형식 오류 응답 → 종료
+```
+
+#### 알려진 이슈 (추후 대응)
+
+| 이슈 | 내용 | 대응 시점 |
+|------|------|----------|
+| Telegram Trigger typeVersion | 1.1 사용 (명세 §2 미포함 — 경고만) | Stage 3-2 이후 검토 |
+| chatId 형식 | string 직접 사용 (resource locator 권고 — 동작에 문제 없음) | 필요 시 수정 |
+| SplitInBatches loop 경고 | 검증기 loop 연결 경고 (실제 연결 정상) | 무시 |
+| 토큰 초과 경로 | Placeholder (Telegram 응답 후 종료) | Stage 3-2 이후 구현 |
+
+#### 피드백 반영 수정 (2026-03-31)
+
+| # | 분류 | 수정 내용 |
+|---|------|----------|
+| Bug1 | 🔴 Critical | `면담 데이터 병합`: `$input.all()` → `$('JSON 파싱').all()` — done 브랜치에서 마지막 배치만 수집되는 버그 수정 |
+| Bug2 | 🔴 Critical | `JSON 파싱`: binary 접근 방식 filesystem mode 호환으로 교체 (`$helpers.getBinaryDataBuffer` fallback 추가) |
+| Minor3 | 🟡 Minor | `maxConcurrency: 1` — settings에 명시적으로 추가 완료 |
+| Minor4 | 🟡 Minor | GDrive `searchMethod: "name"` contains 이슈 — 실제 충돌 위험 낮음, JSON `_notes`에 기록, 수정 보류 |
+| 참고 | ℹ️ 조사 | Telegram 노드 'Invalid operation' 에러 6건 — `validate_node` 개별 검증 통과 확인, false positive 결론 |
+
+#### WF2 활성화 전 필수 체크
+- [x] Railway 환경변수 `PATIENT_DRIVE_ROOT_FOLDER_ID` 설정 확인 ✅
+- [ ] Railway 환경변수 `TELEGRAM_ADMIN_CHAT_ID` 설정 확인
+- [x] n8n에서 Telegram credential "PsyCaseAuto Telegram Bot" 연결 확인 ✅
+- [x] n8n에서 Google Drive credential "PsyCaseAuto Google Drive" 연결 확인 ✅
+- [ ] WF3 Error Workflow `4ox2lxKl1st6pUkY` 활성화 상태 확인
+
+---
+
+### 세션 5 — WF2 Stage 3-1 버그 수정 & End-to-End 테스트 완료 (2026-04-01)
+
+#### 수정 이력 (총 7건)
+
+| # | 노드 | 문제 | 수정 |
+|---|------|------|------|
+| Fix1 | 환자 폴더 검색 | `$env` in GDrive `__rl` value 미평가 → `.` 전달 → 404 | `메시지 파싱` Code에서 `root_folder_id: $env.PATIENT_DRIVE_ROOT_FOLDER_ID` 출력 → GDrive에서 `$('메시지 파싱').json.root_folder_id` 참조 |
+| Fix2 | 전체 | Railway Primary `PATIENT_DRIVE_ROOT_FOLDER_ID` 오타 | 환경변수 값 수정 후 Deploy |
+| Fix3 | 파일 순회 | `SplitInBatches` Done 브랜치에서 `$('JSON 파싱').all()` 미작동 (n8n 2.14.2 버그) | `SplitInBatches` 제거 → n8n 네이티브 다중 아이템 처리로 전환 |
+| Fix4 | 면담 데이터 병합 | `$input.all()` 모드 + `runOnceForAllItems` 조합 수정 | `runOnceForAllItems` 명시 + `$input.all()` 사용 |
+| Fix5 | JSON 파싱 | `runOnceForAllItems`에서 `$helpers` 미정의 | `runOnceForEachItem`으로 변경 |
+| Fix6 | JSON 파싱 | `runOnceForEachItem`에서 `$input.first()` 금지 | `$json` / `$binary` 로 교체 |
+| Fix7 | JSON 파싱 | `binaryItem.data`가 filesystem mode에서 내부 참조값 → 가비지 디코딩 | Code 노드 포기 → **`extractFromFile` (typeVersion 1.1)** 내장 노드로 교체 |
+
+#### 최종 WF2 구조 변경 요약
+
+| 항목 | 세션 4 | 세션 5 (현재) |
+|------|--------|--------------|
+| 노드 수 | 24개 | 23개 |
+| 파일 순회 | SplitInBatches | 제거 (n8n 네이티브 처리) |
+| JSON 파싱 | Code 노드 (binary 수동 읽기) | `extractFromFile` (destinationKey: interview_data) |
+| GDrive 폴더 ID | `$env` 직접 참조 (미작동) | 메시지 파싱 Code → JSON 경유 |
+
+#### 확정 기술 결정
+
+| 결정 | 내용 |
+|------|------|
+| D-15 | `extractFromFile` 노드로 Google Drive JSON 파일 파싱 — Code 노드 binary 읽기는 filesystem mode에서 불안정 |
+| D-16 | n8n GDrive `__rl` value에 `$env` 직접 참조 불가 → Code 노드 JSON 경유 필수 |
+
+#### End-to-End 테스트 결과 (2026-04-01)
+
+| 항목 | 결과 |
+|------|------|
+| Telegram 트리거 | ✅ `PT-2026-001 보고서` 수신 |
+| 환자 폴더 검색 | ✅ PT-2026-001 폴더 탐색 성공 |
+| interviews 폴더 | ✅ 서브폴더 탐색 성공 |
+| 파일 목록 | ✅ 2개 파일 인식 |
+| JSON 파싱 | ✅ interview_data 오브젝트 2건 파싱 |
+| 면담 데이터 병합 | ✅ `interview_count: 2`, `estimated_tokens: 64` |
+| Telegram 응답 | ✅ "🔄 보고서 생성 시작 / 면담 수: 2건 / 추정 토큰: 64" |
+
+#### WF2 Stage 3-1 상태: ✅ 완료
+
+#### 다음 단계
+- Stage 3-2: 12개 섹션 Sub-WF 구현 (Claude Sonnet 4 API 호출)
+- WF1-A: HTML 체크리스트 Webhook 수신 → Google Drive JSON 저장
+- [ ] 테스트: `PT-2024-001 보고서` 형식 메시지 전송으로 정상 분기 확인
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |
@@ -245,10 +374,11 @@ PsyCaseAuto/
 | 3 | WF1-B | 녹음 경로: Webhook → FFmpeg 청크 분할 → Whisper STT → 용어 교정 → Drive 저장 |
 | 4 | WF2 | 보고서 생성: Telegram 트리거 → 12섹션 순차 생성 → DOCX → Drive → Telegram 응답 |
 
-Session 4 과제 (우선순위 순)
+Session 5 과제 (우선순위 순)
+WF2 Stage 3-2 — 12개 섹션 Sub-WF 설계 및 구현
+WF2 활성화 전 end-to-end 테스트 (환자 폴더 존재/없음 분기 확인)
 HTML UI 개선 — 음성만 모드 시 체크리스트 탭 숨기고 바로 전송 화면, 탭 수 정리
 STT 정확도 검증 — 실제 임상 면담 녹음(5분↑)으로 테스트
-WF2 보고서 생성 워크플로우 설계 및 구현
 
 ---
 

@@ -69,7 +69,8 @@ psychiatric interview automation/
 | WF3 | Error Workflow | ✅ 완료 | Telegram 에러 알림 |
 | WF1-B | STT 녹음 파이프라인 | ✅ 완료 | End-to-End 테스트 통과, 활성 |
 | WF1-A | 설문지 경로 | ⬜ 미착수 | HTML Webhook 수신 → GDrive 저장 |
-| WF2 | 보고서 생성 | ⬜ 미착수 | Telegram 트리거 → 12섹션 순차 생성 → DOCX |
+| WF2 Stage 3-1 | 데이터 수집 프레임워크 | ✅ 완료 | Telegram→GDrive→JSON파싱→병합, E2E 테스트 통과 (23노드) |
+| WF2 Stage 3-2 | 12섹션 보고서 생성 | 🔴 진행 예정 | Claude Sonnet 4 → 12개 Sub-WF 순차 호출 → DOCX |
 
 > 세션별 상세 기록: `docs/PROGRESS_LOG.md` 참조.
 
