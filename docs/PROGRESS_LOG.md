@@ -558,11 +558,49 @@ Phase 1 결과 병합 [4720,352]
 
 ---
 
+### 세션 5E — E2E 테스트용 PT-2026-001 Mock 데이터 제작 (2026-04-01)
+
+#### 생성 파일
+
+| 파일 | 면담 유형 | 날짜 | 워드 수 | 경로 |
+|------|----------|------|---------|------|
+| `stt_20260320.json` | 초진 (initial) | 2026-03-20 | ~4,312 | `test_data/PT-2026-001/interviews/` |
+| `stt_20260328.json` | 경과 (followup) | 2026-03-28 | ~3,187 | `test_data/PT-2026-001/interviews/` |
+| `UPLOAD_GUIDE.md` | — | — | — | `test_data/PT-2026-001/` |
+
+#### Mock 데이터 설계 기준
+
+- **형식**: WF1-B `STT 결과 정리` 노드 출력(`sttResult`) 구조 그대로 사용
+- **환자 프로파일**: PT-2026-001, 31세 여, 주요우울장애 중등도-중증 + 범불안장애 공존 가능
+- **12섹션 커버리지**: 모든 섹션에서 추출 가능한 정보 포함 (인적 사항, 주호소, 개인력, MSE, 현병력, 정신역동)
+- **자살 사고 포함**: 수동적 자살사고, 1회 자해 이력 → S06 MSE의 충동성 중등도 → `HIGH_SUICIDE_RISK` 플래그 미발동 예상 (테스트 확인 필요)
+- **Google Drive 업로드 경로**: `PsyCaseAuto/PT-2026-001/interviews/`
+
+#### WF2 파싱 경로
+
+```
+stt_YYYYMMDD.json (GDrive) → 파일 내용 로드 → extractFromFile → interview_data = sttResult
+→ 면담 데이터 병합 (fallback: JSON.stringify(iv) 경로)
+→ full_text_for_ai = 두 면담 JSON 직렬화 concat → Phase 1/2 AI 호출
+```
+
+> `iv.transcript?.full_text` 조건 미충족 시 `JSON.stringify(iv)` fallback 경로 사용.
+> full_text 포함 전체 sttResult가 AI 입력으로 전달됨 — 기능상 문제 없음.
+
+#### E2E 테스트 절차
+
+1. `test_data/PT-2026-001/interviews/` 파일 2개를 Google Drive `PsyCaseAuto/PT-2026-001/interviews/` 에 수동 업로드
+2. WF2 Main (`LiN5bKslyWtZX6yG`) 활성화
+3. PsyCaseAuto Telegram 봇 → `PT-2026-001 보고서` 전송
+4. Phase 1 (S01~S08) + Phase 2 (S09~S12) 정상 실행 확인
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |
 |------|------|------|
-| **[최우선]** 테스트 | Phase 1+2 E2E | `PT-2026-001 보고서` 전송 → 8섹션 병렬 + 4섹션 직렬 실행 + 12섹션 통합 확인 |
+| **[최우선]** | E2E 테스트 | Google Drive mock 파일 업로드 → `PT-2026-001 보고서` 전송 → 12섹션 통합 실행 확인 |
 | 3-4 | Stage 3-4 | Hallucination 검증 + DOCX 변환 + GDrive 저장 + Telegram 완료 알림 |
 | WF1-A | 설문지 경로 | Form Trigger → 입력 검증 → Google Drive JSON 저장 |
 
