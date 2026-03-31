@@ -418,10 +418,71 @@ Telegram Trigger (wf2-n01)
 
 ---
 
+### 세션 5C — WF2 Phase 1 직렬 → 병렬 구조 변환 (2026-04-01, 컨텍스트 이어서)
+
+#### 변경 배경
+- 직렬 8섹션 체인: 40.451초 실측 → 병렬 전환으로 5~15초 예상
+- Context 오염 없음: 각 섹션 Sub-WF가 독립 실행, 서로 참조하지 않음
+
+#### 구조 변경 요약
+
+| 항목 | 변경 전 (직렬) | 변경 후 (병렬) |
+|------|--------------|--------------|
+| 섹션1→섹션2 연결 | 직렬 체인 (8단계) | 제거 |
+| 생성 시작 알림 출력 | S01 1개 | S01~S08 팬아웃 (8개 동시) |
+| 섹션X → 다음 | 직렬 전달 | `섹션 병렬 수집` Merge로 수렴 |
+| Merge 노드 | 없음 | `섹션 병렬 수집` (typeVersion 3.2, mode: append, numberInputs: 8) |
+| Phase 1 결과 병합 코드 | `$('섹션X').first().json` × 8 | `$input.all()` + section_id 정렬 |
+| 총 노드 수 | 40 | 41 |
+| 연결 수 | 34 | 35 |
+
+#### 적용된 n8n operations (44개, 원자적 적용)
+
+| 종류 | 수 | 내용 |
+|------|---|------|
+| removeConnection | 8 | 직렬 섹션 간 연결 제거 |
+| addNode | 1 | `섹션 병렬 수집` Merge 노드 추가 |
+| moveNode | 18 | 8×(릴레이+exec) 팬아웃 배치 + Phase 1 병합 + Phase 2 |
+| addConnection | 16 | 팬아웃 7 + exec→Merge 8 + Merge→Phase 1 병합 1 |
+| updateNode | 1 | `Phase 1 결과 병합` jsCode → `$input.all()` 방식 |
+
+#### 최종 팬아웃 레이아웃
+
+```
+                         ┌→ S01 입력 전달 [4100,-396] → 섹션1 보고서 생성 [4350,-396] ─(idx 0)┐
+                         ├→ S02 입력 전달 [4100,-196] → 섹션2 보고서 생성 [4350,-196] ─(idx 1)┤
+                         ├→ S03 입력 전달 [4100,   4] → 섹션3 보고서 생성 [4350,   4] ─(idx 2)┤
+생성 시작 알림 [3840,304]─┤→ S04 입력 전달 [4100, 204] → 섹션4 보고서 생성 [4350, 204] ─(idx 3)┤→ 섹션 병렬 수집 [4620,304] → Phase 1 결과 병합 [4880,304] → Phase 2 [5120,304]
+                         ├→ S05 입력 전달 [4100, 404] → 섹션5 보고서 생성 [4350, 404] ─(idx 4)┤
+                         ├→ S06 입력 전달 [4100, 604] → 섹션6 보고서 생성 [4350, 604] ─(idx 5)┤
+                         ├→ S07 입력 전달 [4100, 804] → 섹션7 보고서 생성 [4350, 804] ─(idx 6)┤
+                         └→ S08 입력 전달 [4100,1004] → 섹션8 보고서 생성 [4350,1004] ─(idx 7)┘
+```
+
+#### 확정 기술 결정
+
+| 결정 | 내용 |
+|------|------|
+| D-19 | Phase 1 병렬 팬아웃: `생성 시작 알림` 1개 출력 → 8개 릴레이 동시 실행. n8n은 동일 output[0]에 여러 destination 연결 시 자동 병렬 처리 |
+| D-20 | Merge 노드 `섹션 병렬 수집` (typeVersion 3.2, mode: append, numberInputs: 8): 8개 exec 결과를 수렴. Phase 1 결과 병합에서 `$input.all()` + `section_id` 오름차순 정렬로 순서 보장 |
+
+#### Phase 1 결과 병합 jsCode (변경 후)
+```javascript
+const allSections = $input.all().map(item => item.json);
+allSections.sort((a, b) => (a.section_id || 0) - (b.section_id || 0));
+const mergedData = $('면담 데이터 병합').first().json;
+// ... error/complete 분류 후 반환
+```
+
+#### WF2 Stage 3-2 Phase 1 병렬 전환: ✅ 완료
+
+---
+
 ## 다음 세션 예정 작업
 
 | 순서 | 세션 | 내용 |
 |------|------|------|
+| **[최우선]** 테스트 | Phase 1 병렬 E2E | `PT-2026-001 보고서` 전송 → 8섹션 병렬 실행 + Merge 동작 확인 |
 | 3-2 P2 | Stage 3-2 Phase 2 | S09~S12 Sub-WF 생성 + WF2 Phase 2 연결 |
 | 3-3 | Stage 3-3 | DOCX 변환 + GDrive 저장 + Telegram 완료 알림 |
 | WF1-A | 설문지 경로 | Form Trigger → 입력 검증 → Google Drive JSON 저장 |
