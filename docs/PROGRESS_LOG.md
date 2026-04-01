@@ -596,14 +596,251 @@ stt_YYYYMMDD.json (GDrive) → 파일 내용 로드 → extractFromFile → inte
 
 ---
 
+### 세션 6 — WF2 Stage 3-4 완성 (2026-04-01)
+
+#### 구현 내용
+
+| 구간 | 노드 수 | 내용 |
+|------|---------|------|
+| A — Hallucination 검증 | 3 | 검증 준비(Code) → API 호출(HTTP Request, claude-haiku-4-5) → 결과 통합(Code) |
+| B — Drive 폴더 준비 | 8 | reports/logs 서브폴더 검색 → IF 분기 → 없으면 생성 → ID 확정 |
+| C — 파일 저장 | 7 | JSON 직렬화→저장, Log 직렬화→저장, HTML 변환→저장 |
+| D — 완성 알림 | 1 | 메시지 구성(Code) → Telegram 전송 |
+
+#### 주요 설계 결정
+
+| 결정 | 내용 |
+|------|------|
+| D-24 | DOCX 변환 불가 → HTML 폴백. Railway n8n에 `docx` npm 미설치, `NODE_FUNCTION_ALLOW_EXTERNAL` 미설정. Word에서 HTML 열기 가능 |
+| D-25 | Hallucination 검증 모델: `claude-haiku-4-5-20251001` (속도·비용 우선). 검증 대상은 사실 기반 6개 섹션만 (Case Formulation, Psychodynamic 제외) |
+| D-26 | Hallucination 검증 API `onError: continueRegularOutput` — 검증 실패해도 보고서 저장 진행. `parse_error: true`로 Telegram에 표시 |
+| D-27 | GDrive 바이너리 데이터: 각 파일별 별도 직렬화 Code 노드 사용. GDrive upload 노드가 바이너리를 passthrough하지 않으므로 순차적 직렬화→업로드 패턴 |
+
+#### WF2 최종 구조
+
+| 항목 | 값 |
+|------|-----|
+| 총 노드 수 | **68** |
+| 총 연결 수 | 62 |
+| Stage 3-4 추가 노드 | 19 (NoOp 1개 제거, 19개 추가) |
+| 출력 파일 | `reports/draft_YYYYMMDD_v1.json` + `draft_YYYYMMDD_v1.html` + `logs/hallucination_check_YYYYMMDD.json` |
+
+#### 노드 흐름 (Stage 3-4)
+
+```
+Phase 2 결과 병합
+  → Hallucination 검증 준비 → 검증 API (Haiku) → 검증 결과 통합
+  → reports 서브폴더 검색 → reports 폴더 확인 (IF)
+      ├─ true  → reports 폴더 ID 확정
+      └─ false → reports 폴더 생성 → reports 폴더 ID 확정
+  → logs 서브폴더 검색 → logs 폴더 확인 (IF)
+      ├─ true  → logs 폴더 ID 확정
+      └─ false → logs 폴더 생성 → logs 폴더 ID 확정
+  → JSON 초안 직렬화 → JSON 초안 저장 (GDrive)
+  → Log 직렬화 → Hallucination 로그 저장 (GDrive)
+  → HTML 보고서 변환 → HTML 보고서 저장 (GDrive)
+  → 완성 메시지 구성 → 완성 알림 (Telegram)
+```
+
+#### Telegram 완성 알림 포함 정보
+
+- 환자코드, HIGH_SUICIDE_RISK 경고 (해당 시)
+- 품질 지표: 완성/부분/누락 섹션 수, 완성도 %
+- Hallucination 검증 결과: 이슈 없음 / 경미 / 심각 / 실패
+- GDrive 링크: HTML 초안, JSON 원본
+- AI 초안 면책 문구
+
+#### WF2 Stage 3-4 상태: ✅ 완료
+
+---
+
+### 세션 7 — WF2 Stage 3-4 디버깅 FIX-1~FIX-4 (2026-04-01)
+
+#### 근거
+
+WF2 E2E 테스트 (Execution #332) 결과 발견된 버그 수정. 상세: `docs/WF2_IMPROVEMENT_PLAN_v2.md` 세션 A 참조.
+
+#### 수정 이력
+
+| # | 노드 (ID) | 문제 | 수정 |
+|---|-----------|------|------|
+| FIX-1 | Hallucination 검증 API (`s34-a2`) | `specifyBody: "json"` 있으나 `jsonBody` 파라미터 누락 → 빈 body POST → API 400 에러 | `jsonBody` 추가 — Haiku 모델 + system_prompt + hallucination_check_input 참조 |
+| FIX-2a | 완성 알림 (`s34-d1`) | `parse_mode: "Markdown"`이 GDrive URL 내 `_`를 italic으로 해석 → Telegram 400 에러 | `parse_mode` 제거, plain text 전송 |
+| FIX-2b | 완성 메시지 구성 (`s34-c6`) | Markdown `*bold*`, `[link](url)` 문법 사용 | 모든 Markdown 문법 제거, plain text로 변경 |
+| FIX-3 | HTML 보고서 변환 (`s34-c4`) | `v()` 함수 `String(obj)` → `[object Object]` | 재귀적 v() 함수: 배열→`;` 조인, 객체→`key: value` 조인, META_KEYS 자동 필터 |
+| FIX-4 | HTML 보고서 변환 (`s34-c4`) | Case Formulation 4P 배열에서 `JSON.stringify(i)` → 메타데이터 노출 | `v(i)` 호출로 교체, META_KEYS(`source_ref`, `type`, `confidence`, `factual`, `informant_source`) 자동 제거 |
+
+#### v() 함수 변경 상세
+
+```javascript
+// 변경 ��
+const v = (x) => (x != null && x !== 'missing' && x !== '') ? String(x) : '';
+
+// 변경 후
+const META_KEYS = new Set(['source_ref', 'type', 'confidence', 'factual', 'informant_source']);
+const v = (x) => {
+  if (x == null || x === 'missing' || x === '') return '';
+  if (typeof x === 'string') return x;
+  if (typeof x === 'number' || typeof x === 'boolean') return String(x);
+  if (Array.isArray(x)) return x.map(i => v(i)).filter(Boolean).join('; ');
+  if (typeof x === 'object') {
+    return Object.entries(x)
+      .filter(([k]) => !META_KEYS.has(k) && x[k] != null)
+      .map(([k, val]) => { const rendered = v(val); return rendered ? `${k}: ${rendered}` : ''; })
+      .filter(Boolean).join(', ');
+  }
+  return String(x);
+};
+```
+
+#### FIX-5~FIX-7 추가 수정
+
+| # | 노드 (ID) | 문제 | 수정 |
+|---|-----------|------|------|
+| FIX-5 | 섹션1~12 보고서 생성 (12개 executeWorkflow) | `onError` 미설정 → Sub-WF 실패 시 Merge 무한 대기 | 12개 모두 `onError: "continueRegularOutput"` 추가 |
+| FIX-6 | Phase 1 결과 병합 → S09 입력 전달 | 4분+ 무응답 → 진행 여부 불명 | `Phase 1 완료 알림` (s34-mid-alert) Telegram 노드 삽입. 생성 시작 알림에 "예상 소요: 4~5분" 추가 |
+| FIX-7 | 검증 결과 통합 (`s34-a3`) | 동일 날짜 2회 실행 시 파일명 중복 | `dateStr` 포맷 `yyyyMMdd` → `yyyyMMdd_HHmm` |
+
+#### STRUCT-1: Drive 선저장 구조 변경
+
+| 항목 | 내용 |
+|------|------|
+| **변경 배경** | Hallucination 검증 실패 시 보고서 전달도 지연 → Drive 저장을 검증 앞으로 이동 |
+| **새 노드** | `보고서 준비` (s34-prep, Code) — dateStr, 파일명, draft_report 생성. `1차 완성 알림` (s34-alert1, Telegram) — 보고서 파일 링크 포함 |
+| **제거 연결** | Phase 2 병합→Halluc 준비, 검증 통합→reports 검색, JSON 저장→Log 직렬화, Log 저장→HTML 변환, HTML 저장→완성 메시지 |
+| **새 연결** | Phase 2 병합→보고서 준비→reports 검색, JSON 저장→HTML 변환→HTML 저장→1차 알림→Halluc 준비, 검증 통합→Log 직렬화→Log 저장→완성 메시지(2차) |
+| **코드 참조 변경** | 8개 노드: `$('검증 결과 통합')` → `$('보고서 준비')`, `$('Log 직렬화')` → `$('보고서 준비')` 등 |
+| **총 노드 수** | 69 → **71** (보고서 준비 + 1차 완성 알림 추가) |
+
+새 흐름:
+```
+Phase 2 결과 병합 → 보고서 준비 → reports/logs 폴더 체인
+  → JSON 직렬화 → JSON 저장 → HTML 변환 → HTML 저장
+  → 1차 완성 알림 (보고서 링크 포함)
+  → Hallucination 검증 준비 → 검증 API → 검증 결과 통합
+  → Log 직렬화 → Log 저장
+  → 2차 검증 알림 (완성 메시지 구성 → 완성 알림)
+```
+
+Telegram 알림 구조:
+```
+[1] 생성 시작 알림 — "예상 소요: 4~5분"
+[2] Phase 1 완료 알림 — "8/8 섹션, Phase 2 진행 중..."
+[3] 1차 완성 알림 — "보고서 저장 완료, 검증 진행 중..."
+[4] 2차 검증 알림 — "Hallucination 검증 완료, 이슈 N건"
+```
+
+#### STRUCT-2: patient_folder_id 체인 전달
+
+| 노드 (ID) | 변경 |
+|-----------|------|
+| 면담 데이터 병합 (wf2-n18) | return에 `patient_folder_id: $('환자 폴더 ID 확정').first().json.patient_folder_id` 추가 |
+| Phase 1 결과 병합 (p1-merge) | return에 `patient_folder_id: mergedData.patient_folder_id` 추가 |
+| Phase 2 결과 병합 (p2-merge) | return에 `patient_folder_id: $('면담 데이터 병합').first().json.patient_folder_id` 추가 |
+| 보고서 준비 (s34-prep) | `$('환자 폴더 ID 확정')` → `$('Phase 2 결과 병합')` 변경 |
+
+검증: Stage 3-4 영역에서 `환자 폴더 ID 확정` 원거리 참조 **0건** 확인 ✅
+
+#### STRUCT-3: chat_id 보안 제거
+
+- `보고서 준비`의 `draftReport` 객체에 `chat_id` 미포함 확인 ✅ (STRUCT-1에서 이미 해결)
+- `JSON 초안 직렬화`는 `ctx.final_report`만 직렬화 → GDrive JSON에 `chat_id` 없음 ✅
+
+#### E2E 재테스트 결과 (2026-04-01 12:37~12:42)
+
+| 항목 | 결과 |
+|------|------|
+| Telegram 알림 4개 | ✅ 시작 → Phase 1 완료 → 1차 완성 → 2차 검증 |
+| GDrive 폴더 생성 | ✅ reports/, logs/ |
+| JSON 초안 저장 | ✅ `draft_20260401_1242_v1.json` (시각 포함) |
+| HTML 보고서 저장 | ❌ **미생성** — HTML 변환 출력에 `reports_folder_id` 누락 |
+| Hallucination 검증 | ⚠️ `parse_error: false` (FIX-1 성공), 3건 low/medium (false positive 의심) |
+| Halluc 로그 저장 | ✅ `hallucination_check_20260401_1242.json` |
+| 완성도 | 79% (이전 88% — Sub-WF 결과 변동) |
+| 비용 | $1.88/일 (디버깅 포함 6~8회 실행) |
+
+발견된 버그:
+- **P-1 (Critical)**: HTML 변환 노드가 `$('보고서 준비')` 참조 → `reports_folder_id` 없음 → GDrive upload 실패
+- **P-2**: Haiku Hallucination 검증 false positive — 원본 6000자 절단, 프롬프트 빈약
+- 상세: 세션 8에서 수정 예정
+
+#### 세션 7 상태: ✅ FIX-1~7 + STRUCT-1~3 완료 (P-1 HTML 버그 잔존)
+
+---
+
 ## 다음 세션 예정 작업
 
-| 순서 | 세션 | 내용 |
-|------|------|------|
-| **[최우선]** | E2E 테스트 | Google Drive mock 파일 업로드 → `PT-2026-001 보고서` 전송 → 12섹션 통합 실행 확인 |
-| 3-4 | Stage 3-4 | Hallucination 검증 + DOCX 변환 + GDrive 저장 + Telegram 완료 알림 |
-| WF1-A | 설문지 경로 | Form Trigger → 입력 검증 → Google Drive JSON 저장 |
+| 순서 | 내용 |
+|------|------|
+| **[최우선]** | E2E 재테스트 (PT-2026-001 Mock 데이터) — 디버깅 가이드 참조 |
+| WF1-A | 설문지 경로 (Form Trigger → GDrive JSON 저장) |
+| HTML→Docs | GDrive upload 시 convert 옵션으로 HTML→Docs 자동 변환 |
+| Sub-WF AI 노드 전환 | 13개 HTTP Request → Basic LLM Chain (n8n UI 수동 권장) |
 
 ---
 
 > **환경변수 전체 목록**: `.env.example` 파일 참조 (Single Source — 이 파일에서 중복 관리하지 않음)
+
+PROGRESS_LOG — 세션 8 추가 내용
+
+기존 PROGRESS_LOG.md 말미(§ 다음 세션 예정 작업)를 이 내용으로 교체
+
+
+세션 8 — Quality Check 분석 + 아키텍처 결정 (2026-04-01)
+Quality Check 결과 요약
+대분류만점득점비율A. 형식 충실도6016.527.5%B. 사실 정확성252080.0%C. Halluc Check 실효성15853.3%합계10044.544.5% (C등급)
+근본 원인 분석
+사실 추출은 양호(80%)하나 형식 재현이 실패(27.5%). 원인:
+
+Sub-WF가 JSON 데이터 구조(key-value)를 반환
+HTML 변환 노드(s34-c4)의 v() 함수로는 JSON→임상 산문 변환 본질적으로 불가
+형식 품질은 변환 단계가 아닌 생성 단계에서 해결해야 함
+
+아키텍처 결정
+#결정근거D-22Sub-WF 출력을 Dual-Layer (narrative + structured + meta)로 전환형식은 생성 단계에서 해결. HTML 변환은 narrative를 이어 붙이기만D-23Quality Check는 별도 수동 QA 프로세스. WF2 Halluc Check 대체 안 함목적 다름(안전 vs 품질), Gold Standard 필요, 비용 높음
+산출물
+파일용도quality_check_PT-2026-001.json첫 QC 결과 (C등급, 44.5/100)quality_check_summary_PT-2026-001.mdQC 결과 요약 + 섹션별 수정 가이드quality_check_prompt.mdQC 채점 시스템 프롬프트 (100점 만점)PROJECT_PLAN_v3.md종합 기획안 v3 (Dual-Layer, QC 전략 반영)
+세션 8 상태: ✅ 분석 완료, 구현은 다음 세션
+
+다음 세션 예정 작업
+[최우선] 세션 9: Sub-WF 프롬프트 Dual-Layer 전환 (12개)
+목표: 12개 Sub-WF의 AI 프롬프트를 v3 Dual-Layer Output 구조로 전면 재설계
+작업 범위: 프롬프트 제작만. 워크플로우 변경은 별도 세션.
+작업 순서 (우선순위 기반 — QC 최하위 섹션 먼저)
+순위Sub-WFQC 점수핵심 변경1S08 Progress Notes0/5SOAP + S) 구어체 원문 + O) 관찰해석 + 날짜HD#2S02 Chief Problems0.5/5번호+영문증상명 + Remote/Recent onset3S04 Past/Family Hx0.5/46개 번호항목 + 투약 형식4S03 Informants0.5/3서술형 평가 3문장+ + Reliable 판정5S01 Identifying Data1/5항목:값 줄 나열 + 병전성격 서술형6S05 Personal History1/55단계 소제목 + 서술형 산문7S06 MSE1.5/59개 항목 + (+/-) + Mood/Affect 표준8S09 Present Illness3/124단락+ 연속 산문 + FCAB + 상대시점9S12 Psychodynamic2.5/63단락+ 연속 산문 + 고도 전문용어10S10 Diagnostic Formulation2.5/3간결 진단명 한 줄 먼저 (현재 양호)11S11 Case Formulation3/5Treatment Plan 구체화12S07 Mood Chart1.5/2수치 데이터 보완 (현재 양호)
+각 프롬프트 필수 포함 요소
+1. Anti-Hallucination Rules (최상단)
+2. 출력 형식 규칙 ("narrative는 임상 보고서 텍스트, JSON 금지")
+3. Gold Standard 예시 (해당 섹션의 실제 원본 보고서 발췌)
+4. Output Format (Dual-Layer JSON 스키마)
+5. Error Handling (누락 정보 처리)
+산출물
+
+system_prompt_section_01.md ~ system_prompt_section_12.md (12개 파일)
+각 파일: 해당 Sub-WF의 HTTP Request 노드에 투입할 시스템 프롬프트
+
+
+세션 10: WF2 노드 업데이트 + E2E 재테스트
+선행 조건: 세션 9 프롬프트 12개 완성
+작업내용Sub-WF 프롬프트 교체12개 Sub-WF의 HTTP Request 노드에 v3 프롬프트 적용HTML 변환 노드 단순화s34-c4를 narrative 기반 단순 이어붙이기로 교체Halluc Check 프롬프트 개선검증 대상 10섹션 확대, FP 감소 지시 추가E2E 테스트PT-2026-001 Mock → 보고서 생성 → QC 2차 채점
+
+세션 11+: 잔여 작업
+작업우선순위WF1-A 설문지 경로🟡 중간HTML→Docs GDrive convert 옵션🟡 중간Sub-WF AI 노드 HTTP→Basic LLM Chain 전환🟢 낮음 (n8n UI 수동)Queue Mode 전환 (성능 최적화)🟢 낮음실사용 테스트Phase 5
+
+알려진 이슈
+P-1 (Resolved by Design): HTML 변환 reports_folder_id 누락
+
+세션 7 발견: HTML 변환 노드가 $('보고서 준비') 참조 시 reports_folder_id 누락
+v3 해결: Dual-Layer 전환 시 HTML 변환 로직 전면 교체 예정 → 이 버그는 자연 해소
+
+P-2 (Open): Haiku Hallucination 검증 false positive
+
+원본 6000자 절단, 프롬프트 빈약 → 세션 10에서 개선 예정
+
+P-3 (Open): Phase 1 팬아웃 순차 실행 (37초)
+
+Queue Mode 전환 시 4~6초로 개선 가능 → Phase 5에서 검토
+
+
+
+환경변수 전체 목록: .env.example 참조
