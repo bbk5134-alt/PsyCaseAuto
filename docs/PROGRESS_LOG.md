@@ -4,6 +4,78 @@
 
 ---
 
+### 세션 9.3 — Sub-WF 프롬프트 M7 완료, 12/12 전체 완성 (2026-04-02)
+
+#### 작업 내용
+
+S11 Case Formulation, S12 Psychodynamic Formulation 프롬프트 생성 및 Claude.ai 검수 후 수정 적용.
+M7 완료로 12개 전체 프롬프트 파일 완성 (12/12).
+
+| 마일스톤 | 대상 | 상태 | 산출물 |
+|---------|------|:----:|--------|
+| M7-1 | S11 Case Formulation | ✅ 완료 | `system_prompt_section_11.md` |
+| M7-2 | S12 Psychodynamic Formulation | ✅ 완료 | `system_prompt_section_12.md` |
+
+#### M7 산출물 상세
+
+**S11 Case Formulation**
+- 4P Bio-Psycho-Social 모델 (Predisposition / Pattern / Precipitants / Perpetuants)
+- Treatment Plan: bio(medications) + psycho[] + social[] 구조
+- S11 조건부 추론: Predisposition·Pattern·Perpetuants·Psycho치료 허용, Precipitants 사실 기반
+- meta 불변: `requires_review = true`, `confidence = "draft"`, `type = "inference"` 고정
+- Phase 2 의존: Phase 1 전체 요약 (S01~S08), `phase1_summary_available` 추적
+- SECTION_KEY: `case_formulation` (D-26 snake_case 준수)
+
+**S12 Psychodynamic Formulation**
+- 3단락+ 연속 산문 (번호 목록·불릿 절대 금지)
+- S12 전체 inference 허용, 추론 어미 필수 (`~했을 것이다`, `~으로 생각된다`, `~것으로 보인다`, `~것 같다`)
+- 단락 1: 대상관계·Oedipal 고착·false self-adaptation (유아기~청소년기)
+- 단락 2: counter-phobic defense·sexualization·repetition compulsion·triangulation (성인기)
+- 단락 3: superego 갈등·dissociation·la belle indifférence·regression (현재)
+- Gold Standard 원문 3단락 전체 포함 (Oedipal 갈등, object relations, false self-adaptation 등)
+- meta 불변: `requires_review = true`, `confidence = "draft"`, `type = "inference"` 고정
+- Phase 2 의존: S05 + S09 + S11, `dependent_sections_available` 가용 여부 추적
+- SECTION_KEY: `psychodynamic_formulation` (D-26 snake_case 준수)
+
+#### Claude.ai 검수에서 발견된 이슈 및 수정
+
+| # | 파일 | 이슈 | 수정 내용 | 판정 |
+|---|------|------|----------|:----:|
+| 1 | S12 | 추론 어미 `"~것 같다"` 누락 (Gold Standard 단락 2에 실제 사용) | §2 규칙3, §4 문체 규칙, §5 체크포인트 3곳 모두 추가 | 수정 |
+| 2 | S12 | S09 SYSTEM NOTE 처리 규칙 누락 (단락 2·3 추론의 핵심 근거) | EH 8-1 신규 추가: S09_present_illness = false, 추론 근거 축소, missing_items 기재 | 수정 |
+| 3 | S11 | Anti-Halluc 규칙3 표현 | 조건부 허용 + requires_review 명시로 기능적으로 동등 | 수정 불필요 |
+| 4 | S11 | `\-` 이스케이프 일관성 | Output Format + Gold Standard 양쪽 올바르게 적용됨 | 수정 불필요 |
+| 5 | S11 | S08 참조 누락 우려 | EH9에 S04+S08 모두 언급됨 | 수정 불필요 |
+| 6 | S12 | `~했으나` 역접절 추론 어미 예외 | Gold Standard 동일 패턴 — 역접절 예외로 인정 | 수정 불필요 |
+| 7 | S11 | Strength-Pattern 관계 불명확 우려 | 3곳에서 명확히 표현됨 | 수정 불필요 |
+
+#### 최종 프롬프트 파일 현황 (12/12 완성)
+
+| # | 섹션 | 파일 | QC 점수 | 상태 |
+|---|------|------|:-------:|:----:|
+| S01 | Identifying Data | `section_01.md` | 1/5 | ✅ |
+| S02 | Chief Problems | `section_02.md` | 0.5/5 | ✅ |
+| S03 | Informants | `section_03.md` | 0.5/3 | ✅ |
+| S04 | Past/Family Hx | `section_04.md` | 0.5/4 | ✅ |
+| S05 | Personal History | `section_05.md` | 1/5 | ✅ |
+| S06 | MSE | `section_06.md` | 1.5/5 | ✅ |
+| S07 | Mood Chart | `section_07.md` | 1.5/2 | ✅ |
+| S08 | Progress Notes | `section_08.md` | 0/5 | ✅ |
+| S09 | Present Illness | `section_09.md` | 3/12 | ✅ |
+| S10 | Diagnostic Formulation | `section_10.md` | 2.5/3 | ✅ |
+| S11 | Case Formulation | `section_11.md` | — (신규) | ✅ |
+| S12 | Psychodynamic | `section_12.md` | — (신규) | ✅ |
+
+#### 다음 할 일
+
+- [ ] M8: n8n 노드 업데이트 (Halluc→AI Agent+Gemini Flash, 프롬프트 교체 S01~S12, E2E)
+- [ ] M9: QC 2차 (목표 60점+)
+- [ ] M10: Gemini Pro 비교 테스트
+
+#### 세션 9.3 상태: ✅ 완료 (12/12 프롬프트 파일 전체 완성, M8 대기 중)
+
+---
+
 ### 세션 9.2 — Sub-WF 프롬프트 M6 완료 (2026-04-02)
 
 #### 작업 내용
