@@ -89,7 +89,10 @@ psychiatric interview automation/
 | WF1-B | STT 녹음 파이프라인 | ✅ 완료 | E2E 통과, 활성 |
 | WF1-A | 설문지 경로 | ⬜ 미착수 | HTML Webhook → GDrive 저장 (**보고서 품질 향상의 전제 조건** §19) |
 | WF2 | 보고서 생성 메인 | ✅ 기능 완료 | 71노드, 4단계 알림, E2E 통과 |
-| — | Sub-WF 프롬프트 v3.1 | 🔴 **진행 중** | Dual-Layer 전환 필요 (12개) |
+| — | Sub-WF 프롬프트 v3.1 | ✅ 완료 | Dual-Layer 12개 전체 완성 |
+| — | Sub-WF S01~S08 AI Agent 전환 | ✅ 완료 | M8 작업 2 완료 (세션 10) |
+| — | Halluc 검증 → Gemini Flash | ✅ 완료 | M8 작업 1 완료 (세션 10) |
+| — | E2E 테스트 (Phase 1) | 🔴 **대기 중** | M8 작업 3 — 다음 세션 |
 | — | Quality Check | ✅ 1차 완료 | 44.5/100 (C등급) → 프롬프트 개선 필요 |
 
 ### Quality Check 결과 (2026-04-01)

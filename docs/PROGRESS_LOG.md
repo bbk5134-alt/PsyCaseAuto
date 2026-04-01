@@ -4,6 +4,110 @@
 
 ---
 
+### 세션 10 — M8 n8n 노드 업데이트 (2026-04-02)
+
+#### 작업 내용
+
+Milestone 8: n8n WF2 메인 + Sub-WF S01~S08 AI Agent 전환 및 Dual-Layer 파싱 코드 적용.
+
+| 작업 | 대상 | 상태 | 내용 |
+|------|------|:----:|------|
+| 작업 1 | `s34-a2` Hallucination 검증 노드 | ✅ 완료 | HTTP Request(Haiku) → AI Agent + Gemini Flash 전환 |
+| Pre-작업 2 | `s34-a1`, `s34-a3`, `s34-c6` | ✅ 완료 | 3개 노드 코드 수정 (아래 상세) |
+| 작업 2 | Sub-WF S01~S08 | ✅ 완료 | AI Agent 전환 + Dual-Layer 파싱 코드 전체 적용 |
+
+#### 작업 1 상세: Hallucination 검증 노드 전환 (WF2 `s34-a2`)
+
+- **변경 전**: HTTP Request → `anthropic/v1/messages` (claude-haiku-4-5)
+- **변경 후**: AI Agent (`conversationalAgent`) + Gemini Flash (`gemini-2.5-flash-preview`) 서브노드
+- 새 노드 추가: `s34-a2-gemini` (`lmChatGoogleGemini`, `ai_languageModel` 연결)
+- System Message: Hallucination 검증 전용 프롬프트 (새 Gemini JSON 출력 포맷 포함)
+- User Message: `={{ $input.first().json.hallucination_check_input }}`
+
+#### Pre-작업 2 수정: 3개 WF2 노드 코드 교체
+
+**`s34-a1` (Hallucination 검증 준비)**
+- `system_prompt` 키 제거 (AI Agent 방식에서 불필요)
+- `FACTUAL_SECTION_KEYS` 10개로 확장 (기존 일부 누락 키 보완)
+- 컨텍스트 절단 방어: 원문 6000자 초과 시 5개 핵심 섹션만 검증 (`context_truncated` 플래그)
+
+**`s34-a3` (검증 결과 통합)**
+- Gemini 신규 JSON 구조 파싱 (`hallucination_check.passed`, `.issues`, `.sections_checked`)
+- 구 Haiku 포맷(`hallucination_detected`) 제거
+- parse_error 폴백 처리 강화
+
+**`s34-c6` (완성 메시지 구성)**
+- 참조 키 교체: `hallucination_detected` → `check.passed` / `check.issues`
+- `context_truncated` 플래그 반영 (Telegram 알림에 "⚡ 원문 절단" 표시)
+- `sections_checked` 목록 알림에 포함
+
+#### 작업 2 상세: Sub-WF S01~S08 AI Agent 전환
+
+**S01~S04** (이미 AI Agent 구조, 파라미터 업데이트)
+
+| Sub-WF | 섹션 | 적용 내용 |
+|--------|------|----------|
+| S01 | Identifying Data | systemMessage (전용 프롬프트), promptType: define, text 표현식, 모델 설정, Dual-Layer parse |
+| S02 | Chief Problems | 동일 패턴 |
+| S03 | Informants | 동일 패턴 |
+| S04 | Past/Family Hx | 동일 패턴 |
+
+**S05~S06** (HTTP Request → AI Agent 구조 교체, 8 ops)
+
+- `입력 준비` 노드 제거 (Code 노드)
+- `Claude API 호출` 노드 제거 (HTTP Request 노드)
+- AI Agent 노드 신규 추가 (`@n8n/n8n-nodes-langchain.agent`)
+- Claude Sonnet 모델 서브노드 신규 추가 (`lmChatAnthropic`)
+- 커넥션 재구성: Trigger → Agent → Parse, Model →(ai_languageModel)→ Agent
+- `출력 파싱 및 검증` Dual-Layer parse code 업데이트
+
+| Sub-WF | 섹션 | SECTION_KEY |
+|--------|------|-------------|
+| S05 | Personal History | `personal_history` |
+| S06 | MSE | `mental_status_exam` |
+
+**S07~S08** (이미 AI Agent 구조, 파라미터 업데이트)
+
+| Sub-WF | 섹션 | 노드명 | SECTION_KEY |
+|--------|------|--------|-------------|
+| S07 | Mood Chart | `AI 보고서 생성`, `Claude Sonnet 4`, `출력 파싱` | `mood_chart` |
+| S08 | Progress Notes | 동일 구조 | `progress_notes` |
+
+#### Dual-Layer Parse Code 공통 패턴 (전 섹션)
+
+```javascript
+const raw = $input.first().json.output || $input.first().json.text || '';
+let parsed;
+try {
+  const cleaned = raw.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+  parsed = JSON.parse(cleaned);
+} catch (e) {
+  parsed = {
+    [SECTION_KEY]: {
+      narrative: raw,
+      structured: { source_ref: 'parse_failed', type: 'raw' },
+      meta: { status: 'partial', confidence: 'low', requires_review: true,
+              missing_items: ['JSON 파싱 실패 — 원문 그대로 저장됨'] }
+    }
+  };
+}
+return [{ json: parsed }];
+```
+
+#### Anthropic Chat Model 설정 가이드 (세션 10 결정)
+
+| 설정 | 권장값 | 비고 |
+|------|--------|------|
+| Model | Claude Sonnet 4.6 (전 섹션 통일) | Hallucination 최소화 우선 |
+| Temperature | 0.1 (기본), 0.0 (단순 추출), 0.2 (S09/S11/S12) | |
+| Max Tokens | 2048~8192 (섹션별) | S08/S09는 8192 |
+| Top K/P | 기본값 (미설정) | |
+| Enable Thinking | OFF (현재), E2E 후 S11/S12 실험 검토 | |
+
+#### 세션 10 상태: ✅ 완료 (M8 작업 1~2 완료, 작업 3 E2E 테스트 대기)
+
+---
+
 ### 세션 9.3 — Sub-WF 프롬프트 M7 완료, 12/12 전체 완성 (2026-04-02)
 
 #### 작업 내용
