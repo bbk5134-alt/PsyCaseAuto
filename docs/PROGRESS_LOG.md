@@ -4,6 +4,62 @@
 
 ---
 
+### 세션 11 — M8 작업 3~6, 버그 수정 (2026-04-02)
+
+#### 작업 내용
+
+M8 완료 작업: 작업 3(E2E 1차), 작업 4(S09~S12 AI Agent 검증), 작업 5(HTML 노드 검증), 작업 6(E2E 2차 + 버그 수정).
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| 작업 3 | E2E 1차 테스트 (Phase 1) | 🔴 수동 실행 필요 (Telegram Trigger) |
+| 작업 4 | S09~S12 AI Agent 전환 + D-26 null 방어 검증 | ✅ 완료 |
+| 작업 5 | HTML 변환 노드(`s34-c4`) 검증 | ✅ 이미 완료 상태 확인 |
+| 작업 6 | E2E 2차 테스트 → 버그 발견 및 수정 | ✅ 버그 수정 완료 |
+
+#### 작업 4 상세: S09~S12 AI Agent 전환 검증
+
+| Sub-WF | ID | 결과 |
+|--------|-----|------|
+| S09 Present Illness | `4VyEFSX0H0FD2ilK` | ✅ 이미 AI Agent (typeVersion 3.1) |
+| S10 Diagnostic Formulation | `6sRG5BX5uBhcRtj1` | ✅ 이미 AI Agent (typeVersion 3.1) |
+| S11 Case Formulation | `xnJZXam1BZB7Iypu` | ✅ AI Agent 교체 완료 (세션 10 연속) |
+| S12 Psychodynamic Formulation | `Hq4QhEKT48aPShWb` | ✅ 이미 AI Agent (typeVersion 3.1) |
+
+- WF2 D-26 null 방어 코드: Phase 2 relay 노드 4개 모두 `?.` optional chaining + `[SYSTEM NOTE: XXX 미생성]` fallback 확인 ✅
+
+#### 작업 5 상세: HTML 변환 노드 (`s34-c4`) 검증
+
+작업 문서의 `ctx.final_report?.sections` 참조는 구 설계 잔재. 현재 구현 이미 올바름:
+- `ctx.final_report?.all_sections` — Phase 2 병합 출력 키와 일치 ✅
+- `sec.narrative || sec.content` — Dual-Layer 읽기 ✅
+- `mental_status_exam` 키 — S06 출력 → Phase 1 병합 → Phase 2 병합 → HTML 전 구간 일치 ✅
+- HTML escape + `\n→<br>` 변환, `draft` 경고 배너, `HIGH_SUICIDE_RISK` 배너 모두 정상 ✅
+
+#### 작업 6 상세: 버그 수정 — "Single '}' in template"
+
+**증상**: WF2 E2E 실행 시 S05, S06, Hallucination 검증 AI Agent 3곳에서 `Error in 15~63ms` 발생
+
+**근본 원인**:
+- n8n Agent `typeVersion 1.x` 노드는 `options.systemMessage`를 템플릿 문자열로 파싱
+- Dual-Layer 시스템 프롬프트의 Output Format 섹션에 JSON `}` 문자 존재
+- n8n 파서가 `}` 를 `{{ }}` expression 닫는 기호로 오인 → "Single '}' in template" 에러
+- `typeVersion 3.1` 노드는 `systemMessage`를 순수 문자열로 처리 (S01~S04, S07~S08, S09~S12 정상)
+
+**수정 내용**:
+
+| 노드 | 워크플로우 | 변경 |
+|------|-----------|------|
+| S05 Personal History Agent | `SmR2paPpXEYTuWZO` | `typeVersion: 1` → `3.1` + `promptType: "define"` 추가 |
+| S06 MSE Agent | `Qp0IXqsbounP2X1l` | `typeVersion: 1` → `3.1` + `promptType: "define"` 추가 |
+| Hallucination 검증 AI Agent (`s34-a2`) | WF2 `LiN5bKslyWtZX6yG` | `typeVersion: 1.7` → `3.1` |
+
+**재발 방지**: AI Agent 노드 신규 생성/수정 시 반드시 `typeVersion: 3.1` + `promptType: "define"` 사용.
+
+#### 세션 11 상태: 버그 수정 완료 — E2E 재실행 대기
+
+---
+
 ### 세션 10 — M8 n8n 노드 업데이트 (2026-04-02)
 
 #### 작업 내용

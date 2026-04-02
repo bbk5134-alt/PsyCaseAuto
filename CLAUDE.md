@@ -92,7 +92,8 @@ psychiatric interview automation/
 | — | Sub-WF 프롬프트 v3.1 | ✅ 완료 | Dual-Layer 12개 전체 완성 |
 | — | Sub-WF S01~S08 AI Agent 전환 | ✅ 완료 | M8 작업 2 완료 (세션 10) |
 | — | Halluc 검증 → Gemini Flash | ✅ 완료 | M8 작업 1 완료 (세션 10) |
-| — | E2E 테스트 (Phase 1) | 🔴 **대기 중** | M8 작업 3 — 다음 세션 |
+| — | S05/S06/Halluc typeVersion 버그 수정 | ✅ 완료 | "Single '}' in template" → typeVersion 3.1 (세션 11) |
+| — | E2E 테스트 (Phase 1+2) | 🔴 **대기 중** | 버그 수정 완료, WF2 재실행 필요 |
 | — | Quality Check | ✅ 1차 완료 | 44.5/100 (C등급) → 프롬프트 개선 필요 |
 
 ### Quality Check 결과 (2026-04-01)
