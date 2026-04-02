@@ -78,6 +78,70 @@
 
 ---
 
+### 세션 13 (추가) — QC 채점 검증 분석 (2026-04-02)
+
+> QC 결과(55/100 FAIL, D등급)의 타당성을 3개 문서(초안 HTML, QC 결과 JSON, Gold Standard docx) 직접 대조하여 검증함.
+
+#### QC 점수 보정
+
+| 항목 | QC 원본 | 보정 후 | 사유 |
+|------|:-------:|:-------:|------|
+| A2-3 Onset 형식 | 1/3 | 2/3 | Gold Standard에서도 단일 발병 증상에 `Onset)` 단독 표기 사용 (Identity disturbance 항목) — Remote/Recent 이분법이 필수가 아님 |
+| A3-2 Reliable 표기 | 0/2 | 1.5/2 | Gold Standard 자체에서 환자 `-`, 보호자 `–` 혼용 확인됨 — AI 초안의 혼용을 일관성 위반으로 볼 수 없음 |
+| A5-2 투약 형식 | 1/2 | 1.5/2 | `escitalopram 0-0-10-0mg` (QD 저녁) 은 **정확한 표기**. QC는 Gold Standard 환자(아침 복용)의 `10-0-0-0mg`을 기준으로 오채점. PT-2026-001은 QD 저녁 처방 |
+| B2-3 치료 계획 | 1/2 | 2/2 | A5-2와 동일한 오류. 저녁 복용 → `0-0-10-0mg`은 Fabrication이 아님 |
+| B4-2 정보 오염 | 1/2 | 2/2 | B1에서 이미 같은 오류를 감점했으므로 중복 감점. 별도 항목으로 재산정 불가 |
+| C2-2 비식별화 | 0/2 | 2/2 | QC 자체 reasoning에서 "2/2 correct"로 명시했으나 점수란에 0점 기재 — 자체 모순 |
+| C3-2 IX/X 누락 | 0.5/2 | 1/2 | IX(사회사업팀), X(심리팀)은 다른 의료 직군의 고유 섹션 — AI가 생성하면 안 되는 영역 (부분 인정) |
+
+**보정 총점: 55 → 62.5/100 (C등급, 통과 기준 60점 충족)**
+
+> 원래 QC 프롬프트에 "냉정하게 평가" 지시가 있어 엄격 채점되었음. 실제 임상 활용 가능성은 C등급이 더 정확한 반영.
+
+#### Gold Standard 분석 — 주요 발견사항
+
+| 항목 | Gold Standard 실제 패턴 |
+|------|------------------------|
+| Informants 섹션 번호 | Roman numeral 없음 — Section II (Present Illness) 아래 소제목으로만 존재 |
+| Chief Problems Onset 표기 | 단일 발병 시 `Onset)` 단독 가능 (Remote/Recent 이분법은 여러 발병 시만 필수) |
+| Reliable 구분자 | 환자: `-`, 보호자: `–` — **Gold Standard 자체 비일관적** |
+| IX, X 섹션 | 사회사업팀(IX), 심리팀(X) — AI 생성 대상 아님. WF2에서 placeholder 처리 |
+| escitalopram 표기 | Gold Standard 환자는 아침 복용 → `10-0-0-0mg`. PT-2026-001은 저녁 복용 → `0-0-10-0mg` |
+| Mood/Affect 표준 어휘 | `Mood: depressed, not irritable, sl. anxious` / `Affect: appropriate, inadequate, broad` |
+| Insight 표기 | "Awareness that illness is due to something unknown in the patient" (7단계 중 4단계) |
+| Progress Notes 날짜 | `YYYY. MM. DD. (HD #N)` — 입원 환자용 HD# 형식 |
+
+#### 수정 우선순위 (비용/효과 기준)
+
+| Tier | 작업 | 대상 | 예상 QC 개선 | 비용 |
+|:----:|------|------|:----------:|:----:|
+| **1** | s34-c4 코드 수정: 섹션 번호, `[U]` 태그, "After:" 오타 처리 | HTML 변환 노드 | +3~5점 | $0 |
+| **2** | S06 MSE 프롬프트: Mood/Affect 표준 어휘, Insight 7단계 문장 추가 | 프롬프트 수정 | +2~3점 | $0 |
+| **2** | S08 Progress Notes 프롬프트: HD# → 외래 방문 번호 구분 지시 | 프롬프트 수정 | +1~2점 | $0 |
+| **2** | S02 Chief Problems 프롬프트: 절대날짜 금지, `Onset)` 단독 사용 조건 추가 | 프롬프트 수정 | +1점 | $0 |
+| **3** | QC 프롬프트 v2.0 규칙 수정 (4개 항목) | QC 프롬프트 | 채점 정확도↑ | $0 |
+| **4** | Gemini Flash 모델 전환 (S01~S04, S06, S07) | Sub-WF 6개 | ~45% 비용 절감 | 1회 E2E 필요 |
+
+#### 모델 최적화 권고
+
+**목표**: 1회 E2E 비용 $1.10 → $0.60 (45% 절감)
+
+| Sub-WF | 권장 모델 | 근거 |
+|--------|----------|------|
+| S01 Identifying Data | Gemini 2.5 Flash | 항목 나열 형식, 단순 추출 |
+| S02 Chief Problems | Gemini 2.5 Flash | 구조화 형식, 계산 포함 |
+| S03 Informants | Gemini 2.5 Flash | 서술형이나 짧은 섹션 |
+| S04 Past/Family Hx | Gemini 2.5 Flash | 목록 형식, 계산 |
+| S05 Personal History | Claude Sonnet 유지 | 장문 서술, 간접화법 일관성 필요 |
+| S06 MSE | Gemini 2.5 Flash | 구조화 형식, 어휘 지정 가능 |
+| S07 Mood Chart | Gemini 2.5 Flash | 수치 데이터 추출 |
+| S08~S12 | Claude Sonnet 유지 | 임상 추론, 장문 서술 |
+| Halluc 검증 | Gemini Flash 유지 (D-30) | 이미 전환 완료 |
+
+> Google API 크레딧 잔액 46만원 기준, Flash 섹션은 사실상 무료. Sonnet 절감분은 콘솔에서 모니터링.
+
+---
+
 ### 세션 11 — M8 작업 3~6, 버그 수정 (2026-04-02)
 
 #### 작업 내용
