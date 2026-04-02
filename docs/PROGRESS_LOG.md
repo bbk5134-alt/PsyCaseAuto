@@ -4,6 +4,53 @@
 
 ---
 
+### 세션 21 — QC v2.0 결과 검토 + s34-c4 HTML 변환 노드 버그 수정 3건 (2026-04-03)
+
+#### QC v2.0 평가 결과 (Claude.ai 시행)
+
+- **대상**: `draft_20260403_0215_v1.html` (E2E 결과물) + STT 원문 2건
+- **점수**: **88/100 (Grade A, PASS)**
+- **Claude Code 교차 검증 결과**: STT 원문 확인으로 QC 평가 대체로 타당. 단, QC가 놓친 항목 2건 발견.
+
+| 대분류 | 점수 | 비고 |
+|--------|------|------|
+| A. 형식 충실도 | 52.5/60 | Present Illness 0/12 — HTML 변환 노드 버그 (프롬프트 문제 아님) |
+| B. 사실 정확성 | 21/25 | Hallucination 3건 탐지 |
+| C. 문서 품질 | 14.5/15 | 안전 플래그·비식별화·누락 처리 우수 |
+
+**QC가 놓친 항목 (Claude Code 추가 발견)**:
+- `자살의 위험성: 상` — STT 양쪽 "중등도"인데 상으로 변조 (B-3 추가 감점 -0.5~1)
+- `Judgment: social -- impaired` — STT 원문에 testing/social 분리 근거 없음 (B-3 추가 감점 -0.5~1)
+- 보정 후 실제 점수: **86~87/100** (여전히 Grade A)
+
+#### 수정 완료 — s34-c4 HTML 변환 노드 (WF2)
+
+| 수정 | 내용 | 버그 원인 |
+|------|------|---------|
+| **P1** | `extractNarrative()` 함수 신설 — narrative가 JSON 문자열인 경우 파싱 후 narrative 추출 | S04 sub-WF가 전체 JSON을 narrative 필드에 저장 → raw JSON 출력 |
+| **P2** | Progress Notes 전용 루프에 `[U]→<u>` 변환 추가 | Progress Notes가 `toHtml()` 우회하는 자체 루프 사용 → `[U]` 태그 raw 노출 |
+| **P6** | `stripLeadingHeader()` 함수 신설 — narrative 첫 줄이 섹션 제목인 경우 제거 | AI가 narrative 첫 줄에 `**XII. Case Formulation**` 형태로 섹션명 반복 출력 |
+
+- **MCP 결과**: operationsApplied: 1, saved: true ✅
+- **수정 범위**: `nar()` 함수 전체 리팩토링 + Progress Notes 루프 수정
+
+#### 수정 미완료 — 다음 세션 처리 필요
+
+| 우선순위 | 대상 | 내용 | 이유 |
+|---------|------|------|------|
+| P3 | S07 MSE 프롬프트 | 자해 ≠ 자살시도 구분 규칙 추가 | S06에는 세션 19에 추가했으나 S07 누락 |
+| P4 | S02 Chief Problems 프롬프트 | Remote/Recent onset 시점 역전 방지 규칙 | Remote onset이 Recent보다 더 최근인 역전 오류 |
+| P5 | S04 Present Illness 프롬프트 | GS 서술어 사용 금지 규칙 | "기생충 같다" 표현 GS contamination |
+
+#### 기대 효과 (HTML 변환 수정 후)
+
+- Present Illness 12점 회복 → 88점 + 12점 = **100점 가능**
+- Progress Notes `[U]` raw 태그 제거 → A-9-3 +1점
+- 중복 헤더 제거 → C-4-3 +0.5점 가독성 개선
+- **예상 점수**: ~97~99/100 (Hallucination 3건 + onset 역전은 잔여)
+
+---
+
 ### 세션 20 — Hallucination 검증 시스템 프롬프트 보완 (2026-04-03)
 
 #### 배경
