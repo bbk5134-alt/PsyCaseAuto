@@ -105,13 +105,28 @@
 - eye-contact, 면담 태도(협조적/방어적/거부적), 특이 행동 관찰
 - 서술형 산문으로 작성 (3~4문장 권장)
 
+<!-- 수정: 수정1 -->
 **2) Mood and Affect**:
 - 형식: `**Mood:** [형용사 조합]` / `**Affect:** [형용사 조합]`
 - Mood = 환자의 **주관적 진술** 기반 (어떤 기분이냐는 질문에 대한 답)
 - Affect = 면담자의 **객관적 관찰** 기반 (외적으로 드러나는 정서 표현)
 - 수식어: `sl.` = slightly, `not` = 아님, `,` 로 여러 형용사 나열
-- Mood 형용사: depressed, irritable, anxious, elevated, dysphoric, euthymic 등
-- Affect 형용사: appropriate, inappropriate, restricted, blunted, flat, broad, labile, constricted, inadequate 등
+
+**Mood 표준 어휘 목록** (아래 조합으로만 사용):
+- 기본 상태 (1개 필수): `depressed` / `euthymic` / `euphoric` / `dysphoric` / `elevated`
+- 과민성 수식 (1개 필수): `irritable` / `not irritable`
+- 불안 수식 (1개 필수): `anxious` / `sl. anxious` / `not anxious`
+- 규칙: **반드시 기본 상태 1개 + 과민성 1개 + 불안 수식 1개 조합**으로 표기
+- 조합 예시: `depressed, not irritable, sl. anxious` / `euthymic, not irritable, not anxious`
+
+**Affect 표준 어휘 목록** (아래 조합으로만 사용):
+- 적절성 (1개 필수): `appropriate` / `inappropriate`
+- 강도 (1개 필수): `adequate` / `inadequate`
+- 범위 (1개 필수): `broad` / `restricted` / `flat` / `blunted` / `labile`
+- 규칙: **반드시 적절성 1개 + 강도 1개 + 범위 1개 조합**으로 표기
+- 조합 예시: `appropriate, inadequate, broad` / `inappropriate, inadequate, restricted`
+
+Gold Standard 예시: `**Mood:** depressed, not irritable, sl. anxious` / `**Affect:** appropriate, inadequate, broad`
 
 **3) Speech characteristics**:
 - 4개 항목 각각 별줄 기재:
@@ -155,30 +170,59 @@
   `Abstract thinking: [intact/impaired] ([질문과 답변])`
 - 실제 검사 수치·답변이 있으면 괄호 안에 기재
 
+<!-- 수정: 수정3 -->
 **7) Impulsivity**:
-- 형식:
-  `**자살의 위험성: 상**` (값까지 굵게 포함)
-  `위협적인 행동 가능성: [상/중/하]` (일반 텍스트)
-  (빈 줄)
-  `**Suicidal ideation (+)**` 또는 `**Suicidal ideation (-)**` (항목명+값 굵게)
-  `Suicidal attempt (+/-)` (일반 텍스트)
-  `Suicidal plan (+/-)` (일반 텍스트)
-  `Homicidal ideation (+/-)` (일반 텍스트)
-- 자살의 위험성 줄: 값(상/중/하)까지 굵게 범위에 포함
-- Suicidal ideation 줄만 굵게, 나머지 3줄은 일반 텍스트
+- **6줄 고정 형식** (순서 변경 금지):
 
+  `**자살의 위험성: [상/중/하]**` ← 항목명 + 값 전체 굵게 처리
+  `위협적인 행동 가능성: [상/중/하]` ← 일반 텍스트 (굵게 처리 금지)
+  *(빈 줄 필수)*
+  `**Suicidal ideation ([+/-])**` ← 항목명 + 괄호 + 값 전체 굵게 처리
+  `Suicidal attempt (+/-)` ← 일반 텍스트 (굵게 처리 금지)
+  `Suicidal plan (+/-)` ← 일반 텍스트 (굵게 처리 금지)
+  `Homicidal ideation (+/-)` ← 일반 텍스트 (굵게 처리 금지)
+
+- **굵게 처리 규칙**:
+  - `**자살의 위험성: 상**` → 콜론 뒤 값(상/중/하)까지 굵게 범위에 포함
+  - `**Suicidal ideation (+)**` → 괄호와 값까지 굵게 범위에 포함
+  - 나머지 3줄(Suicidal attempt, Suicidal plan, Homicidal ideation): 일반 텍스트, 대괄호 없이 표기
+
+- **자살 위험도 판정 기준**:
+  - 자살의 위험성 **"상"**: SI(+) AND (SP(+) OR 과거 자살 시도 SA 과거력 있음)
+  - 자살의 위험성 **"중"**: SI(+) AND SP(-) AND SA 과거력 없음
+  - 자살의 위험성 **"하"**: SI(-) 또는 소극적 사망 소망만 있는 경우
+  - 위협적인 행동 가능성: HI 유무 + 과거 폭력력 기반으로 판단
+
+- **자해 vs 자살시도 엄격 구분 규칙 (Step 2-6, 필수)**:
+  - **Suicidal attempt (+)**: STT 원문에 "자살 시도", "자살을 시도", "suicide attempt" 등
+    **명시적 자살 의도를 가진 행동**이 기술된 경우에만 SA(+) 기재
+  - **Suicidal attempt (-)**: STT 원문에 "자해", "self-harm", "손목을 긋다",
+    "찰과상" 등 자해 행동이 기술되었으나 **자살 의도 확인이 불가한 경우** → SA(-)
+    - 자해 이력은 별도로 `structured.data.impulsivity.self_harm_history` 필드에 기재
+  - ❌ 금지: 자해 이력만 있는 경우 SA(+)로 기재하는 것
+  - ✅ 허용: SA(-) + `"self_harm_history": "YYYY-MM, N회, 손목 찰과상"` 기재
+
+<!-- 수정: 수정2 -->
 **8) Judgment and Insight**:
 - 형식:
   `**Judgment:** testing -- [intact/impaired]`
   `           social -- [intact/impaired]`
   (빈 줄)
-  `**Insight:** [아래 6단계 중 하나]`
-  - Complete denial of illness
-  - Slight awareness of being sick and needing help, but denying it at the same time
-  - Awareness that they are sick but blaming it on others, external events
-  - Awareness that illness is due to something unknown in the patient
-  - Intellectual insight
-  - True emotional insight
+  `**Insight:** [아래 7단계 중 해당 단계의 문장 전체]`
+
+- **Insight 7단계 전체 목록** (해당 단계의 문장 전체를 그대로 기재):
+  1. Complete denial of illness
+  2. Slight awareness of being sick and needing help, but denying it at the same time
+  3. Awareness that they are sick but blaming it on others, external events
+  4. Awareness that illness is due to something unknown in the patient
+  5. Intellectual insight — admission of illness and recognition that symptoms or disturbed thinking are due to one's own irrational feelings without applying this knowledge to future experiences
+  6. Intellectual insight (limited) — same as above but applying with doubtful success
+  7. True emotional insight — awareness of motives and feelings which could lead to basic changes in behavior; open to new ideas about self and important people in one's life
+
+- **형식 규칙**:
+  - narrative에서 Insight는 반드시 위 7단계 중 해당 단계의 **문장 전체**를 그대로 기재
+  - 단계 번호 숫자는 기재하지 않음 (문장만)
+  - 예) `**Insight:** Awareness that illness is due to something unknown in the patient`
 
 **9) Reliability**:
 - `[Reliable / Unreliable]` (이유 필요 시 간략 서술)
@@ -188,6 +232,8 @@
 - [ ] 9개 항목 모두 포함 (번호·소제목 Gold Standard와 정확히 일치)
 - [ ] Thought Content: 12개 항목 각각 별줄
 - [ ] Mood = 주관적, Affect = 객관적 구분 준수
+- [ ] Mood: 기본 상태 1개 + 과민성 1개 + 불안 수식 1개 조합 준수
+- [ ] Affect: 적절성 1개 + 강도 1개 + 범위 1개 조합 준수
 - [ ] 자살 위험 "상" 시 meta.alert = "HIGH_SUICIDE_RISK" 설정
 - [ ] MSE 날짜 헤더에 포함 (확인 불가 시 "(날짜 미확인)" 명시)
 
@@ -307,6 +353,9 @@ Reliable
 - [ ] Spontaneity: `**Spontaneity of speech (-)**` (대괄호 없음, (+/-) 값까지 굵게)
 - [ ] Sensorium: 검사값을 괄호 안에 기재 (있는 경우)
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
+- [ ] Mood: 기본 상태 + 과민성 + 불안 수식 3요소 조합 준수
+- [ ] Affect: 적절성 + 강도 + 범위 3요소 조합 준수
+- [ ] Insight: 7단계 중 해당 단계의 문장 전체 기재, 단계 번호 미기재
 
 ---
 
@@ -388,7 +437,8 @@ Reliable
           "suicidal_ideation": true,
           "suicidal_attempt": false,
           "suicidal_plan": false,
-          "homicidal_ideation": false
+          "homicidal_ideation": false,
+          "self_harm_history": null
         },
         "judgment": {
           "testing": "intact",
@@ -416,14 +466,14 @@ Reliable
 | 키 | 타입 | 설명 |
 |----|------|------|
 | `structured.data.exam_date` | string | MSE 시행 날짜 (없으면 null) |
-| `structured.data.mood_affect.mood` | string | 주관적 기분 (환자 진술 기반) |
-| `structured.data.mood_affect.affect` | string | 객관적 정서 (면담자 관찰 기반) |
+| `structured.data.mood_affect.mood` | string | 주관적 기분 (환자 진술 기반) — 기본 상태 + 과민성 + 불안 수식 3요소 조합 |
+| `structured.data.mood_affect.affect` | string | 객관적 정서 (면담자 관찰 기반) — 적절성 + 강도 + 범위 3요소 조합 |
 | `structured.data.speech.spontaneity` | boolean | 자발적 발화 여부 |
 | `structured.data.perception.*` | boolean\|null | 지각 이상 여부 (미확인 시 null) |
 | `structured.data.thought.*` | boolean\|null | 사고 이상 여부 (미확인 시 null) |
-| `structured.data.impulsivity.suicide_risk` | enum | 상/중/하 |
-| `structured.data.impulsivity.violence_risk` | enum | 상/중/하 |
-| `structured.data.insight` | string | Insight 단계 (6단계 중 하나) |
+| `structured.data.impulsivity.suicide_risk` | enum | 상/중/하 — SI·SP·SA 판정 기준 적용 |
+| `structured.data.impulsivity.violence_risk` | enum | 상/중/하 — HI·과거 폭력력 기반 판단 |
+| `structured.data.insight` | string | Insight 단계 (7단계 중 해당 문장 전체) |
 | `meta.alert` | string\|null | HIGH_SUICIDE_RISK (해당 시) 또는 null |
 
 ---
@@ -472,3 +522,21 @@ Reliable
 - 입력 텍스트에서 **급성 자살 위험**(구체적 계획 + 수단 확보)이 감지되면:
   meta에 `"alert": "HIGH_SUICIDE_RISK"` 추가
   (이 필드는 WF2 메인에서 탐지하여 Telegram 알림에 포함됨)
+
+---
+
+## Quality Check
+
+| 항목 | 확인 |
+|------|------|
+| Mood 3요소 조합 규칙 추가됨 | ✅ |
+| Affect 3요소 조합 규칙 추가됨 | ✅ |
+| Insight 7단계 전문 목록 포함됨 | ✅ |
+| Insight 단계 번호 미기재 규칙 명시됨 | ✅ |
+| Impulsivity 6줄 형식 명확화됨 | ✅ |
+| 자살 위험도 판정 기준 추가됨 | ✅ |
+| §6 Output Format insight 키 설명 7단계로 수정됨 | ✅ |
+| 기존 Anti-Halluc Rules(§2) 변경 없음 | ✅ |
+| 기존 Output Format JSON 스키마 키 이름 변경 없음 | ✅ |
+| 자해 vs 자살시도 구분 규칙 추가됨 (Step 2-6) | ✅ |
+| `self_harm_history` 필드 Output Format에 추가됨 | ✅ |

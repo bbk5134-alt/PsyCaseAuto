@@ -4,6 +4,103 @@
 
 ---
 
+### 세션 19 — Step 2-6 T4 완료 + Hallucination 검증 버그 수정 + E2E 재실행 (2026-04-03)
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| T4: S06 MSE n8n 업데이트 | SA vs self-harm 구분 규칙 + `self_harm_history` 필드 반영 | ✅ 완료 |
+| 버그 수정: Hallucination 검증 준비 | `hallucination_check_input` 중괄호 이스케이프 (`{`→`{{`) | ✅ 완료 |
+| 버그 수정: Hallucination 검증 AI Agent | System Message JSON 예시 `{`→`{{` 이스케이프 (근본 원인) | ✅ 완료 |
+| T5: E2E 재실행 (S08~S12 + 후처리) | 사용자 수동 실행 완료 | ✅ 완료 |
+
+#### T4 상세 — S06 MSE Agent systemMessage 업데이트
+
+- **대상 WF**: Sub-WF S06 (`Qp0IXqsbounP2X1l`), 노드: `S06 MSE Agent`
+- **변경 내용**:
+  - §4 Impulsivity 섹션에 자해 vs 자살시도 구분 규칙 추가
+  - `structured.data.impulsivity.self_harm_history: null` Output Format에 추가
+  - QC 테이블 2행 추가 (자해/SA 구분 확인 항목)
+- **파일**: `docs/prompts/system_prompt_section_06.md` (16,147자)
+- **MCP 결과**: operationsApplied: 1, saved: true
+- **D-33**: UI 수동 저장 금지 준수
+
+#### 신규 버그 수정 — Hallucination 검증 준비 중괄호 이스케이프
+
+- **발견 경위**: Execution 476 (2026-04-02, 8분 40초) 오류 분석
+- **오류**: `Single '}' in template.` — LangChain f-string 파서가 `JSON.stringify()` 출력의 `{}`를 템플릿 변수로 파싱
+- **원인 노드**: WF2 `Hallucination 검증 준비` (Code 노드) → `hallucination_check_input`에 JSON 구조 그대로 전달
+- **수정**: `userMessage.replace(/\{/g, '{{').replace(/\}/g, '}}')` 추가 (Step 2-6 P-05)
+- **대상 WF**: WF2 (`LiN5bKslyWtZX6yG`), operationsApplied: 1
+
+#### T5 E2E 실행 결과
+
+**실행 범위**: S08~S12 pin 해제 + HTML/Drive/TG/Hallucination 후처리 전체 pin 해제
+**획득 결과물**: JSON 초안, HTML 보고서, Hallucination 검증 로그 (Google Drive 저장)
+**비용**: ~$0.53 (Claude Sonnet 4, S08~S12 5섹션 호출)
+
+**E2E 중 발견·수정한 추가 버그 2건**
+
+| 버그 | 원인 | 수정 |
+|------|------|------|
+| Progress Notes HTML에 raw JSON 출력 | Option A 핀 데이터가 구버전 AI 출력 (narrative에 JSON 전체 포함) | S08 unpin 재실행으로 해소 |
+| Hallucination `Single '}' in template` 지속 | System Message 내 JSON 예시 블록의 `{}` → LangChain 파서 오류 | System Message `{`→`{{` 이스케이프 후 해소 |
+
+**QC 3차 채점**: Claude 사용량 한도로 다음 세션으로 연기
+**다음 세션**: 생성된 HTML·JSON·Halluc 로그 기반 QC 3차 채점 및 결과 분석
+
+---
+
+### 세션 18 — Step 2-6 QC 2차 채점 완료 + A-9 버그 수정 (2026-04-03)
+
+#### QC 2차 채점 결과
+
+| 대분류 | 득점 | 만점 | 비율 |
+|--------|:----:|:----:|:----:|
+| A. 형식 충실도 | 53 | 60 | 88.3% |
+| B. 사실 정확성 | 23 | 25 | 92.0% |
+| C. 임상 문서 품질 | 14.5 | 15 | 96.7% |
+| **합계** | **90.5** | **100** | **90.5% (A등급)** |
+
+#### 섹션별 득점 (A분류)
+
+| 섹션 | 득점 | 만점 | 주요 감점 이유 |
+|------|:----:|:----:|--------------|
+| A-1 Identifying Data | 4.5 | 5 | 출생순위 표기 누락 |
+| A-2 Chief Problems | 6.5 | 8 | SI Remote/Recent onset 역전, markdown 잔여물 |
+| A-3 Informants | 5 | 5 | — |
+| A-4 Present Illness | 11 | 12 | 마지막 문장 절대 날짜 1건 |
+| A-5 Past/Family Hx | 5 | 5 | — |
+| A-6 Personal History | 5 | 5 | — |
+| A-7 MSE | 7.5 | 8 | Insight 단계 GS와 다름 (부분점수) |
+| A-8 Diagnostic Formulation | 4 | 4 | — |
+| A-9 Progress Notes | 0 | 8 | ★ 섹션 완전 누락 (HTML 변환 버그) |
+| A-10 Case Formulation | 5 | 5 | — |
+| A-11 Psychodynamic | 5 | 5 | — |
+
+#### Tier 판정
+
+90.5점 ≥ 75점 → **✅ Tier 3 진행 가능**
+단, A-9 Progress Notes HTML 누락 버그(s34-c4) 수정 후 E2E 재확인 필요
+
+#### Critical Issues
+
+| 심각도 | 위치 | 내용 |
+|--------|------|------|
+| CRITICAL | A-9 Progress Notes | HTML 변환 노드에서 Progress Notes 섹션 렌더링 블록 누락 |
+| HIGH | A-7 MSE Impulsivity | SA(+) 기재 — 자해(self-harm)와 자살시도(suicide attempt) 혼동 |
+| HIGH | A-2 Chief Problems | SI Remote/Recent onset 시간 역전 (4개월/6개월) |
+| MEDIUM | 다수 섹션 | markdown 잔여물(**...**,  \-) HTML에 리터럴 노출 |
+
+#### 다음 작업 (이번 세션)
+
+- s34-c4 HTML 변환 노드: Progress Notes 렌더링 블록 추가
+- s34-c4: markdown 잔여물 후처리 regex 추가
+- S06 MSE 프롬프트: SA vs self-harm 구분 규칙 추가 (※ A-7 MSE = S06, S07은 Mood Chart)
+
+---
+
 ### 세션 13 — Phase 2 QC, S10 버그 수정, HTML 폴더 버그 수정 (2026-04-02)
 
 #### 작업 내용
@@ -69,6 +166,156 @@
 - JSON 초안 파일: Drive 저장 확인 ✅
 - Hallucination 검증: 정상 실행 확인 ✅
 - 완성도: 67~79% (Pin된 섹션 수에 따라 변동)
+
+---
+
+### 세션 17 — Tier 2 Step 2-4 완료: S01 프롬프트 수정 + n8n 업데이트 (2026-04-02)
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| Step 2-4: S01 프롬프트 저장 | `docs/prompts/system_prompt_section_01.md` 전체 교체 (310줄) | ✅ 완료 |
+| Step 2-4: S01 n8n 업데이트 | Sub-WF `nJLVKGu1Ngh9C3pl` AI Agent `AI 보고서 생성` systemMessage 교체 | ✅ 완료 |
+
+#### S01 주요 변경사항
+
+| 항목 | 내용 |
+|------|------|
+| 병전 성격 서술형 강화 | §4 규칙 8에 단어·형용사 나열 절대 금지 명시 + ❌/✅ 예시 추가 |
+| 간접화법 필수 | "~이었다고 한다", "~라고 한다" 완전 문장 최소 2문장 이상 규칙 신설 |
+| Gold Standard 체크포인트 | §5에 병전 성격 판단 기준 (`❌ "내성적, 꼼꼼함"` → `✅ "~이었다고 한다. ~라고 한다."`) 명시 |
+| Error Handling §10 | 병전 성격 1문장 미만 시 "[정보 없음]" 처리 규칙 추가 |
+
+#### 검증 결과
+
+| Sub-WF | 체크 항목 | 결과 |
+|--------|----------|:----:|
+| S01 (`nJLVKGu1Ngh9C3pl`) | `병전 성격` 서술형 규칙 존재 (13곳) | ✅ |
+| S01 | `단어·형용사 나열 절대 금지` 존재 | ✅ |
+| S01 | `간접화법` 규칙 존재 | ✅ |
+| S01 | 첫 줄 `# I. Identifying Data 시스템 프롬프트` | ✅ |
+
+#### 다음 작업
+
+- **Tier 2 Step 2-5**: n8n 일괄 반영 확인 + E2E 테스트 (S01~S09 수정 프롬프트 통합 검증)
+
+---
+
+### 세션 16 — Tier 2 Step 2-3 완료: S02/S09 프롬프트 수정 + n8n 업데이트 (2026-04-02)
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| Step 2-3: S02 프롬프트 저장 | `docs/prompts/system_prompt_section_02.md` 전체 교체 | ✅ 완료 |
+| Step 2-3: S09 프롬프트 저장 | `docs/prompts/system_prompt_section_09.md` 전체 교체 | ✅ 완료 |
+| Step 2-3: S02 n8n 업데이트 | Sub-WF `TifgZTXdSNW9Gtlh` AI Agent systemMessage 교체 | ✅ 완료 |
+| Step 2-3: S09 n8n 업데이트 | Sub-WF `4VyEFSX0H0FD2ilK` AI Agent systemMessage 교체 (§7 제외) | ✅ 완료 |
+
+#### S02 주요 변경사항
+
+| 항목 | 내용 |
+|------|------|
+| 절대날짜 금지 강화 | §2 규칙 4에 구체적 예시 추가 ("2023년 3월", "2026년 3월 20일" 등) |
+| Onset 단독 조건 명시 | 발병 1회: `Onset)` 단독 / 발병 2회+: `Remote/Recent` 이분법 선택 테이블 추가 |
+| 판단 불가 시 fallback | `Onset)` 단독 + meta.missing_items "Remote/Recent 구분 확인 필요" |
+| 입력 절대날짜 처리 | Error Handling §11: 역산 변환 + narrative/structured 어디에도 원본 날짜 출력 금지 |
+
+#### S09 주요 변경사항
+
+| 항목 | 내용 |
+|------|------|
+| 절대날짜 금지 강화 | §2 규칙 4에 "내원 N일/N개월/N년 전" (N일 단위 추가) + 구체적 예시 |
+| FCAB Affect 최소 3문장 | §4 A(Affect) 단락 작성 규칙 신설: 단락 내 정동 서술 최소 3문장, 1~2문장 요약 금지 |
+| 체크포인트 업데이트 | §5 형식 준수 체크포인트에 "각 단락 내 정동(A) 관련 문장 최소 3개 이상" 추가 |
+| Error Handling §13 신설 | Affect 서술 1~2문장 짧을 때 처리 규칙 (동일 블록 추가 서술 / "[정동 추가 확인 필요]") |
+
+#### 검증 결과
+
+| Sub-WF | 체크 항목 | 결과 |
+|--------|----------|:----:|
+| S02 (`TifgZTXdSNW9Gtlh`, versionCounter: 19) | `Onset)` 단독 텍스트 존재 | ✅ |
+| S02 | `Remote onset)` 이분법 텍스트 존재 | ✅ |
+| S02 | 절대날짜 금지 규칙 존재 | ✅ |
+| S02 | 첫 줄 `# II. Chief Problems and Durations 시스템 프롬프트` | ✅ |
+| S09 (`4VyEFSX0H0FD2ilK`, versionCounter: 14) | `내원 N일` 시간 단위 존재 | ✅ |
+| S09 | `최소 3문장` Affect 규칙 존재 | ✅ |
+| S09 | 절대날짜 금지 강화 존재 | ✅ |
+| S09 | 첫 줄 `# III. Present Illness 시스템 프롬프트` | ✅ |
+| S09 | §7 Mock 데이터 systemMessage 미포함 | ✅ |
+
+#### Claude.ai 검토 권고 대응
+
+> Claude.ai에서 제안한 2개 권고 사항에 대한 결정:
+
+**권고 1: S09 "N일" 단위 추가 → S02 불일치 가능성**
+- **결정**: 현 시점 S02 수정 보류
+- **이유**: S02 onset은 증상 발병 시점(통상 수개월~수년 단위). "내원 5일 전 자살 충동" 같은 케이스는 S09 Suicidal ideation Recent onset(예: "내원 1개월 전")과 별개의 사건으로 S08에서 처리됨. 실제 edge case 발생 시 Step 2-5 E2E에서 확인 후 추가 수정.
+
+**권고 2: FCAB Affect 3문장 — Gold Standard 초과 우려**
+- **결정**: 현행 유지 + E2E에서 분량 모니터링
+- **이유**: Gold Standard 단락 2("별거 후")는 정동 표현이 압축적이나, QC 감점 원인이 "Affect 단락 1~2문장 짧음"이었으므로 3문장 기준 유지. E2E(Step 2-5)에서 단락 분량이 Gold Standard 대비 1.5배 초과 시 "2~3문장" 완화 검토.
+
+#### 다음 작업
+
+- **Tier 2 Step 2-4**: S01 Identifying Data 프롬프트 수정 (Claude.ai → Claude Code)
+- 준비물: Claude.ai에서 수정된 section_01.md 제공
+
+---
+
+### 세션 15 — Tier 2 Step 2-1 + Step 2-2 완료: S06/S08 프롬프트 수정 + n8n 업데이트 (2026-04-02)
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| GitHub pull | origin/master 최신 5커밋 동기화 | ✅ 완료 |
+| Step 2-1: S06 MSE 프롬프트 저장 | `docs/prompts/system_prompt_section_06.md` (531줄) 저장 | ✅ 완료 |
+| Step 2-1: S06 n8n 업데이트 | Sub-WF `Qp0IXqsbounP2X1l` AI Agent systemMessage 교체 | ✅ 완료 |
+| Step 2-2: S08 Progress Notes 프롬프트 저장 | `docs/prompts/system_prompt_section_08.md` (416줄) 저장 | ✅ 완료 |
+| Step 2-2: S08 n8n 업데이트 | Sub-WF `lbr2QAXPhX80MuZG` AI Agent systemMessage 교체 | ✅ 완료 |
+
+#### Step 2-1: S06 MSE 프롬프트 주요 변경사항
+
+| 항목 | 내용 |
+|------|------|
+| Mood 표준 어휘 | depressed/euthymic/euphoric + irritable/not irritable + anxious/sl. anxious/not anxious (3요소 조합) |
+| Affect 표준 어휘 | appropriate/inappropriate + adequate/inadequate + broad/restricted/flat/blunted/labile (3요소 조합) |
+| Insight 7단계 | 1-Complete denial ~ 7-True emotional insight 전체 목록 추가 |
+| Impulsivity 형식 | 6줄 고정 형식 (SI/SA/SP/HI +/- + 자살 위험도 상/중/하) |
+
+#### Step 2-1 검증 결과 (S06, `Qp0IXqsbounP2X1l`, versionCounter: 9→10)
+
+| 체크 | 결과 |
+|------|:----:|
+| "Mood 표준 어휘 목록" 존재 | ✅ |
+| "Insight 7단계 전체 목록" 존재 | ✅ |
+| "자살 위험도 판정 기준" 존재 | ✅ |
+| 첫 줄 `# VI. Mental Status Examination 시스템 프롬프트` | ✅ |
+
+#### Step 2-2: S08 Progress Notes 프롬프트 주요 변경사항
+
+| 항목 | 내용 |
+|------|------|
+| 입원/외래 분기 | `admission_date` 필드 유무로 판정: 존재 → HD#, 없음/null → OPD# |
+| OPD# 산정 기준 | 면담 배열 순서 기준 (첫 면담 = OPD #1) |
+| `meta.is_outpatient` 키 추가 | 외래 환자 시 true, Output Format + Error Handling §7 업데이트 |
+| P-02 준수 | `notes[].hospital_day` 키 이름 변경 없음 (OPD# 값도 동일 키에 저장) |
+
+#### Step 2-2 검증 결과 (S08, `lbr2QAXPhX80MuZG`, versionCounter: →10)
+
+| 체크 | 결과 |
+|------|:----:|
+| "OPD #N" 텍스트 존재 | ✅ |
+| "is_outpatient" 텍스트 존재 | ✅ |
+| "입원/외래 판정" 텍스트 존재 | ✅ |
+| 첫 줄 `# VIII. Progress Notes 시스템 프롬프트` | ✅ |
+
+#### 다음 작업
+
+- **Tier 2 Step 2-3**: S02 Chief Problems + S09 Present Illness 프롬프트 수정 (Claude.ai → Claude Code)
+- 준비물: Claude.ai에서 수정된 section_02.md + section_09.md 전문 제공
 
 ---
 

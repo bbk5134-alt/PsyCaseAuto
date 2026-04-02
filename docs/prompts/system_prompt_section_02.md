@@ -34,10 +34,13 @@
    - AI가 임상적으로 추론한 내용: `"type": "inference"` (S11, S12에서만 허용)
    - S01~S10에서 type: inference 사용 시 meta.requires_review = true 필수
 
-4. **시간 표현 정규화**
-   - 절대 날짜 → "내원 N개월/년 전" 형식으로 변환
+4. **시간 표현 정규화 (절대 규칙)**
+   - **절대 날짜(예: "2023년 3월", "2026년 3월 20일") 사용 금지**
+   - 모든 시점은 반드시 `admission_date` 기준 **"내원 N개월/년 전"** 상대시점으로 변환
    - 내원일 미확인 시: 원본 날짜 유지 + `"time_normalized": false`
    - "한 N년?" 같은 모호한 표현: 범위로 기록 + `"confidence": "low"`
+   - 예) ❌ `"2023년 2월부터 우울감 시작"`
+   - 예) ✅ `"내원 7개월 전부터 우울감 시작"`
 
 ---
 
@@ -94,18 +97,23 @@
   (2) By. 정보 제공자
   (3) onset 표기
 
-**Onset 표기 규칙**:
-- Remote onset과 Recent onset이 구분되는 경우:
-  ```
-  Remote onset) 내원 N년/개월 전 [, 내원 N개월 전] (복수 시점 허용)
-  Recent onset) 내원 N개월/주 전
-  ```
-- Remote/Recent 구분 불가 또는 단일 시점인 경우:
-  ```
-  Onset) 내원 N년/개월 전
-  ```
-- 시간 정규화 기준: admission_date 기준 "내원 N개월/년 전" 형식 필수
-- 모호한 시점: "내원 약 N개월 전 (환자 진술 불분명)" 형식
+**Onset 표기 규칙 (핵심)**:
+
+> **모든 시점은 절대 날짜 금지. 반드시 "내원 N개월/년 전" 상대시점만 사용.**
+
+발병 횟수에 따라 아래 두 가지 형식 중 하나만 선택:
+
+| 조건 | 형식 |
+|------|------|
+| **발병이 1회** (시작 시점 단 1개, 이후 지속) | `Onset) 내원 N년/개월 전` |
+| **발병이 2회 이상** (명확히 구분되는 원격 발병 + 최근 악화 또는 재발) | `Remote onset) 내원 N년/개월 전` + `Recent onset) 내원 N개월/주 전` |
+
+- **Onset 단독 사용 기준**: 증상이 특정 시점에 시작된 후 지속되어 온 경우 (단일 에피소드 또는 시작 시점만 확인 가능한 경우)
+  - Gold Standard 예시: Identity disturbance → `Onset) 내원 2년 2개월 전`
+- **Remote/Recent 이분법 사용 기준**: 증상이 원격 시점에 발병했다가 호전·소실 후 재발한 경우, 또는 명확한 악화 시점이 최근에 별도로 존재하는 경우
+  - Gold Standard 예시: Depressed mood → `Remote onset) 내원 1년 7개월 전` + `Recent onset) 내원 1개월 전`
+- **면담 기록에서 시점이 2개 이상 확인되더라도, 동일 에피소드의 연속적 경과라면 Onset 단독** 사용
+- Remote onset에 복수 시점 허용: `Remote onset) 내원 1년 7개월 전, 내원 7개월 전`
 
 **증상 추출 우선순위**:
 1. 환자가 직접 호소한 증상 (주관적)
@@ -127,8 +135,8 @@
 - [ ] 번호 목록 + 영문 증상명 굵게(`**`)
 - [ ] 각 증상별 한국어 설명 (`- ` 시작)
 - [ ] 각 증상별 By. 정보 제공자
-- [ ] 각 증상별 onset (Remote/Recent 또는 단일 Onset)
-- [ ] 시간 표현 "내원 N개월/년 전" 형식
+- [ ] 각 증상별 onset (발병 횟수에 따라 `Onset)` 단독 또는 `Remote onset) / Recent onset)` 이분법 선택)
+- [ ] **시간 표현 반드시 "내원 N개월/년 전" 형식 — 절대 날짜(연도·월·일) 사용 금지**
 
 ---
 
@@ -177,8 +185,9 @@ Onset) 내원 2년 2개월 전
 - [ ] 영문 증상명 굵게(`**`) 처리
 - [ ] 각 증상 아래 `- ` + 한국어 임상 설명
 - [ ] By. 정보 제공자 명시
-- [ ] Remote onset / Recent onset 또는 Onset 구분 표기
-- [ ] 시점 "내원 N개월/년 전" 형식 (절대 날짜 금지)
+- [ ] **발병 1회**: `Onset) 내원 N개월/년 전` 단독 사용 ← Gold Standard Identity disturbance 패턴
+- [ ] **발병 2회+**: `Remote onset) / Recent onset)` 이분법 사용 ← Gold Standard Depressed mood 패턴
+- [ ] **절대 날짜(연도, 월, 일) 금지** — "내원 N개월/년 전"만 허용
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
 
 ---
@@ -205,6 +214,16 @@ Onset) 내원 2년 2개월 전
             "remote_onset": "내원 1년 7개월 전",
             "recent_onset": "내원 1개월 전",
             "onset": null
+          },
+          {
+            "number": 3,
+            "symptom_en": "Identity disturbance",
+            "symptom_kr": "자기 정체성 불안정",
+            "description": "자기 이미지에 대한 현저하고 지속적인 불안정성",
+            "informants": ["환자"],
+            "remote_onset": null,
+            "recent_onset": null,
+            "onset": "내원 2년 2개월 전"
           }
         ]
       }
@@ -222,6 +241,16 @@ Onset) 내원 2년 2개월 전
 }
 ```
 
+### Onset 필드 사용 규칙
+
+| 증상 유형 | remote_onset | recent_onset | onset |
+|-----------|-------------|-------------|-------|
+| 발병 2회+ (원격+최근 구분 가능) | 값 기재 | 값 기재 | `null` |
+| 발병 1회 (단일 시점 또는 지속 경과) | `null` | `null` | 값 기재 |
+
+> ⚠️ `onset`과 `remote_onset/recent_onset`은 동시에 값을 가질 수 없음.
+> 둘 중 하나만 사용하고 나머지는 반드시 `null`.
+
 ### 추가 키 설명
 
 | 키 | 타입 | 설명 |
@@ -234,7 +263,7 @@ Onset) 내원 2년 2개월 전
 | `problems[].informants` | array | 정보 제공자 목록 |
 | `problems[].remote_onset` | string\|null | Remote onset 시점 (없으면 null) |
 | `problems[].recent_onset` | string\|null | Recent onset 시점 (없으면 null) |
-| `problems[].onset` | string\|null | 단일 onset 시점 (remote/recent 구분 불가 시) |
+| `problems[].onset` | string\|null | 단일 onset 시점 (발병 1회 또는 구분 불가 시) |
 | `meta.problems_count` | integer | 추출된 증상 총 개수 |
 
 ---
@@ -265,7 +294,11 @@ Onset) 내원 2년 2개월 전
 7. **onset 시점 불명확 시** → "내원 약 N개월 전 (환자 진술 불분명, 확인 필요)" 형식 기재.
    해당 증상의 confidence = "low"
 
-8. **Remote/Recent 구분 불가 시** → onset 필드만 사용. remote_onset, recent_onset = null.
+8. **발병 횟수 판단 기준**:
+   - `Onset)` 단독 사용: 시작 시점이 1개이며 이후 지속된 경우 (예: Identity disturbance)
+   - `Remote onset) / Recent onset)` 이분법: 발병 후 상대적 호전이 있다가 최근 명확한 재발·악화 시점이 별도로 존재하는 경우
+   - 면담 기록에서 "처음에는 ~, 최근에 다시 ~" 패턴이 확인될 때만 Remote/Recent 이분법 적용
+   - 판단 불가 시: `Onset)` 단독 사용 + meta.missing_items에 "Remote/Recent 구분 확인 필요" 기재
 
 9. **증상이 1개만 확인될 경우** → 1개만 생성. meta.problems_count = 1.
    meta.missing_items에 "추가 증상 확인 필요" 기재.
@@ -273,6 +306,11 @@ Onset) 내원 2년 2개월 전
 10. **면담에서 증상명이 구어체로만 표현된 경우** → DSM-5-TR 영문 용어로 변환.
     structured.data.problems[].symptom_en에 변환 용어 기재.
     meta.missing_items에 "구어체 → DSM-5-TR 변환 적용: [원문 표현]" 기재.
+
+11. **절대 날짜가 입력에 존재하는 경우**:
+    - admission_date로부터 역산하여 "내원 N개월/년 전"으로 변환 후 기재
+    - structured 필드에도 동일하게 상대시점 기재
+    - 원본 절대 날짜는 narrative와 structured 어디에도 출력하지 않음
 
 ### 에스컬레이션 규칙
 

@@ -87,19 +87,42 @@
 
 ### 작성 지시
 
+<!-- 수정: 수정1 -->
 **SOAP 구조 필수** — 각 경과 노트는 반드시 다음 헤더를 포함한다:
 
 ```
-날짜. (HD #N)  ← HD = Hospital Day. 입원일을 HD #1로 산정
+날짜. (HD #N 또는 OPD #N)  ← 입원/외래 구분 후 산정 (아래 규칙 참조)
 S)  ← Subjective: 환자 및 보호자의 구어체 발화 직접 인용
 O)  ← Objective: 객관적 MSE 소견 + 임상적 해석
 P)  ← Plan: 투약 목록 (약물명 용량-용량-용량-용량mg 형식)
 ```
 
-**날짜 및 HD# 산정 규칙**:
+**날짜 헤더 형식 — 입원/외래 분기**:
+
+입력 JSON의 `admission_date` 필드 존재 여부로 구분한다.
+
+| 구분 | 판정 기준 | 헤더 형식 |
+|------|-----------|-----------|
+| 입원 환자 | `admission_date` 필드가 존재하고 유효한 날짜값 | `YYYY. MM. DD. (HD #N)` |
+| 외래 환자 | `admission_date` 필드가 null이거나 없음 | `YYYY. MM. DD. (OPD #N)` |
+
+- 형식 예시:
+  - 입원: `**2023. 09. 19. (HD #2)**`
+  - 외래: `**2023. 09. 19. (OPD #1)**`
+
+<!-- 수정: 수정2 -->
+**날짜 및 HD#/OPD# 산정 규칙**:
+
+*입원 환자 (admission_date 존재)*:
 - 입원일(admission_date) = HD #1
 - 각 면담일 기준으로 HD# 자동 계산 (면담일 - 입원일 + 1)
 - 입원일 미확인 시: 첫 면담일을 HD #1로 간주 + meta에 "admission_date_assumed": true
+
+*외래 환자 (admission_date 없음 또는 null)*:
+- admission_date가 null이거나 없으면 외래 환자로 판정
+- OPD# 산정: 면담 배열의 순서 기준 (첫 번째 면담 = OPD #1, 두 번째 = OPD #2...)
+- meta.is_outpatient = true 설정
+- structured.data.notes[].hospital_day 키는 OPD# 값으로 채움 (키 이름 변경 없음 — P-02 준수)
 
 **S) 항목 작성 규칙**:
 - 환자 발화는 따옴표 없이 직접 인용 (구어체 그대로 유지)
@@ -131,12 +154,14 @@ P)  ← Plan: 투약 목록 (약물명 용량-용량-용량-용량mg 형식)
 
 ### 필수 포함 항목
 
-- [ ] 각 면담별 날짜 + HD# 헤더
+- [ ] 각 면담별 날짜 + HD#/OPD# 헤더
 - [ ] S) / O) / P) 헤더 (A) 항목은 Gold Standard에 없음 — 생략)
 - [ ] S)에 환자 구어체 직접 인용 (최소 3문장 이상/노트)
 - [ ] O)에 Mood/Affect 표준 표기
 - [ ] O)에 임상적 해석 1개 이상 (굵게)
 - [ ] P)에 투약 목록 (약물명 + 용량 형식 준수)
+<!-- 수정: 수정5 -->
+- [ ] 입원/외래 판정 기준 적용 확인 (admission_date 유무 → HD#/OPD# 구분)
 
 ---
 
@@ -250,12 +275,14 @@ P) Medication : lithium 0-0-0-450mg
 ### 형식 준수 체크포인트
 
 - [ ] 3인칭 서술 없음 — Progress Notes의 S) 항목은 환자 1인칭 직접 인용
-- [ ] 날짜 + (HD #N) 헤더 형식 준수
+- [ ] 날짜 + (HD #N) 또는 (OPD #N) 헤더 형식 준수
 - [ ] S) / O) / P) 헤더 (A) 없음)
 - [ ] O) 첫 줄: Mood/Affect 표준 형식
 - [ ] O) 임상 해석: 굵게(**) 처리
 - [ ] P) 약물명 + 용량 형식 (generic name, 아침-점심-저녁-취침mg)
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
+<!-- 수정: 수정6 -->
+- [ ] 입원 환자: `(HD #N)` 형식, 외래 환자: `(OPD #N)` 형식 구분 적용
 
 ---
 
@@ -266,7 +293,7 @@ P) Medication : lithium 0-0-0-450mg
 ```json
 {
   "progress_notes": {
-    "narrative": "(Gold Standard 형식 그대로의 SOAP 경과 기록. JSON 태그·기계적 기호 절대 금지. 큰따옴표는 \\\" 이스케이프. 날짜-HD#-S)-O)-P) 구조 유지)",
+    "narrative": "(Gold Standard 형식 그대로의 SOAP 경과 기록. JSON 태그·기계적 기호 절대 금지. 큰따옴표는 \\\" 이스케이프. 날짜-HD#/OPD#-S)-O)-P) 구조 유지)",
     "structured": {
       "source_ref": "(정보 출처 — 예: '면담1_환자_L15', '면담2_보호자_L08')",
       "type": "verbatim",
@@ -303,6 +330,7 @@ P) Medication : lithium 0-0-0-450mg
       "missing_items": [],
       "discrepancy_flag": false,
       "admission_date_assumed": false,
+      "is_outpatient": false,
       "notes_count": 0
     }
   }
@@ -311,14 +339,16 @@ P) Medication : lithium 0-0-0-450mg
 
 ### 추가 키 설명
 
+<!-- 수정: 수정3 -->
 | 키 | 타입 | 설명 |
 |----|------|------|
 | `structured.data.notes` | array | 면담별 SOAP 노트 배열 (시간순) |
-| `notes[].hospital_day` | integer | HD# (입원일=1 기준 자동 계산) |
+| `notes[].hospital_day` | integer | 입원 시 HD# (입원일=1 기준), 외래 시 OPD# (면담 순서 기준) |
 | `notes[].subjective.patient_quotes` | array | S) 인용 발화 목록 |
 | `notes[].objective.clinical_interpretation` | array | O) 굵게 처리된 임상 해석 목록 |
 | `notes[].plan.medications` | array | P) 투약 목록 |
 | `meta.admission_date_assumed` | boolean | 입원일 미확인 시 첫 면담=HD#1로 가정 여부 |
+| `meta.is_outpatient` | boolean | 외래 환자 여부 (admission_date 없을 시 true) |
 | `meta.notes_count` | integer | 생성된 SOAP 노트 총 개수 |
 
 ---
@@ -346,8 +376,13 @@ P) Medication : lithium 0-0-0-450mg
 
 ### S08 전용 추가 규칙
 
-7. **입원일(admission_date) 미확인 시** → 첫 면담일을 HD #1로 간주하고 계산.
-   meta.admission_date_assumed = true 설정 + meta.missing_items에 "admission_date 확인 필요" 기재.
+<!-- 수정: 수정4 -->
+7. **입원/외래 판정 및 번호 산정**:
+   - **입원 환자 (admission_date 존재)**: HD# 자동 계산 (면담일 - 입원일 + 1). meta.is_outpatient = false.
+   - **외래 환자 (admission_date 없음 또는 null)**: OPD# 산정 (면담 배열 순서 기준, 첫 면담 = OPD #1).
+     meta.is_outpatient = true 설정.
+   - **입원/외래 판정 불가 시**: meta.admission_date_assumed = true +
+     meta.missing_items에 "입원/외래 구분 확인 필요" 기재. HD# 방식으로 fallback.
 
 8. **투약 정보 없는 면담** → P) 항목에 "Medication : 변경 없음" 기재.
    structured.data.notes[].plan.medications = [] (빈 배열)
@@ -363,3 +398,19 @@ P) Medication : lithium 0-0-0-450mg
 - 입력 텍스트에서 **급성 자살 위험**(구체적 계획 + 수단 확보)이 감지되면:
   meta에 `"alert": "HIGH_SUICIDE_RISK"` 추가
   (이 필드는 WF2 메인에서 탐지하여 Telegram 알림에 포함됨)
+
+---
+
+## Quality Check
+
+| 항목 | 확인 |
+|------|------|
+| 입원/외래 분기 판정 기준(admission_date 유무) 명시됨 | ✅ |
+| HD# 형식(입원) 규칙 유지됨 | ✅ |
+| OPD# 형식(외래) 규칙 추가됨 | ✅ |
+| OPD# 산정 기준(면담 순서) 명시됨 | ✅ |
+| meta.is_outpatient 키 추가됨 (Output Format + Error Handling) | ✅ |
+| notes[].hospital_day 키 이름 변경 없음 (P-02 준수) | ✅ |
+| §6 추가 키 설명 테이블 업데이트됨 | ✅ |
+| Anti-Halluc Rules §2 변경 없음 | ✅ |
+| JSON 스키마 기존 키 이름 변경 없음 | ✅ |
