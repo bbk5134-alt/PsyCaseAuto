@@ -14,9 +14,7 @@
 | **Where** | 개인 핫스팟 환경 (병원 네트워크 미사용) |
 | **How** | n8n 워크플로우 → Railway 배포, AI 초안 → 전공의 검토/수정 → 발표용 완성 (§18) |
 
-**최우선 품질 기준**:
-1. **Hallucination 절대 방지** — 면담에 없는 내용을 지어내지 않는 것
-2. **형식 재현도** — Gold Standard(원본 보고서)와 동일한 형식 출력
+**최우선 품질 기준**: ① Hallucination 절대 방지 ② Gold Standard와 동일한 형식 출력
 
 ---
 
@@ -24,133 +22,92 @@
 
 ```
 psychiatric interview automation/
-├── CLAUDE.md                 ← 이 파일
-├── .claude/
-│   └── settings.local.json
-├── docs/                     ← 설계·참조 문서
-│   ├── PROJECT_PLAN_v3.1.md  ← SSoT (전체 설계, v3.1 Final)
-│   ├── PROGRESS_LOG.md       ← 세션별 진척 기록
-│   ├── system_prompt_case_conference.md  ← AI 프롬프트 원본 (Mode A/B, 참조용)
-│   ├── quality_check_prompt.md          ← QC 채점 프롬프트 (100점)
-│   └── prompts/              ← 섹션별 Sub-WF 프롬프트 (v3.1 Dual-Layer)
-│       ├── system_prompt_section_01.md  ~ section_12.md  ← 제작 예정
+├── CLAUDE.md
+├── docs/
+│   ├── PROJECT_PLAN_v3.1.md        ← SSoT (전체 설계, D-01~D-32)
+│   ├── PROGRESS_LOG.md             ← 세션별 진척 기록
+│   ├── milestone.md                ← 단계별 작업 계획 (Tier 1~4, Step 단위)
+│   ├── system_prompt_quality_check_v2.md  ← QC 채점 프롬프트 (100점, v2.0)
+│   └── prompts/                    ← 섹션별 Sub-WF 프롬프트 (v3.1 Dual-Layer)
+│       └── system_prompt_section_01.md ~ section_12.md  ← 12개 완성
 ├── config/
-│   └── psych_terms_dictionary.json      ← 정신과 용어 교정 사전
-├── n8n_workflows/            ← n8n JSON 워크플로우
-│   ├── wf1b_stt_pipeline.json           ← WF1-B (STT, 활성)
-│   ├── wf2_main_report.json             ← WF2 메인 (71노드, 활성)
-│   ├── sub_wf_s01_s08.json              ← Sub-WF S01~S08 백업
-│   ├── sub_wf_s09_s12.json              ← Sub-WF S09~S12 백업
-│   ├── wf3_error_workflow.json          ← WF3 (에러 처리)
-│   ├── wf_telegram_ping_test.json
-│   └── wf_gdrive_init.json
-├── frontend/                 ← Netlify 배포 대상
+│   └── psych_terms_dictionary.json
+├── n8n_workflows/
+│   ├── wf1b_stt_pipeline.json
+│   ├── wf2_main_report.json        ← WF2 메인 (72노드)
+│   ├── sub_wf_s01_s08.json
+│   └── sub_wf_s09_s12.json
+├── frontend/
 │   └── psychiatric_interview_checklist_v2.html
-├── test_data/                ← E2E 테스트용 mock 데이터
-│   └── PT-2026-001/
-│       ├── UPLOAD_GUIDE.md
-│       └── interviews/
-│           ├── stt_20260320.json        ← 초진 면담 mock
-│           └── stt_20260328.json        ← 경과 면담 mock
-├── Dockerfile
-├── railway.toml
-├── .env.example              ← 환경변수 Single Source
-└── .gitignore
+├── test_data/PT-2026-001/interviews/
+│   ├── stt_20260320.json           ← 초진 면담 mock
+│   └── stt_20260328.json           ← 경과 면담 mock
+└── .env.example                    ← 환경변수 Single Source
 ```
 
 ---
 
 ## 핵심 의사결정 (확정 — 재논의 금지)
 
-> D-번호 canonical: `docs/PROJECT_PLAN_v3.1.md` §2가 유일한 권위입니다.
+> **전체 D-01~D-32**: `docs/PROJECT_PLAN_v3.1.md` §2가 유일한 canonical 소스.
+> 아래는 작업 시 가장 자주 참조하는 핵심 결정만 발췌.
 
-| # | 결정 | 이유 |
-|---|------|------|
-| D-01 | 데이터 수집(WF1)과 보고서 생성(WF2) 별도 워크플로우 | 면담은 여러 번, 보고서는 종합 1회 |
-| D-02 | 보고서 12개 섹션을 각각 별도 AI 호출 | Lost-in-the-Middle 방지, Hallucination 감소 |
-| D-03 | 저장소는 Google Drive (JSON 파일) | Sheets 셀 크기 제한 회피 |
-| D-06 | 환자 식별은 코드 기반 (PT-YYYY-NNN) | 개인정보보호, 실명 사용 금지 |
-| D-12 | Present Illness는 FCAB 구조 | Fact→Cognition→Affect→Behavior |
-| D-20 | HTML 보고서 출력 (DOCX 아닌) | Railway n8n에 docx npm 없음. GDrive convert로 Docs 변환 |
-| **D-21** | **Sub-WF 출력은 Dual-Layer (narrative + structured + meta)** | **형식은 생성 단계에서 해결. HTML 변환은 narrative를 이어 붙이기만** |
-| **D-22** | **Quality Check는 수동 QA. WF2 Halluc Check 대체 안 함** | **목적 다름: Halluc=안전(자동), QC=형식(수동)** |
-| **D-26** | **Phase 2 릴레이에서 의존 데이터 null 방어 필수** | **S02 실패 시 S09가 undefined 수신 방지** |
-| **D-27** | **AI 모델 업데이트 시 Quality Check 필수 재실행** | **형식 regression 감지** |
-
-> 전체 의사결정 로그 (D-01 ~ D-32): `docs/PROJECT_PLAN_v3.1.md` §2 참조.
+| # | 결정 |
+|---|------|
+| D-02 | 12개 섹션 각각 별도 AI 호출 (Lost-in-Middle 방지) |
+| D-21 | Sub-WF 출력: Dual-Layer (narrative + structured + meta). narrative에 JSON 태그 금지 |
+| D-26 | Phase 2 릴레이: 의존 데이터 null 방어 필수 (`?.` + `[SYSTEM NOTE]` fallback) |
+| D-29 | AI 호출: AI Agent 노드 사용 (HTTP Request 직접 호출 금지) |
+| D-31 | n8n `__rl` ResourceLocator 필드는 도트 표기법 업데이트 불가 → Code 노드 출력에서 전달 |
+| D-32 | WF2 Pin 대상: Execute Workflow 노드만 (Drive·Telegram·외부 API 노드 Pin 금지) |
 
 ---
 
 ## 현재 진행 상태
 
-| WF | 이름 | 상태 | 비고 |
-|----|------|:----:|------|
-| WF3 | Error Workflow | ✅ 완료 | Telegram 에러 알림 |
-| WF1-B | STT 녹음 파이프라인 | ✅ 완료 | E2E 통과, 활성 |
-| WF1-A | 설문지 경로 | ⬜ 미착수 | HTML Webhook → GDrive 저장 (**보고서 품질 향상의 전제 조건** §19) |
-| WF2 | 보고서 생성 메인 | ✅ **E2E 완료** | 72노드, HTML 정상 저장 확인 (세션 13) |
-| — | Sub-WF 프롬프트 v3.1 | ✅ 완료 | Dual-Layer 12개 전체 완성 |
-| — | Sub-WF S01~S12 AI Agent 전환 | ✅ 완료 | 세션 10~11 완료 |
-| — | Halluc 검증 → Gemini Flash | ✅ 완료 | M8 작업 1 완료 (세션 10) |
-| — | S10 maxTokensToSample 버그 수정 | ✅ 완료 | 2048 → 8192 (세션 13) |
-| — | HTML 폴더 저장 버그 수정 | ✅ 완료 | s34-c4 Code 노드 수정 (세션 13) |
-| — | E2E 테스트 (Phase 1+2) | ✅ **완료** | HTML PT-2026-001/reports/ 정상 저장 확인 |
-| — | Phase 2 QC (S09~S12) | ✅ 완료 | 24.5/26 (94%) — 세션 13 |
-| — | 전체 QC (A+B+C, Halluc 포함) | 🔴 **미완료** | Halluc Check C섹션 채점 필요 |
-| — | S09 프롬프트 개선 | 🔴 대기 | 절대날짜 → 상대시점, FCAB Affect 3문장+ |
+| 항목 | 상태 | 비고 |
+|------|:----:|------|
+| WF3 Error Workflow | ✅ | Telegram 에러 알림 |
+| WF1-B STT 파이프라인 | ✅ | E2E 통과 |
+| WF1-A 설문지 경로 | ⬜ | 미착수 — 보고서 품질 전제 조건 (milestone Step 4-3) |
+| WF2 보고서 생성 (72노드) | ✅ | E2E 완료, HTML 정상 저장 |
+| Sub-WF 프롬프트 12개 (Dual-Layer) | ✅ | 완성 |
+| Sub-WF S01~S12 AI Agent 전환 | ✅ | D-29 완료 |
+| Halluc 검증 → Gemini Flash | ✅ | D-30 완료 |
+| QC 1차 (55→62.5점 보정, C등급) | ✅ | 분석 완료, 프롬프트 수정 후 재채점 필요 |
+| **다음 작업** | 🔴 | `docs/milestone.md` Tier 1 Step 1-1부터 진행 |
 
-### Phase 2 QC 결과 (세션 13, 2026-04-02)
-
-| 섹션 | 만점 | 득점 | 비고 |
-|------|:----:|:----:|------|
-| S09 Present Illness | 12 | 10.5 | 상대시점·Affect 보강 필요 |
-| S10 Diagnostic Formulation | 3 | 3 | 만점 |
-| S11 Case Formulation | 5 | 5 | 만점 |
-| S12 Psychodynamic Formulation | 6 | 6 | 만점 |
-| **Phase 2 합계** | **26** | **24.5** | **94%** |
-
-### 1차 QC 결과 (2026-04-01, Dual-Layer 전 기준 — 구버전 참고용)
-
-| 대분류 | 만점 | 득점 | 비율 |
-|--------|:----:|:----:|:----:|
-| A. 형식 충실도 | 60 | 16.5 | 27.5% |
-| B. 사실 정확성 | 25 | 20 | 80.0% |
-| C. Halluc Check 실효성 | 15 | 8 | 53.3% |
-| **합계** | **100** | **44.5** | **44.5% (C등급)** |
-
-> ⚠️ 1차 QC는 Dual-Layer 전 구버전 기준. 현재 Dual-Layer + AI Agent 전환 후 전체 재채점 필요.
-
-> 세션별 상세 기록: `docs/PROGRESS_LOG.md` 참조.
+> QC 세부 결과: `docs/PROGRESS_LOG.md` 세션 13 참조.
 
 ---
 
 ## 기술 스택
 
-| 구성요소 | 기술 | 비고 |
-|---------|------|------|
-| 워크플로우 엔진 | n8n (Railway 배포) | 기존 결혼준비AI와 인스턴스 공유 |
-| STT | OpenAI gpt-4o-transcribe | `n8n HTTP Request` 노드 |
-| AI 보고서 | Claude Sonnet 4 (AI Agent 노드) | 섹션별 Sub-WF, Dual-Layer 출력 |
-| AI 검증 | Gemini Flash (AI Agent 노드) | Hallucination 검증 (10섹션, D-23, D-30) |
-| 저장소 | Google Drive (JSON/HTML) | OAuth2 연동 완료 |
-| 트리거/알림 | Telegram Bot (PsyCaseAuto 전용) | 2단계 알림 (🔄시작→✅완성+검증 통합, D-17) |
-| 프론트엔드 | HTML (Netlify) | 면담 체크리스트 |
+| 구성요소 | 기술 |
+|---------|------|
+| 워크플로우 엔진 | n8n (Railway 배포, 결혼준비AI 인스턴스 공유) |
+| STT | OpenAI gpt-4o-transcribe (`n8n HTTP Request`) |
+| AI 보고서 생성 | Claude Sonnet 4 (AI Agent 노드, 섹션별 Sub-WF) |
+| AI Halluc 검증 | Gemini 2.5 Flash (AI Agent 노드, 10섹션) |
+| 저장소 | Google Drive (JSON/HTML, OAuth2 완료) |
+| 트리거/알림 | Telegram Bot (PsyCaseAuto 전용, 2단계 알림) |
+| 프론트엔드 | HTML (Netlify, 면담 체크리스트) |
 
 ---
 
 ## 워크플로우 & 자격증명 레지스트리
 
-| 워크플로우 | ID | 상태 |
-|-----------|-----|------|
-| WF3 Error Workflow | `4ox2lxKl1st6pUkY` | ✅ 활성 |
-| WF1-B STT Pipeline | `XElVH6RbgWCGZcjO` | ✅ 활성 |
-| WF2 보고서 생성 메인 | `LiN5bKslyWtZX6yG` | ✅ 활성 |
+| 워크플로우 | ID |
+|-----------|-----|
+| WF3 Error Workflow | `4ox2lxKl1st6pUkY` |
+| WF1-B STT Pipeline | `XElVH6RbgWCGZcjO` |
+| WF2 보고서 생성 메인 | `LiN5bKslyWtZX6yG` |
 
 | 자격증명 | ID | 용도 |
 |---------|-----|------|
 | Telegram | `8T0Q83WRhTEEdvSL` | PsyCaseAuto Bot |
 | Google Drive | `fcKtWyui68XESQND` | Drive 읽기/쓰기 |
-| Anthropic | `RiXuEl0fGr0aAGNz` | Claude API (HTTP Request 헤더) |
+| Anthropic | `RiXuEl0fGr0aAGNz` | Claude API |
 
 ---
 
@@ -158,70 +115,33 @@ psychiatric interview automation/
 
 | 작업 | 참조 문서 |
 |------|----------|
+| **다음 할 일 확인** | `docs/milestone.md` (Tier 1~4, Step 단위) |
 | 전체 설계·아키텍처 | `docs/PROJECT_PLAN_v3.1.md` |
 | 이전 세션 작업 내용 | `docs/PROGRESS_LOG.md` |
-| AI 프롬프트 원본 (Mode A/B) | `docs/system_prompt_case_conference.md` |
-| 섹션별 Sub-WF 프롬프트 (v3.1) | `docs/prompts/system_prompt_section_XX.md` |
-| Quality Check 채점 프롬프트 | `docs/quality_check_prompt.md` |
-| n8n 설계 규칙 | 프로젝트 내 `n8n_워크플로우_스킬.md` |
+| 섹션별 Sub-WF 프롬프트 | `docs/prompts/system_prompt_section_XX.md` |
+| QC 채점 프롬프트 | `docs/system_prompt_quality_check_v2.md` |
 | 전공의 보고서 수정 절차 | `docs/PROJECT_PLAN_v3.1.md` §18 |
-| 알려진 제약·전제 조건 | `docs/PROJECT_PLAN_v3.1.md` §19 |
+| 알려진 제약·위험 | `docs/PROJECT_PLAN_v3.1.md` §15, §19 |
 | 환경변수 목록 | `.env.example` |
 
 ---
 
 ## 이 프로젝트의 특수 규칙
 
-1. **Hallucination 방지가 최우선**: 모든 AI 프롬프트에 Anti-Hallucination 규칙 최상단 배치. `source_ref` 태깅 필수. narrative에 source_ref 노출 금지.
-2. **Dual-Layer Output**: Sub-WF는 반드시 `narrative` (임상 산문) + `structured` (JSON 데이터) + `meta` (품질 메타)를 동시 반환. narrative에 JSON 구조 사용 금지.
-3. **Phase 2 null 방어 (D-26)**: S09~S12 릴레이에서 의존 섹션 결과가 null/빈 객체인지 검증, fallback 메시지 삽입.
-4. **환자 데이터 보호**: 실명 사용 금지, 코드 기반 식별(PT-YYYY-NNN), STT 후처리에서 실명 자동 치환.
+1. **Hallucination 방지 최우선**: 모든 AI 프롬프트에 Anti-Hallucination 규칙 최상단 배치. `source_ref` 태깅 필수. narrative에 source_ref 노출 금지.
+2. **Dual-Layer Output**: Sub-WF는 반드시 `narrative` + `structured` + `meta` 동시 반환. narrative에 JSON 구조 사용 금지.
+3. **Phase 2 null 방어 (D-26)**: S09~S12 릴레이에서 의존 섹션 null 검증 + `[SYSTEM NOTE]` fallback.
+4. **환자 데이터 보호**: 실명 사용 금지, 코드 기반 식별 (PT-YYYY-NNN).
 5. **동시성 제한**: `maxConcurrency: 1` — 환자 데이터 혼선 방지.
-6. **Telegram 봇 분리**: `$env.TELEGRAM_BOT_TOKEN_PSYCH` (결혼준비AI 봇과 분리).
+6. **Telegram 봇 분리**: `$env.TELEGRAM_BOT_TOKEN_PSYCH` (결혼준비AI 봇과 별도).
 7. **FFmpeg 사용 불가**: Railway n8n에서 child_process 차단. ≤24MB 단일 파일만.
-8. **Anthropic API 호출**: HTTP Request 노드 + `x-api-key` / `anthropic-version: 2023-06-01` 헤더 (전용 credential 노드 아님).
-9. **모델 업데이트 시 QC 필수 (D-27)**: Claude/GPT 모델 변경 후 반드시 Quality Check 재실행. 5점+ 하락 시 롤백.
-
----
-
-## 당면 과제 (세션 9)
-
-12개 Sub-WF 프롬프트를 Dual-Layer 구조로 전면 재설계. QC 최하위 섹션 우선:
-
-| 우선순위 | 섹션 | QC 점수 | 핵심 변경 |
-|:-------:|------|:-------:|----------|
-| 1 | S08 Progress Notes | 0/5 | SOAP + S) 구어체 원문 + O) 관찰해석 + 날짜HD# |
-| 2 | S02 Chief Problems | 0.5/5 | 번호+영문증상명 + Remote/Recent onset |
-| 3 | S04 Past/Family Hx | 0.5/4 | 6개 번호항목 + 투약 형식 |
-| 4 | S03 Informants | 0.5/3 | 서술형 평가 3문장+ + Reliable 판정 |
-| 5 | S01 Identifying Data | 1/5 | 항목:값 줄 나열 + 병전성격 서술형 |
-| 6 | S05 Personal History | 1/5 | 5단계 소제목 + 서술형 산문 |
-| 7 | S06 MSE | 1.5/5 | 9개 항목 + (+/-) + Mood/Affect 표준 |
-| 8 | S09 Present Illness | 3/12 | 4단락+ FCAB 연속 산문 + 상대시점 |
-| 9 | S12 Psychodynamic | 2.5/6 | 3단락+ 연속 산문 + 고도 전문용어 |
-| 10 | S10 Diagnostic Formulation | 2.5/3 | 간결 진단명 한 줄 먼저 (현재 양호) |
-| 11 | S11 Case Formulation | 3/5 | Treatment Plan 구체화 |
-| 12 | S07 Mood Chart | 1.5/2 | 수치 데이터 보완 (현재 양호) |
-
-### 알려진 위험 (v3.1 §15)
-
-| 위험 | 심각도 | 대응 |
-|------|:------:|------|
-| 위험 7: HTML 발표 부적합 | 중~높 | 세션 10 E2E에서 HTML→Docs 변환 서식 확인. 실패 시 §18 대안 경로 |
-| 위험 8: 모델 업데이트 regression | 중 | D-27: 모델 변경 시 QC 재실행 |
-| 위험 9: Halluc Check FN | 높 | Halluc 프롬프트에 FN 탐지 강화 + QC에서 보완 검증 |
-
-### 알려진 제약 (v3.1 §19)
-
-- **WF1-A 미완성**: 구조화된 면담 데이터 입력 불가 → AI 정보 추출 난이도/Halluc 위험 증가
-- **Gold Standard 1건**: MDD 환자만. 다른 진단군 적응력 미검증
-- **HTML→Docs 변환 미검증**: 서식 유지도 테스트 필요 (세션 10)
+8. **AI Agent 노드 필수 (D-29)**: Sub-WF AI 호출은 반드시 AI Agent 노드. HTTP Request 직접 호출 금지.
+9. **모델 변경 시 QC 필수**: Claude/Gemini 모델 교체 후 반드시 QC 재실행. 5점+ 하락 시 롤백.
 
 ---
 
 ## 변경 규칙
 
-- `docs/PROJECT_PLAN_v3.1.md`의 의사결정(§2)은 확정 사항. 변경 시 반드시 사용자와 논의 후 해당 문서를 먼저 업데이트.
-- D-번호 canonical: `docs/PROJECT_PLAN_v3.1.md` §2가 유일한 권위. PROGRESS_LOG 세션별 임시 번호와 충돌 시 §2가 우선.
+- `docs/PROJECT_PLAN_v3.1.md` §2 의사결정은 확정. 변경 시 사용자 논의 후 해당 문서 먼저 업데이트.
 - 이 `CLAUDE.md`는 프로젝트 구조·상태 변경 시 사용자 요청으로만 수정.
 - 코드보다 기획이 먼저. 요구사항 → 설계 → 구현 순서.
