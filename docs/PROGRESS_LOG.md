@@ -4,6 +4,80 @@
 
 ---
 
+### 세션 13 — Phase 2 QC, S10 버그 수정, HTML 폴더 버그 수정 (2026-04-02)
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| Phase 2 QC (S09~S12) | 섹션별 출력 검토 + QC 채점 | ✅ 완료 |
+| S10 maxTokensToSample 버그 수정 | 2048 → 8192 (LM Chat 노드) | ✅ 완료 |
+| HTML 보고서 폴더 저장 버그 수정 | s34-c4 Code 노드에 `reports_folder_id` 추가 | ✅ 완료 |
+| E2E 전체 확인 | HTML이 PT-2026-001/reports/에 정상 저장 | ✅ 완료 |
+
+#### Phase 2 QC 결과
+
+| 섹션 | 만점 | 득점 | 평가 | 비고 |
+|------|:----:|:----:|------|------|
+| S09 Present Illness | 12 | 10.5 | 우수 | 상대시점 표현 1곳, FCAB Affect 단락 보강 필요 |
+| S10 Diagnostic Formulation | 3 | 3 | 만점 | S10 버그 수정 후 재실행 |
+| S11 Case Formulation | 5 | 5 | 만점 | Pin 확정 |
+| S12 Psychodynamic Formulation | 6 | 6 | 만점 | Pin 확정 |
+| **Phase 2 합계** | **26** | **24.5** | **94%** | |
+
+#### S09 개선 권고 (다음 프롬프트 튜닝 시 반영)
+
+- **절대 날짜 제거**: Present Illness 내 `2026년 3월 20일` → `내원 8일 전` 형태의 상대 시점 표현 사용
+- **FCAB Affect 단락 강화**: F→C→A→B 4단락 중 A(Affect) 단락이 1~2문장으로 짧음 → 최소 3문장 이상 기술 지시 추가
+
+#### S10 버그 수정 상세
+
+- **증상**: `narrative`에 raw JSON string, `structured.source_ref: "parse_failed"`, JSON 중간 절단
+- **원인**: Sub-WF S10 LM Chat 노드(`4a8b462f-...`) `maxTokensToSample: 2048` → API 응답 절단 → `JSON.parse()` 실패
+- **수정**: AI Agent + LM Chat 노드 모두 `maxTokensToSample: 8192` (S02와 동일한 패턴)
+- **대상 WF**: `6sRG5BX5uBhcRtj1` (Sub-WF S10)
+
+#### HTML 폴더 버그 수정 상세
+
+- **증상**: HTML 파일이 PT-XXXX/reports/ 폴더가 아닌 내 Drive 루트에 저장됨
+- **근본 원인**: `s34-c2` (JSON 초안 저장, Google Drive 업로드 노드) 실행 후 `$json`이 Drive API 응답으로 덮어씌워짐 → `s34-c5`의 `$json.reports_folder_id` = `undefined`
+- **시도한 방법 (실패)**: `n8n_update_partial_workflow`로 `parameters.folderId.value` 도트 표기법 업데이트 → `operationsApplied: 1` 반환했으나 실제 적용 안 됨
+  - 원인: `folderId`는 `__rl: true` (ResourceLocator) 타입 — 서브 경로 도트 표기법으로 업데이트 불가능
+- **최종 수정**: `s34-c4` (HTML 보고서 변환, Code 노드) return 직전에 `reports_folder_id` 명시적 추출 후 json 출력에 포함
+  ```javascript
+  const reports_folder_id = $('reports 폴더 ID 확정').first().json.reports_folder_id;
+  return [{ json: { ...ctx, html_content: h, reports_folder_id }, binary: { ... } }];
+  ```
+- **결과**: HTML 파일이 PT-2026-001/reports/ 폴더에 정상 저장 확인 ✅
+
+#### Pin 전략 확정
+
+- **확정 원칙**: WF2에서 Pin은 **Execute Workflow 노드(Sub-WF 호출 노드)에만** 적용
+- **Pin 금지**: Drive 업로드 노드, Telegram 알림 노드, 외부 API 호출 노드
+- **이유**: Drive 업로드/Telegram은 매번 실제 실행해야 정상 동작, Pin하면 해당 단계 건너뜀
+
+#### [추론] 태그 설계 제안
+
+- **초안 HTML**: AI가 추론한 내용에 `[추론]` 태그 → 전공의 수정 편의
+- **최종 HTML**: `[추론]` 태그 제거 (CSS gray italic으로 스타일링 → 인쇄 시 미표시)
+- **D-21과의 관계**: D-21은 `source_ref` 태그에 관한 결정, `[추론]` 태그는 별도 UX 제안 (미확정, 다음 QC 반영 여부 검토)
+
+#### E2E 결과 (2026-04-02 오후)
+
+- Telegram 봇 정상 동작: Phase 1 완료 → 보고서 저장 완료 알림 수신
+- HTML 파일: `PT-2026-001/reports/` 폴더 저장 확인 ✅
+- JSON 초안 파일: Drive 저장 확인 ✅
+- Hallucination 검증: 정상 실행 확인 ✅
+- 완성도: 67~79% (Pin된 섹션 수에 따라 변동)
+
+#### 비용 모니터링
+
+- Claude Sonnet 4 API 비용: Anthropic Console에서 확인 필요 (E2E 2회 실행)
+- 섹션당 Sub-WF × 12회 + Halluc 검증으로 1회 실행 시 상당한 토큰 소모 예상
+- **권고**: 튜닝/테스트 시 Mock 데이터 + 일부 섹션 Pin 사용 → 비용 최소화
+
+---
+
 ### 세션 11 — M8 작업 3~6, 버그 수정 (2026-04-02)
 
 #### 작업 내용

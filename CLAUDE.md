@@ -77,7 +77,7 @@ psychiatric interview automation/
 | **D-26** | **Phase 2 릴레이에서 의존 데이터 null 방어 필수** | **S02 실패 시 S09가 undefined 수신 방지** |
 | **D-27** | **AI 모델 업데이트 시 Quality Check 필수 재실행** | **형식 regression 감지** |
 
-> 전체 의사결정 로그 (D-01 ~ D-27): `docs/PROJECT_PLAN_v3.1.md` §2 참조.
+> 전체 의사결정 로그 (D-01 ~ D-32): `docs/PROJECT_PLAN_v3.1.md` §2 참조.
 
 ---
 
@@ -88,15 +88,28 @@ psychiatric interview automation/
 | WF3 | Error Workflow | ✅ 완료 | Telegram 에러 알림 |
 | WF1-B | STT 녹음 파이프라인 | ✅ 완료 | E2E 통과, 활성 |
 | WF1-A | 설문지 경로 | ⬜ 미착수 | HTML Webhook → GDrive 저장 (**보고서 품질 향상의 전제 조건** §19) |
-| WF2 | 보고서 생성 메인 | ✅ 기능 완료 | 71노드, 4단계 알림, E2E 통과 |
+| WF2 | 보고서 생성 메인 | ✅ **E2E 완료** | 72노드, HTML 정상 저장 확인 (세션 13) |
 | — | Sub-WF 프롬프트 v3.1 | ✅ 완료 | Dual-Layer 12개 전체 완성 |
-| — | Sub-WF S01~S08 AI Agent 전환 | ✅ 완료 | M8 작업 2 완료 (세션 10) |
+| — | Sub-WF S01~S12 AI Agent 전환 | ✅ 완료 | 세션 10~11 완료 |
 | — | Halluc 검증 → Gemini Flash | ✅ 완료 | M8 작업 1 완료 (세션 10) |
-| — | S05/S06/Halluc typeVersion 버그 수정 | ✅ 완료 | "Single '}' in template" → typeVersion 3.1 (세션 11) |
-| — | E2E 테스트 (Phase 1+2) | 🔴 **대기 중** | 버그 수정 완료, WF2 재실행 필요 |
-| — | Quality Check | ✅ 1차 완료 | 44.5/100 (C등급) → 프롬프트 개선 필요 |
+| — | S10 maxTokensToSample 버그 수정 | ✅ 완료 | 2048 → 8192 (세션 13) |
+| — | HTML 폴더 저장 버그 수정 | ✅ 완료 | s34-c4 Code 노드 수정 (세션 13) |
+| — | E2E 테스트 (Phase 1+2) | ✅ **완료** | HTML PT-2026-001/reports/ 정상 저장 확인 |
+| — | Phase 2 QC (S09~S12) | ✅ 완료 | 24.5/26 (94%) — 세션 13 |
+| — | 전체 QC (A+B+C, Halluc 포함) | 🔴 **미완료** | Halluc Check C섹션 채점 필요 |
+| — | S09 프롬프트 개선 | 🔴 대기 | 절대날짜 → 상대시점, FCAB Affect 3문장+ |
 
-### Quality Check 결과 (2026-04-01)
+### Phase 2 QC 결과 (세션 13, 2026-04-02)
+
+| 섹션 | 만점 | 득점 | 비고 |
+|------|:----:|:----:|------|
+| S09 Present Illness | 12 | 10.5 | 상대시점·Affect 보강 필요 |
+| S10 Diagnostic Formulation | 3 | 3 | 만점 |
+| S11 Case Formulation | 5 | 5 | 만점 |
+| S12 Psychodynamic Formulation | 6 | 6 | 만점 |
+| **Phase 2 합계** | **26** | **24.5** | **94%** |
+
+### 1차 QC 결과 (2026-04-01, Dual-Layer 전 기준 — 구버전 참고용)
 
 | 대분류 | 만점 | 득점 | 비율 |
 |--------|:----:|:----:|:----:|
@@ -105,8 +118,7 @@ psychiatric interview automation/
 | C. Halluc Check 실효성 | 15 | 8 | 53.3% |
 | **합계** | **100** | **44.5** | **44.5% (C등급)** |
 
-**근본 원인**: Sub-WF가 JSON 데이터 구조를 반환 → HTML 변환으로는 임상 산문 재현 불가
-**해결**: Dual-Layer Output (D-21) — narrative 필드에 Gold Standard 형식 산문 직접 생성
+> ⚠️ 1차 QC는 Dual-Layer 전 구버전 기준. 현재 Dual-Layer + AI Agent 전환 후 전체 재채점 필요.
 
 > 세션별 상세 기록: `docs/PROGRESS_LOG.md` 참조.
 
@@ -118,10 +130,10 @@ psychiatric interview automation/
 |---------|------|------|
 | 워크플로우 엔진 | n8n (Railway 배포) | 기존 결혼준비AI와 인스턴스 공유 |
 | STT | OpenAI gpt-4o-transcribe | `n8n HTTP Request` 노드 |
-| AI 보고서 | Claude Sonnet 4 (HTTP Request) | 섹션별 Sub-WF, Dual-Layer 출력 |
-| AI 검증 | Claude Haiku 4.5 | Hallucination 검증 (10섹션, D-23) |
+| AI 보고서 | Claude Sonnet 4 (AI Agent 노드) | 섹션별 Sub-WF, Dual-Layer 출력 |
+| AI 검증 | Gemini Flash (AI Agent 노드) | Hallucination 검증 (10섹션, D-23, D-30) |
 | 저장소 | Google Drive (JSON/HTML) | OAuth2 연동 완료 |
-| 트리거/알림 | Telegram Bot (PsyCaseAuto 전용) | 4단계 알림 (🔄시작→⏳P1완료→✅완성→ℹ️검증) |
+| 트리거/알림 | Telegram Bot (PsyCaseAuto 전용) | 2단계 알림 (🔄시작→✅완성+검증 통합, D-17) |
 | 프론트엔드 | HTML (Netlify) | 면담 체크리스트 |
 
 ---

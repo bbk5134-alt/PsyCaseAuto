@@ -75,6 +75,8 @@
 | **D-28** | **모델 업데이트 시 QC 필수 재실행**       | 형식 regression 감지                 | 04-01 |
 | **D-29** | **Sub-WF AI 호출: HTTP Request → AI Agent 노드 전환 (세션 10)** | 모델 교체 용이성, CLAUDE.md 절대 규칙 준수 | 04-01 |
 | **D-30** | **Halluc 검증: Haiku → Gemini Flash 전환 검토** | Google AI Studio 크레딧 활용, 비용↓ | 04-01 |
+| **D-31** | **`__rl` ResourceLocator 필드는 n8n API 도트 표기법 업데이트 불가** | `parameters.folderId.value` 도트 경로 업데이트 실패 확인 → Code 노드 출력에서 값 전달 우회 | 04-02 |
+| **D-32** | **WF2 Pin 대상: Execute Workflow 노드만** | Drive 업로드·Telegram·외부 API 노드 Pin 금지 — 실행 건너뜀 발생 | 04-02 |
 
 ---
 
@@ -99,9 +101,9 @@
 | 항목          | 값                        |
 | ----------- | ------------------------ |
 | Workflow ID | `LiN5bKslyWtZX6yG`       |
-| 총 노드 수      | 71                       |
+| 총 노드 수      | 72 (세션 13 s34-a2-gemini 포함) |
 | Sub-WF      | 12개 (S01~S12)            |
-| 상태          | Stage 3-4 완료, 프롬프트 튜닝 필요 |
+| 상태          | E2E 완료 — 프롬프트 튜닝 단계 |
 
 ### 전체 흐름
 
