@@ -4,6 +4,65 @@
 
 ---
 
+### 세션 20 — Hallucination 검증 시스템 프롬프트 보완 (2026-04-03)
+
+#### 배경
+Claude.ai가 세션 19 E2E 결과물(`hallucination_check_20260403_0215.json`)을 STT 원문과 교차 검증하여 Hallucination 검증 시스템에 3가지 구조적 결함을 발견함. 메타 평가 점수: **68/100 (보통)**.
+
+#### 발견된 결함 요약
+
+| # | 결함 유형 | 원인 | 영향 |
+|---|-----------|------|------|
+| FP #1 | "선생님 믿어보려고요" 인용구 오탐 | 2차 면담 원문 미탐색 (초진만 확인) | 전공의 혼란 유발 |
+| FN #1 | "Suicidal attempt (+)" 변조 미탐지 | 심각도 변조 탐지 규칙 부재 | **임상적 중대성 높음** — NSSI를 자살 시도로 상향 |
+| 규칙 미이행 | context_truncated: true 설정했으나 10섹션 전체 검증 | "5섹션 축소" 규칙 실효성 없음 | 규칙 신뢰도 저하 |
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| STT 원문 교차 검증 | FP #1 확인 (2차 면담에 인용구 존재), FN #1 확인 (NSSI→SA 변조) | ✅ 완료 |
+| 수정 1: 심각도 변조 탐지 기준 추가 | Hallucination 판정 기준 4가지로 확장 + `severity_distortion` 타입 신설 | ✅ 완료 |
+| 수정 2: 다중 원문 교차 탐색 절차 명시 | "모든 면담 원문 빠짐없이 교차 탐색 후 판정" + 1건이라도 확인 시 pass | ✅ 완료 |
+| 수정 3: context_truncated 규칙 현실화 | "5섹션 축소" → "전 섹션 + 핵심 항목(수치/인용구/귀속) 집중" | ✅ 완료 |
+| prompt-engineering 6요소 프레임워크 적용 | Role, Context, Constraints, Output Format, Error Handling, Examples | ✅ 완료 |
+| n8n WF2 s34-a2 업데이트 | MCP `n8n_update_partial_workflow`, operationsApplied: 1, saved: true | ✅ 완료 |
+
+#### 변경 사항 요약 (시스템 메시지 diff)
+
+**추가된 판정 기준 #2 (severity_distortion)**:
+```
+원문에 존재하는 사실의 심각도·등급·빈도가 근거 없이 상향 또는 하향되어 기술됨
+(예: 자해 → 자살 시도, 중등도 위험도 → 상, 1회 → 반복적)
+```
+
+**추가된 원문 탐색 절차 (신규 섹션)**:
+```
+- 제공된 모든 면담 원문(초진, 경과, 보호자 면담 등)을 빠짐없이 교차 탐색한 후 판정
+- 1건의 원문에서 미발견이더라도, 다른 원문에서 확인되면 Hallucination이 아님
+- 각 issue 판정 시 출처 원문 항목을 reason에 명시
+```
+
+**수정된 context_truncated 규칙**:
+```
+[이전] 5개 핵심 섹션으로 축소 + context_truncated: true
+[이후] 전 섹션 확인 시도 + 핵심 항목(수치/인용구/귀속) 우선 확인
+       + 실제 확인한 섹션만 sections_checked에 기재
+```
+
+**issues 타입 확장**: `fabricated_fact | inference_unmarked | informant_error | severity_distortion`
+
+#### 예상 효과
+- FN #1 유형(NSSI→SA 심각도 변조) 탐지 가능
+- FP #1 유형(다중 원문 미탐색) 방지
+- 68점 → 70점대 후반~80점대 진입 예상
+
+#### 다음 세션
+- Gemini Flash 전환 후 재 E2E 실행으로 수정된 Hallucination 검증 시스템 성능 확인
+- **Tier 3 Step 3-1**: S01~S04 Chat Model → `lmChatGoogleGemini` (gemini-2.5-flash-preview)
+
+---
+
 ### 세션 19 — Step 2-6 T4 완료 + Hallucination 검증 버그 수정 + E2E 재실행 (2026-04-03)
 
 #### 작업 내용
