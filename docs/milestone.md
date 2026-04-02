@@ -59,55 +59,17 @@
 
 ---
 
-## Tier 1 — s34-c4 HTML 변환 노드 수정 ($0, 코드만)
+## ~~Tier 1 — s34-c4 HTML 변환 노드 수정 ($0, 코드만)~~ ✅ 완료 (세션 14, 2026-04-02)
 
-> **목표**: HTML 렌더링 품질 즉시 개선 (+3~5 QC점)
-> **비용**: $0 (E2E 불필요, 코드 변경만)
-> **대상**: WF2 노드 `s34-c4` (HTML 보고서 변환, Code 노드)
+> **결과**: HTML 렌더링 3항목 모두 수정 확인. E2E Execution 472 통과.
 
-### Step 1-1: [U] 태그 변환 + "After:" 오타 교정
+### ~~Step 1-1~~: [U] 태그 변환 + "After:" 오타 교정 ✅
 
-**실행 환경**: Claude Code 단독
+### ~~Step 1-2~~: 섹션 번호 맵(sectionMap) 수정 ✅
+- Informants → h2 소제목, IX/X placeholder 추가, VIII→XI 점프 수정
 
-| Task | 내용 |
-|------|------|
-| T1 | n8n에서 s34-c4 현재 jsCode 읽기 (`n8n_get_workflow` → 노드 코드 확인) |
-| T2 | `[U]...[/U]` → `<u>...</u>` 정규식 변환 추가 (narrative 텍스트 내) |
-| T3 | `After:` → `Affect:` 오타 교정 로직 추가 (Progress Notes O) 섹션) |
-| T4 | `n8n_update_partial_workflow`로 jsCode 업데이트 |
-
-**✅ 검증**: n8n에서 s34-c4 노드 코드 재읽기 → [U] 변환, After 교정 로직 존재 확인
-
----
-
-### Step 1-2: 섹션 번호 맵(sectionMap) 수정
-
-**실행 환경**: Claude Code 단독
-
-| Task | 내용 |
-|------|------|
-| T1 | s34-c4 내 sectionMap (또는 h1 태그 생성 로직) 구조 파악 |
-| T2 | Informants: 독립 Roman numeral 제거 → Section II 아래 소제목으로 변경 |
-| T3 | IX(사회사업팀), X(심리팀) placeholder 섹션 추가 ("본 섹션은 해당 팀에서 작성합니다") |
-| T4 | 섹션 번호 연속성 보장: I → II → (Informants) → III → ... → VIII → IX → X → XI → XII |
-| T5 | `n8n_update_partial_workflow`로 업데이트 |
-
-**✅ 검증**: 코드 내 섹션 순서 확인. 이전 VIII→XI jump 해소 여부
-
----
-
-### Step 1-3: E2E 검증 (Tier 1 통합)
-
-**실행 환경**: Claude Code (WF2 실행 필요)
-
-| Task | 내용 |
-|------|------|
-| T1 | WF2 E2E 실행 (기존 Pin 데이터 사용, Sub-WF 실행 불필요) |
-| T2 | HTML 출력 확인: `[U]` → `<u>` 변환됨? |
-| T3 | HTML 출력 확인: "After:" → "Affect:" 교정됨? |
-| T4 | HTML 출력 확인: 섹션 번호 I~XII 연속? Informants 소제목? IX/X placeholder? |
-
-**✅ 검증**: 3개 수정사항 모두 HTML에 반영 확인. 실패 시 Step 1-1/1-2로 복귀.
+### ~~Step 1-3~~: E2E 검증 (Tier 1 통합) ✅
+- Execution 472 — 8항목 전체 통과
 
 ---
 

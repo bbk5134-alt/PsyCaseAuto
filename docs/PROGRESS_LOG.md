@@ -70,6 +70,47 @@
 - Hallucination 검증: 정상 실행 확인 ✅
 - 완성도: 67~79% (Pin된 섹션 수에 따라 변동)
 
+---
+
+### 세션 14 — Tier 1 완료: s34-c4 HTML 변환 노드 수정 + E2E 검증 (2026-04-02)
+
+#### 작업 내용
+
+| 작업 | 내용 | 상태 |
+|------|------|:----:|
+| Step 1-1: [U] 태그 변환 추가 | `toHtml()`에 `[U]...[/U]` → `<u>` 정규식 변환 | ✅ 완료 |
+| Step 1-1: After→Affect 오타 교정 | `nar()`에 `progress_notes` 조건 교정 로직 추가 | ✅ 완료 |
+| Step 1-2: Informants h2 소제목화 | 독립 `<h1>` → Section II 아래 `<h2>` 소제목으로 변경 | ✅ 완료 |
+| Step 1-2: 섹션 번호 연속성 | Mood Chart → VII, Diagnostic → VIII, VIII→XI 점프 수정 | ✅ 완료 |
+| Step 1-2: IX/X placeholder 추가 | 사회사업팀·심리팀 평가 섹션 "해당 팀 작성" 안내 삽입 | ✅ 완료 |
+| Step 1-3: E2E 검증 | WF2 실행(Execution 472) → HTML 8항목 전체 통과 | ✅ 완료 |
+
+#### Tier 1 E2E 검증 결과 (Execution 472, 2026-04-02 KST 17:16)
+
+| 항목 | 결과 |
+|------|:----:|
+| `[U]` 잔존 | ✅ 0건 (코드 로직 확인, 이번 Pin 데이터에 [U] 입력 없음) |
+| `After:` 잔존 | ✅ 0건 (`Affect:` 1건으로 정상 교정) |
+| 섹션 순서 I~XII 연속 | ✅ VIII→IX→X→XI (점프 없음) |
+| Informants h2 | ✅ `<h2>Informants & Reliability</h2>` |
+| IX placeholder | ✅ "IX. 사회사업팀 평가" + "본 섹션은 해당 팀에서 작성합니다" |
+| X placeholder | ✅ "X. 심리팀 평가" + "본 섹션은 해당 팀에서 작성합니다" |
+| XI. Case Formulation | ✅ |
+| XII. Psychodynamic Formulation | ✅ |
+
+#### 트러블슈팅 기록 (n8n MCP 업데이트 덮어쓰기 문제)
+
+- **증상**: `n8n_update_partial_workflow` 성공 응답 후 실행 시 구 코드 출력
+- **원인**: n8n UI에서 WF2를 열어 다른 작업 후 자동저장/수동저장 시 MCP 업데이트 내용이 구 버전으로 덮어씌워짐
+- **확인 방법**: 업데이트 후 즉시 `n8n_get_workflow`로 jsCode 재읽기 → jsCode 길이 + 핵심 패턴 존재 확인
+- **대응**: 재업데이트 후 즉시 재검증 → 정상 확인
+- **교훈 (D-33 추가 권고)**: MCP로 노드 업데이트 후 **n8n UI에서 WF를 수동 저장하지 말 것** — UI 저장 시 MCP 변경사항 덮어쓰임
+
+#### 다음 작업
+
+- **Tier 2 Step 2-1**: S06 MSE 프롬프트 수정 (Mood/Affect 표준 어휘 + Insight 7단계)
+- milestone.md Tier 2 참조
+
 #### 비용 모니터링
 
 - Claude Sonnet 4 API 비용: Anthropic Console에서 확인 필요 (E2E 2회 실행)

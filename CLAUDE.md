@@ -60,6 +60,7 @@ psychiatric interview automation/
 | D-29 | AI 호출: AI Agent 노드 사용 (HTTP Request 직접 호출 금지) |
 | D-31 | n8n `__rl` ResourceLocator 필드는 도트 표기법 업데이트 불가 → Code 노드 출력에서 전달 |
 | D-32 | WF2 Pin 대상: Execute Workflow 노드만 (Drive·Telegram·외부 API 노드 Pin 금지) |
+| D-33 | MCP로 노드 업데이트 후 n8n UI에서 WF 수동 저장 금지 — UI 저장 시 MCP 변경사항 덮어씌워짐 |
 
 ---
 
@@ -75,9 +76,10 @@ psychiatric interview automation/
 | Sub-WF S01~S12 AI Agent 전환 | ✅ | D-29 완료 |
 | Halluc 검증 → Gemini Flash | ✅ | D-30 완료 |
 | QC 1차 (55→62.5점 보정, C등급) | ✅ | 분석 완료, 프롬프트 수정 후 재채점 필요 |
-| **다음 작업** | 🔴 | `docs/milestone.md` Tier 1 Step 1-1부터 진행 |
+| Tier 1: s34-c4 HTML 변환 수정 | ✅ | [U]변환·After교정·섹션번호 수정, E2E 통과 (세션 14) |
+| **다음 작업** | 🔴 | `docs/milestone.md` Tier 2 Step 2-1부터 진행 |
 
-> QC 세부 결과: `docs/PROGRESS_LOG.md` 세션 13 참조.
+> QC 세부 결과: `docs/PROGRESS_LOG.md` 세션 13~14 참조.
 
 ---
 
