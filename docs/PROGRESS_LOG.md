@@ -4,6 +4,52 @@
 
 ---
 
+### 세션 23 — QC 검토 + 5개 수정 + Gemini Tier 3 교체 (2026-04-03)
+
+#### 배경
+
+`draft_20260403_1224_v1.html` QC 결과 (91/100, Grade A) 3개 CRITICAL 이슈 확인 후 일괄 수정.
+
+#### QC 결과 요약 (91/100)
+
+| 이슈 | 중요도 | 원인 분석 | 판정 |
+|------|--------|-----------|------|
+| S11/S12 raw JSON 렌더링 | CRITICAL | HTML 변환 노드 extractNarrative 미처리 | 실제 버그 ✅ |
+| HIGH SUICIDE RISK 플래그 부재 | CRITICAL | Safety 트리거 조건 불충분 (과거 자해+수동SI 미포함) | 트리거 확장 필요 ✅ |
+| S02 onset 역전 | HIGH | P4 fallback 미작동 (역전 감지 후 Onset 전환 불이행) | 강화 필요 ✅ |
+
+#### 수정 완료 (5건)
+
+| Fix | 대상 | 내용 | 방법 |
+|-----|------|------|------|
+| P7 | HTML s34-c4 노드 | extractNarrative: 코드펜스 제거 + regex fallback (S11/S12) | n8n MCP |
+| Fix 1 | S06 프롬프트 | Safety 트리거 확장: 자해이력+SI(+) 조합 → HIGH_SUICIDE_RISK | 파일+n8n |
+| Fix 2 | S02 프롬프트 | P4 fallback 강화: 역전 즉시 강제 Onset 단독 전환, 역전 출력 절대 금지 | 파일+n8n |
+| Fix 3 | S08 프롬프트 | 첫 번째 노트 헤더 절대 규칙 명시 (예외 없음, 헤더 없이 S) 시작 금지) | 파일+n8n |
+| Tier 3 | S01~S04, S06, S07 | Claude Sonnet 4 → Gemini 2.5 Flash Preview 교체 (비용 ~45% 절감 목표) | n8n MCP |
+
+#### Gemini 교체 상세
+
+| Sub-WF | WF ID | 결과 |
+|--------|-------|------|
+| S01 | `nJLVKGu1Ngh9C3pl` | ✅ |
+| S02 | `TifgZTXdSNW9Gtlh` | ✅ |
+| S03 | `J0EvW4lNbKGLo157` | ✅ |
+| S04 | `StjkISptQwFHl5Ws` | ✅ |
+| S06 | `Qp0IXqsbounP2X1l` | ✅ |
+| S07 | `5wWj9DLBB1z1r9Fr` | ✅ |
+
+- credential: `xyQSdt2V3UhYvrcF` (Google Gemini PaLM API)
+- 모델: `models/gemini-2.5-flash-preview-04-17`
+- S05, S08~S12: Claude Sonnet 4 유지
+
+#### 다음 작업
+
+- 핀 제거 (S01~S08, S11, S12) → E2E 재실행 → QC
+- D-09: Gemini 교체 후 QC 필수, 5점+ 하락 시 롤백
+
+---
+
 ### 세션 22 — P3/P4/P5 프롬프트 수정 + n8n S02·S07·S09 업데이트 (2026-04-03)
 
 #### 작업 개요

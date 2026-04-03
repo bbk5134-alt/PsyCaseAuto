@@ -519,9 +519,17 @@ Reliable
 
 ### 에스컬레이션 규칙
 
-- 입력 텍스트에서 **급성 자살 위험**(구체적 계획 + 수단 확보)이 감지되면:
-  meta에 `"alert": "HIGH_SUICIDE_RISK"` 추가
-  (이 필드는 WF2 메인에서 탐지하여 Telegram 알림에 포함됨)
+<!-- 수정: Safety 트리거 기준 확장 — 자해 이력 + SI 조합 추가 -->
+- 아래 조건 중 **하나라도** 해당되면 meta에 `"alert": "HIGH_SUICIDE_RISK"` 추가:
+  1. **급성 위험**: 구체적 자살 계획(Suicidal plan +) AND 수단 확보
+  2. **자해 이력 + SI 동반**: `self_harm_history ≠ null` AND `suicidal_ideation = "(+)"`
+     (수동적 자살 사고여도, 계획·수단 없어도 해당)
+  3. **자살 시도 이력**: `suicidal_attempt = "(+)"`
+
+  > 근거: 과거 자해 이력 + 자살 사고 동반은 국제 임상 가이드라인에서 고위험군으로 분류.
+  > 수동적 SI만 있더라도 자해 이력이 있으면 즉시 안전 평가 필요.
+
+  (이 필드는 WF2 메인에서 탐지하여 Telegram 알림 + HTML 경고 배너에 포함됨)
 
 ---
 

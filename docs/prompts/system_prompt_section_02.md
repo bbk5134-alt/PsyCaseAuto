@@ -115,14 +115,17 @@
 - **면담 기록에서 시점이 2개 이상 확인되더라도, 동일 에피소드의 연속적 경과라면 Onset 단독** 사용
 - Remote onset에 복수 시점 허용: `Remote onset) 내원 1년 7개월 전, 내원 7개월 전`
 
-<!-- 수정: P4 Onset 역전 방지 규칙 -->
-- **Remote/Recent 시점 역전 방지 규칙 (필수)**:
+<!-- 수정: P4 Onset 역전 방지 규칙 (fallback 강화) -->
+- **Remote/Recent 시점 역전 방지 규칙 (절대 규칙)**:
   - Remote onset은 반드시 Recent onset보다 더 이전(오래된) 시점이어야 함
-  - 검증 기준: Remote = "내원 N1개월/년 전", Recent = "내원 N2개월/년 전" → N1 > N2 필수
-  - ❌ 역전 오류: `Remote onset) 내원 4개월 전` / `Recent onset) 내원 6개월 전`
-  - ✅ 정상 예시: `Remote onset) 내원 1년 7개월 전` / `Recent onset) 내원 1개월 전`
-  - 역전이 발생할 것 같으면: 면담 데이터 재검토 후 에피소드 구분 재확인
-    → 구분 불가 시 Remote/Recent 이분법 포기, `Onset)` 단독 사용으로 대체
+  - 검증 기준: Remote = "내원 N1개월/년 전", Recent = "내원 N2개월/년 전" → **N1 > N2 필수**
+  - ❌ 역전 오류: `Remote onset) 내원 4개월 전` / `Recent onset) 내원 6개월 전` (N1=4 < N2=6 → 역전)
+  - ✅ 정상 예시: `Remote onset) 내원 1년 7개월 전` / `Recent onset) 내원 1개월 전` (N1=19 > N2=1)
+  - **역전 감지 즉시 강제 대체 (재검토 없이)**:
+    - N1 ≤ N2 조건이 확인되는 순간 → Remote/Recent 형식 **사용 금지**
+    - 반드시 `Onset)` 단독 형식으로 대체 출력
+    - `[확인 필요]` 태그 추가 후 역전 형식 그대로 출력하는 것 **절대 금지**
+    - 예) Remote 4개월 + Recent 6개월 확인 → `Onset) 내원 6개월 전 [확인 필요]` 출력
 
 **증상 추출 우선순위**:
 1. 환자가 직접 호소한 증상 (주관적)
