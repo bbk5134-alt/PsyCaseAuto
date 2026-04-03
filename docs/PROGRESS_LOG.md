@@ -4,6 +4,63 @@
 
 ---
 
+### 세션 27 — s34-a2 v2 시스템 프롬프트 적용 (2026-04-03)
+
+#### 작업 배경
+
+세션 26 수정(s34-a1 원문 전체 전달) 이후 첫 E2E 결과인 `hallucination_check_20260403_1410.json` (7 issues, context_truncated: false) 에 대해 Claude.ai QC 실시.
+
+#### QC 결과 검토 (77/100, Pass — 보정 후)
+
+Claude.ai 원점수: 73/100 (Fail) → **77/100 (Pass)** 로 보정.
+
+보정 사유: QC 채점 프롬프트가 `absence_assumption`을 비표준 type으로 오분류하여 A-3(-2점), D-1(-2점) 감점. 세션 25에서 공식 5번째 type으로 등록된 사항이므로 해당 감점 취소.
+
+| 섹션 | 점수 | 주요 이슈 |
+|------|------|-----------|
+| A 정확성 | 13/20 → 15/20 | FP 1건 (Issue 7: S06 Goal-directed — STT에 "목표 지향적" 명시) |
+| B 완전성 | 16/20 | FN 2건: FN-1 S07 Mood Chart 입원용어, FN-2 S06 Preoccupation 추론 |
+| C 유용성 | 16/20 | severity 구분 있음 |
+| D 프롬프트 준수 | 16/20 → 18/20 | absence_assumption 사용 정상, 3단계 탐색 경로 기재 정상 |
+| E 임상 안전 | 17/20 | FN-1 치료 세팅 오류 미탐지 — 임상적으로 중요 |
+
+#### 이슈 원인 분석
+
+| 이슈 | 근본 원인 | v2 해결책 |
+|------|-----------|-----------|
+| FP Issue 7 (Goal-directed) | 프롬프트에 MSE 섹션 교차확인 규칙 없음 | "MSE 섹션 교차확인 의무" 절 추가 |
+| FN-1 (Mood Chart 입원 용어) | 치료 세팅 검증 규칙 없음 | "FP 방어 5 (실질 FN 방지 규칙)" 추가 |
+| FN-2 (Preoccupation 추론) | 기존 inference_unmarked 규칙 범위 내 — 탐지 실패 | v2 직접 해결 없음 (모니터링) |
+
+#### 모델 업그레이드 검토
+
+Gemini 2.5 Flash → Pro 업그레이드 타당성 분석:
+- **결론: 현 단계 불필요**. FN-1은 규칙 부재가 원인 → 프롬프트 수정이 우선.
+- Pro 업그레이드 검토 시점: v2 적용 후 E2E 재채점에서 75점+ 미달 시.
+- gemini-3.1-pro-preview 모델명은 지식 컷오프 기준 존재 불확실 → 사용 전 n8n에서 유효성 테스트 필요.
+
+#### s34-a2 v2 프롬프트 적용
+
+Claude.ai 수정본(`s34-a2_system_prompt_v2.md`) 검토 후 수정 없이 n8n WF2 "Hallucination 검증 AI Agent" 노드에 직접 적용.
+
+**v1 대비 v2 변경사항**:
+1. MSE 섹션 교차확인 의무 절 신규 추가 (FP 방어용)
+2. severity_distortion 적용 예시 표 확장 (6가지, 치료 세팅 왜곡 포함)
+3. FP 방어 5: 치료 세팅 용어 검증 절 신규 추가 (실질 FN 방지 규칙)
+4. severity major 예시에 "치료 세팅 오기" 추가
+5. severity_distortion 치료 세팅 왜곡 예시 추가
+
+n8n MCP `n8n_update_partial_workflow` 적용 완료 (operationsApplied: 1, saved: true).
+
+프롬프트 파일: `docs/prompts/s34-a2_system_prompt_v2.md` 저장 완료.
+
+#### 다음 작업
+
+- s34-a1 핀 데이터 해제 후 E2E 재실행 → Halluc check QC 재채점 (목표 75점+)
+- v2 적용 후 FP Issue 7 해소 확인 + FN-1 탐지 여부 확인
+
+---
+
 ### 세션 26 — s34-a1 원문 절단 버그 수정 (2026-04-03)
 
 #### 발견 경위
