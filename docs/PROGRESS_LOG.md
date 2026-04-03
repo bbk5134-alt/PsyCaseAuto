@@ -4,6 +4,63 @@
 
 ---
 
+### 세션 26 — s34-a1 원문 절단 버그 수정 (2026-04-03)
+
+#### 발견 경위
+
+n8n UI에서 Hallucination 검증 AI Agent(s34-a2) 입력 패널 확인 중 `[원본 면담 기록 — 절단됨]` 및 `context_truncated: true` 발견. Hallucination 검증이 원문 없이 진행되고 있던 것으로 의심되어 조사.
+
+#### 원인 분석
+
+`s34-a1` ("Hallucination 검증 준비") jsCode에 하드코딩된 **6000자 제한**:
+
+```javascript
+// 기존 (버그)
+const truncated = originalText.length > 6000;
+const sourceText = originalText.substring(0, 6000) + (truncated ? '\n\n[... 원문 절단됨]' : '');
+const keysToCheck = truncated ? [5개 섹션] : FACTUAL_SECTION_KEYS;
+```
+
+실제 원문 크기:
+- 초진 면담 (stt_20260320): ~15,000자
+- 경과 면담 (stt_20260328): ~11,000자
+- **합계 ~26,000자 중 6,000자(23%)만 전달**
+
+`wf2-n18` (면담 데이터 병합)은 `full_text_for_ai`에 최대 500,000자를 보존하고 있었으나, s34-a1에서 6,000자로 슬라이싱됨.
+
+#### 이전 검증 결과 신뢰도 영향
+
+| 섹션 | 원문 포함 여부 | 기존 검증 신뢰도 |
+|------|-------------|---------------|
+| S01~S03 (Identifying/Chief/Informants) | ✅ 포함 | 신뢰 가능 |
+| S04 Past/Family History | ❌ 누락 | 불신뢰 |
+| S05~S07 (Personal/MSE/Mood) | ❌ 누락 | 불신뢰 |
+| S08 Progress Notes | ❌ 경과 면담 전체 누락 | 불신뢰 |
+| S09 Present Illness | ⚠️ 일부 | 부분 신뢰 |
+| S10 Diagnostic Formulation | ❌ 누락 | 불신뢰 |
+
+→ **Gemini가 원문 없이 보고서 내부 논리만으로 판정**해온 것으로 추정.
+
+#### 수정 내용 (WF2 s34-a1, MCP 적용)
+
+```javascript
+// 수정 후
+const truncated = false;                    // 6000자 제한 제거
+const sourceText = originalText;            // 전체 원문 전달
+const keysToCheck = FACTUAL_SECTION_KEYS;   // 항상 10개 섹션
+```
+
+Gemini 2.5 Flash 1M 토큰 컨텍스트 지원 — ~26,000자(≈8,700 토큰)은 처리 가능 범위.
+
+n8n MCP `n8n_update_partial_workflow` 적용 완료 (operationsApplied: 1, saved: true).
+
+#### 다음 작업
+
+- s34-a1 핀 데이터 해제 후 E2E 재실행 → 전체 원문 기반 Hallucination 검증 확인
+- QC 재채점으로 실질적인 사실정확성(B항목) 점수 재검증
+
+---
+
 ### 세션 25 — Step 4-0/4-1/4-2 완료 (2026-04-03)
 
 #### 작업 내용
