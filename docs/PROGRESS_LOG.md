@@ -4,6 +4,57 @@
 
 ---
 
+### 세션 25 — Step 4-0/4-1/4-2 완료 (2026-04-03)
+
+#### 작업 내용
+
+| Step | 내용 | 결과 |
+|------|------|------|
+| 4-0 | p2-merge Safety 배너 수정 | ✅ |
+| 4-1 | HTML→Docs 변환 검증 | ✅ (docx 변환 서식 이상 없음) |
+| 4-2 | §18 운용 문서 보완 | ✅ |
+
+#### Step 4-0: p2-merge Safety 배너 수정 (CRITICAL)
+
+**문제**: S06 프롬프트(Fix 1)에서 `meta.alert: 'HIGH_SUICIDE_RISK'` 출력하지만 p2-merge 코드가 `suicide_risk === '상'`만 체크 → 배너 미출력.
+
+**수정 내용** (WF2 `Phase 2 결과 병합` 노드):
+```javascript
+// 변경 전
+const alert = (mseData?.impulsivity?.suicide_risk === '상' ||
+               mseData?.impulsivity?.suicidal_plan === true)
+  ? 'HIGH_SUICIDE_RISK' : null;
+
+// 변경 후
+const s06Meta = phase1Results.mental_status_exam?.meta;
+const alert = (mseData?.impulsivity?.suicide_risk === '상' ||
+               mseData?.impulsivity?.suicidal_plan === true ||
+               s06Meta?.alert === 'HIGH_SUICIDE_RISK')
+  ? 'HIGH_SUICIDE_RISK' : null;
+```
+
+n8n MCP로 WF2 적용 완료 (operationsApplied: 1).
+
+#### Step 4-2: §18 운용 문서 보완
+
+PROJECT_PLAN_v3.1.md → **rev.3** 업데이트:
+
+- **T1**: Halluc 경고 대응 절 신규 추가
+  - fabricated_fact 우선 처리 원칙
+  - 발표 직전 최소 처리 가이드 (fabricated_fact만 + `[확인 필요]`)
+  - context_truncated 경고 문구
+- **T2**: 모바일 수정 한계 절 신규 추가
+  - 환경별(모바일/PC) 권장 작업 표
+  - 모바일 최소 체크리스트 4개 항목
+- **T3**: draft_ 접두어 규칙 — 기존 §18에 이미 존재 (P-07), 추가 불필요
+- §19-3 해당 항목 "완료" 상태로 업데이트
+
+#### 다음 작업
+
+- Step 4-3: Hallucination 시스템 프롬프트 업그레이드 (Claude.ai에서 설계 후 n8n 적용)
+
+---
+
 ### 세션 24 — Tier 3 QC 검증 + Hallucination QC 검증 + Tier 4 구조화 (2026-04-03)
 
 #### 배경

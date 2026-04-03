@@ -99,25 +99,21 @@ s34-c4 HTML 변환 수정: `[U]` 태그 변환, "After:"→"Affect:" 오타, 섹
 
 > **전제**: Tier 3 완료 ✅ | **순서 유연** | 자세한 설계는 Tier 3 완료 후 Claude.ai에서 develop
 
-### Step 4-0: p2-merge Safety 배너 수정 (CRITICAL, 최우선)
+### ~~Step 4-0~~ ✅ 완료 (세션 25, 2026-04-03)
 
-p2-merge Code 노드에서 `s06Meta.alert === 'HIGH_SUICIDE_RISK'` 조건 추가. 다음 E2E 전 반드시 적용.
+p2-merge Code 노드에 `s06Meta?.alert === 'HIGH_SUICIDE_RISK'` 조건 추가.
+`phase1Results.mental_status_exam?.meta` → `s06Meta`로 참조. n8n 반영 완료.
 
-### Step 4-1: HTML→Docs 변환 검증 (위험 8)
+### ~~Step 4-1~~ ✅ 완료 (세션 25, 2026-04-03)
 
-| Task | 내용 |
-|------|------|
-| T1 | E2E 생성된 HTML을 Google Drive에서 Docs로 변환 (우클릭 → Docs로 열기) |
-| T2 | 서식 유지 확인: 표, 들여쓰기, 특수문자(`<u>`, 볼드), 섹션 구분 |
-| T3 | 심각한 서식 손실 시 대안: 브라우저 Ctrl+P → PDF |
+`draft_20260403_1410_v1.docx` 변환 검증 완료. 큰 서식 손실 없음. Google Docs로 운용 가능.
 
-### Step 4-2: §18 운용 문서 보완
+### ~~Step 4-2~~ ✅ 완료 (세션 25, 2026-04-03)
 
-| Task | 내용 |
-|------|------|
-| T1 | §18에 Halluc 경고 시 행동 지침 추가 |
-| T2 | §18에 모바일 수정 한계 명시 |
-| T3 | draft_ 수정 실수 방지 (`[수정금지]` 접두어) |
+PROJECT_PLAN_v3.1.md §18에 추가 (rev.3):
+- T1 ✅ Halluc 경고 대응 절차 (fabricated_fact 우선 처리, 시간 없을 때 최소 처리)
+- T2 ✅ 모바일 수정 한계 표 + 최소 체크리스트 (4개 항목)
+- T3 ✅ draft_ 접두어 규칙 기존 §18에 이미 존재 확인
 
 ### Step 4-3: Hallucination 검증 시스템 프롬프트 업그레이드
 
