@@ -4,6 +4,66 @@
 
 ---
 
+### 세션 24 — Tier 3 QC 검증 + Hallucination QC 검증 + Tier 4 구조화 (2026-04-03)
+
+#### 배경
+
+세션 23에서 5개 Fix + Gemini Flash 전환 후 E2E 실행한 `draft_20260403_1410_v1.html`에 대해 QC 2건(보고서 QC + Hallucination check QC) 검증.
+
+#### QC #1: 보고서 QC (86.5/100, A등급, PASS)
+
+| 항목 | Tier 2 (Sonnet) | Tier 3 (Gemini) | 차이 |
+|------|:-:|:-:|:-:|
+| A (형식) | — | 51/60 | — |
+| B (사실정확) | — | 23/25 | — |
+| C (임상품질) | — | 12.5/15 | — |
+| **총점** | 91 | 86.5 | **-4.5** (5pt 이내) |
+
+**미해결 이슈 (Tier 4 이관)**:
+
+| 이슈 | 원인 | 조치 |
+|------|------|------|
+| HIGH_SUICIDE_RISK 배너 미출력 | p2-merge `meta.alert` 미참조 (CRITICAL) | Step 4-0 |
+| S02 첫 증상 번호+영문명 누락 | Gemini 프롬프트 이행률 낮음 | 모니터링 |
+| S02 Onset Remote/Recent 미구분 | Gemini P4 규칙 미이행 | 모니터링 |
+| S08 첫 노트 헤더 누락 | Gemini Fix 3 미이행 | 모니터링 |
+| S07 Mood Chart 입원 용어 | 외래/입원 분기 미구현 | Step 4-3 이후 |
+
+#### QC #2: Hallucination Check QC (58/100, Fail)
+
+Hallucination check(`hallucination_check_20260403_1410.json`, 21건) 자체의 품질 평가.
+
+| 기준 | 점수 | 주요 감점 |
+|------|------|-----------|
+| A 정확성 | 7/20 | FP 4건: STT 경과 원문 미확인(#6), MSE 표준 변환 과분류(#7), placeholder 과분류(#13-14) |
+| B 완전성 | 11/20 | 5/10 섹션만 커버, Alcohol "none" FN, anhedonia 추가 FN |
+| C 유용성 | 12/20 | severity 구분 부재 |
+| D 프롬프트 준수 | 14/20 | informant_error/severity_distortion 미사용 |
+| E 임상 안전 | 14/20 | Alcohol FN, 날짜 오류 심각성 미분류 |
+
+**구조적 원인**: `context_truncated: true` → Gemini Flash context window 한계로 전체 섹션 탐색 불가
+**시스템 프롬프트 수정 필요**: 7건 권고 → Tier 4 Step 4-3에 기록
+
+#### Tier 3 판정
+
+- QC 86.5/100 (A등급) — Tier 2 대비 -4.5pt → **5pt 이내, Gemini 롤백 불필요**
+- E2E 비용 ~$0.62 (Tier 2 ~$1.1 대비 ~45% 절감) → 비용 목표 달성
+- **Tier 3 완료 선언**, 잔여 이슈는 Tier 4로 이관
+
+#### Q&A 기록
+
+- Q1-1 (완성도 로직): 현 단계 변경 불필요, Tier 4에서 섹션별 상태 표시(방안 A) 검토
+- Q1-2 (Safety 배너): p2-merge에 `meta.alert` 체크 추가 필수 → Step 4-0 CRITICAL
+- Q2 (Halluc Gemini 설정): 사용자가 수동으로 temperature 0.1 설정 완료
+- Q4 (Tier 4 기록): milestone.md에 Step 4-0~4-6 구조화, Step 4-4/4-5 보류 처리
+
+#### 다음 작업
+
+- Tier 4 Step 4-0: p2-merge Safety 배너 수정 (CRITICAL, 다음 E2E 전 필수)
+- Tier 4 Step 4-3: Hallucination 시스템 프롬프트 업그레이드 (Claude.ai에서 설계)
+
+---
+
 ### 세션 23 — QC 검토 + 5개 수정 + Gemini Tier 3 교체 (2026-04-03)
 
 #### 배경

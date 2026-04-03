@@ -70,14 +70,13 @@ psychiatric interview automation/
 |------|:----:|------|
 | WF3 Error Workflow | ✅ | Telegram 에러 알림 |
 | WF1-B STT 파이프라인 | ✅ | E2E 통과 |
-| WF1-A 설문지 경로 | ⬜ | 미착수 — 보고서 품질 전제 조건 (milestone Step 4-3) |
+| WF1-A 설문지 경로 | ⬜ | 보류 — Tier 4 Step 4-4 |
 | WF2 보고서 생성 (72노드) | ✅ | E2E 완료, HTML 정상 저장 |
 | Sub-WF 프롬프트 12개 (Dual-Layer) | ✅ | 완성 |
-| Sub-WF S01~S12 AI Agent 전환 | ✅ | D-29 완료 |
-| Halluc 검증 → Gemini Flash | ✅ | D-30 완료 |
-| QC 1차 (55→62.5점 보정, C등급) | ✅ | 분석 완료, 프롬프트 수정 후 재채점 필요 |
-| Tier 1: s34-c4 HTML 변환 수정 | ✅ | [U]변환·After교정·섹션번호 수정, E2E 통과 (세션 14) |
-| **다음 작업** | 🔴 | `docs/milestone.md` Tier 2 Step 2-1부터 진행 |
+| Tier 1: s34-c4 HTML 변환 수정 | ✅ | 세션 14 |
+| Tier 2: 프롬프트 미세 조정 + QC 90.5/A | ✅ | 세션 15~22 |
+| Tier 3: Gemini Flash 전환 + QC 86.5/A | ✅ | 세션 23~24, E2E ~$0.62 |
+| **다음 작업** | 🔴 | `docs/milestone.md` Tier 4 Step 4-0 (Safety 배너 CRITICAL) |
 
 > QC 세부 결과: `docs/PROGRESS_LOG.md` 세션 13~14 참조.
 
