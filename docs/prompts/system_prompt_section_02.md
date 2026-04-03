@@ -115,6 +115,15 @@
 - **면담 기록에서 시점이 2개 이상 확인되더라도, 동일 에피소드의 연속적 경과라면 Onset 단독** 사용
 - Remote onset에 복수 시점 허용: `Remote onset) 내원 1년 7개월 전, 내원 7개월 전`
 
+<!-- 수정: P4 Onset 역전 방지 규칙 -->
+- **Remote/Recent 시점 역전 방지 규칙 (필수)**:
+  - Remote onset은 반드시 Recent onset보다 더 이전(오래된) 시점이어야 함
+  - 검증 기준: Remote = "내원 N1개월/년 전", Recent = "내원 N2개월/년 전" → N1 > N2 필수
+  - ❌ 역전 오류: `Remote onset) 내원 4개월 전` / `Recent onset) 내원 6개월 전`
+  - ✅ 정상 예시: `Remote onset) 내원 1년 7개월 전` / `Recent onset) 내원 1개월 전`
+  - 역전이 발생할 것 같으면: 면담 데이터 재검토 후 에피소드 구분 재확인
+    → 구분 불가 시 Remote/Recent 이분법 포기, `Onset)` 단독 사용으로 대체
+
 **증상 추출 우선순위**:
 1. 환자가 직접 호소한 증상 (주관적)
 2. 보호자가 관찰한 변화 (객관적 보완)
@@ -189,6 +198,8 @@ Onset) 내원 2년 2개월 전
 - [ ] **발병 2회+**: `Remote onset) / Recent onset)` 이분법 사용 ← Gold Standard Depressed mood 패턴
 - [ ] **절대 날짜(연도, 월, 일) 금지** — "내원 N개월/년 전"만 허용
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
+<!-- 수정: P4 체크포인트 추가 -->
+- [ ] Remote onset이 Recent onset보다 이전 시점인지 역전 여부 확인 (N1 > N2)
 
 ---
 
@@ -311,6 +322,14 @@ Onset) 내원 2년 2개월 전
     - admission_date로부터 역산하여 "내원 N개월/년 전"으로 변환 후 기재
     - structured 필드에도 동일하게 상대시점 기재
     - 원본 절대 날짜는 narrative와 structured 어디에도 출력하지 않음
+
+<!-- 수정: P4 Error Handling 12번 -->
+12. **Remote/Recent onset 역전 감지 시**:
+    - Remote onset이 Recent onset보다 더 최근인 경우 역전 오류로 처리
+    - 면담 데이터 재검토하여 에피소드 구분 재확인
+    - 구분 불가 시: Remote/Recent 이분법 포기, `Onset)` 단독 사용으로 대체
+    - meta.missing_items에 `"Remote/Recent onset 역전 감지 → Onset 단독 처리"` 기재
+    - 해당 증상 meta.confidence = "low"
 
 ### 에스컬레이션 규칙
 

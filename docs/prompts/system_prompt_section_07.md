@@ -283,6 +283,17 @@ HD#8: Mood: depressed, not irritable, not anxious / Affect: appropriate, inadequ
 
 10. **기분 변화가 없는 경우** → trend = "유지". entries 전체에 동일 mood_score 기재.
 
+<!-- 수정: P3 Error Handling 11번 -->
+11. **자해 vs 자살시도 구분 규칙 (S06 연동, 필수)**:
+   - key_statement 작성 시 자해 행동(self-harm)을 "자살 시도"로 표기 금지
+   - 원문에 "자해", "self-harm", "손목을 긋다", "찰과상" 등이 기술되고
+     자살 의도가 명시적으로 확인되지 않는 경우 → key_statement에 "자해"로만 기재
+   - HIGH_SUICIDE_RISK alert 트리거 조건:
+     SI(+) AND (SP(+) 또는 수단 확보가 원문에 명시됨).
+     자해 이력 단독은 트리거 조건이 아님
+   - mood_score 산정 시 자해 이력은 기분 중증도 판단의 보조 근거로만 활용하며
+     "자살 시도"로 재해석하여 점수에 반영 금지
+
 ### 에스컬레이션 규칙
 
 - 입력 텍스트에서 **급성 자살 위험**(구체적 계획 + 수단 확보)이 감지되면:

@@ -4,6 +4,72 @@
 
 ---
 
+### 세션 22 — P3/P4/P5 프롬프트 수정 + n8n S02·S07·S09 업데이트 (2026-04-03)
+
+#### 작업 개요
+
+세션 21에서 식별된 미완료 프롬프트 수정 3건(P3·P4·P5)을 Claude.ai에서 완료하고,
+수정된 프롬프트를 n8n에 반영했다.
+
+#### 수정 내용
+
+| 번호 | 대상 | 수정 규칙 | 위치 |
+|------|------|-----------|------|
+| **P3** | S07 Mood Chart | 자해(NSSI) vs 자살시도(SA) 구분 규칙 — EH #11 신설 | Anti-Halluc §2 연동, key_statement 작성 기준 |
+| **P4** | S02 Chief Problems | Remote/Recent onset 시점 역전 방지 규칙 (N1 > N2 필수) | Task §4 Onset 규칙 + 체크포인트 + EH #12 총 3곳 |
+| **P5** | S09 Present Illness | Gold Standard 서술어 오염 금지 (Anti-GS-Contamination) — Anti-Halluc 절대 규칙 5번 신설 | Anti-Halluc §2 + 체크포인트 + EH #14 총 3곳 |
+
+#### 수정 상세
+
+**P3 (S07 EH #11)**:
+- `key_statement`에 자해를 "자살 시도"로 표기 금지
+- `HIGH_SUICIDE_RISK` 트리거 조건: SI(+) AND (SP(+) 또는 수단 확보) — 자해 이력 단독은 트리거 불가
+- `mood_score` 산정 시 자해 이력 → 기분 중증도 보조 근거만, "자살 시도"로 재해석 금지
+
+**P4 (S02 3곳)**:
+- Onset 규칙에 "Remote/Recent 시점 역전 방지 규칙 (필수)" 추가
+- 역전 오류 예시(`Remote 내원 4개월 전` / `Recent 내원 6개월 전`) 명시
+- 역전 감지 시 fallback: Onset 단독 사용
+
+**P5 (S09 3곳)**:
+- Anti-Halluc 절대 규칙 5번: Gold Standard 환자 특이적 표현 금지
+- 금지 표현 예시 6개 명시 ("기생충 같다", "귀한 딸인데", "버려지기 전에 버리자" 등)
+- EH #14: GS 오염 표현 자가 대조 → 교체 또는 "[확인 필요]" 처리
+
+#### QC 채점 (Claude Code 자체 검수, 수정 후)
+
+| 항목 | 배점 | 점수 | 비고 |
+|------|------|------|------|
+| A. 규칙 적용 정확도 (P3/P4/P5 각 15점) | 45 | 45 | 3개 규칙 모두 정확히 삽입 |
+| B. 삽입 위치 적절성 | 30 | 29 | S09 Anti-Halluc 규칙 5번 `---` 구분자 앞에 정확히 배치 |
+| C. 기존 규칙과 충돌 없음 | 15 | 15 | 기존 규칙 번호 체계 유지 |
+| D. 형식 일관성 (들여쓰기·HTML comment 등) | 10 | 9 | 들여쓰기 불일치 초기 발견 → 수정 완료 |
+| **합계** | **100** | **98** | PASS (기준 85점) |
+
+#### 들여쓰기 수정 (Claude Code 추가 수정)
+
+| 파일 | 위치 | 내용 |
+|------|------|------|
+| `system_prompt_section_02.md` | EH #12 | 3-space → 4-space indent (EH #1~#11과 일치) |
+| `system_prompt_section_09.md` | EH #14 | 3-space → 4-space indent (EH #1~#13과 일치) |
+
+#### n8n 업데이트
+
+| Sub-WF | Workflow ID | 상태 |
+|--------|-------------|------|
+| S02 — Chief Problems | `TifgZTXdSNW9Gtlh` | ✅ 성공 |
+| S07 — Mood Chart | `5wWj9DLBB1z1r9Fr` | ✅ 성공 |
+| S09 — Present Illness | `4VyEFSX0H0FD2ilK` | ✅ 성공 |
+
+- 업데이트 방법: `n8n_update_partial_workflow` MCP, `updateNode` + `updates: {"parameters.options.systemMessage": "..."}` 형식
+- S09: §7 Mock 면담 데이터 블록 제외, §1~§6 + Error Handling만 systemMessage에 반영
+
+#### 다음 작업
+
+- `milestone.md` Tier 2 완료 처리 → Tier 3 (Gemini Flash 전환) 시작
+
+---
+
 ### 세션 21 — QC v2.0 결과 검토 + s34-c4 HTML 변환 노드 버그 수정 3건 (2026-04-03)
 
 #### QC v2.0 평가 결과 (Claude.ai 시행)
@@ -40,7 +106,7 @@
 |---------|------|------|------|
 | P3 | S07 MSE 프롬프트 | 자해 ≠ 자살시도 구분 규칙 추가 | S06에는 세션 19에 추가했으나 S07 누락 |
 | P4 | S02 Chief Problems 프롬프트 | Remote/Recent onset 시점 역전 방지 규칙 | Remote onset이 Recent보다 더 최근인 역전 오류 |
-| P5 | S04 Present Illness 프롬프트 | GS 서술어 사용 금지 규칙 | "기생충 같다" 표현 GS contamination |
+| P5 | S09 Present Illness 프롬프트 | GS 서술어 사용 금지 규칙 | "기생충 같다" 표현 GS contamination (S04는 Past History — 오기 수정 2026-04-03) |
 
 #### 기대 효과 (HTML 변환 수정 후)
 
