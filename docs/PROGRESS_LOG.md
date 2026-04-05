@@ -130,8 +130,35 @@ n8n MCP `patchNodeField` → `parameters.options.systemMessage` 적용 완료.
 
 #### 다음 작업 (Tier 4)
 
-- `docs/milestone.md` Tier 4 Step 4-0 Safety 배너 CRITICAL 작업
+- Step 4-3b [추론] 태그 CSS (선택) → 세션 30에서 완료
 - 2분할 병렬 처리: 실환자 데이터 테스트 후 QC 재평가 시 필요하면 적용
+
+---
+
+### 세션 30 — Step 4-3b [추론] 태그 CSS 구현 (2026-04-05)
+
+#### 작업 내용
+
+s34-c4 (`HTML 보고서 변환`) 노드에 `[추론]...[/추론]` 태그 CSS 스타일링 구현.
+
+**변경 사항 3개:**
+
+| # | 위치 | 변경 내용 |
+|---|------|---------|
+| 1 | CSS (inline in `let h`) | `.inference { color: #888; font-style: italic; }` + `@media print { .inference { display: none; } }` 추가 |
+| 2 | `toHtml()` 함수 | `withUnderline` 다음에 `withInference` 체인 추가: `[추론](.*?)[\/추론]` → `<span class="inference">$1</span>` |
+| 3 | Progress Notes 전용 루프 | 동일 `withInference` 변환 추가 (기존 `withUnderline` 체인 이후) |
+
+**적용 결과:**
+- 화면 표시: 회색(#888) 이탤릭체
+- 인쇄 시: `display: none` (숨김)
+- 적용 범위: 전체 섹션(toHtml) + Progress Notes 루프
+
+n8n MCP `updateNode` → `parameters.jsCode` 전체 교체 완료 (7072 → 7445 chars, +373 chars)
+
+#### 다음 작업
+
+- Step 4-6: 실사용 테스트 (실환자 녹음 → WF1-B → WF2 → §18 전공의 수정 E2E)
 - v2 적용 후 FP Issue 7 해소 확인 + FN-1 탐지 여부 확인
 
 ---
