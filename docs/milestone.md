@@ -59,6 +59,21 @@
 > **목표**: GS2(Bipolar+AUD) 기반 out-of-sample E2E → 시스템 실제 일반화 성능 측정
 > **의사결정**: D-34~D-38 (PROGRESS_LOG 세션 32 참조)
 
+### Step 5-0: QC 프롬프트 v2.1 준비 (Step 5-6 전 필수)
+
+> **역할**: Claude Code (파일 수정)
+> **예상 소요**: Step 5-1과 동일 세션 가능
+> **근거**: Claude.ai QC에서 `absence_assumption` 오분류가 세션 27, 29에서 반복 → 3회째 반복 방지
+
+| Task | 내용 |
+|------|------|
+| 5-0a | `system_prompt_quality_check_v2.md`에 `absence_assumption`을 공식 5번째 type으로 명시 |
+| 5-0b | 판정 예시 2~3개 추가 (부재 가정의 FP/TP 구분) |
+
+**✅ 검증 포인트**: QC 프롬프트 내 absence_assumption 언급 + 예시 존재
+
+---
+
 ### Step 5-1: GS2 구조 분석 + 프롬프트 커버리지 점검 ← 현재 위치
 
 > **역할**: Claude Code (분석) + 사용자 (여자친구 확인 요청)
@@ -72,7 +87,7 @@
 | 5-1d | 여자친구 확인 필요 항목 정리 → 전달 | 사용자 |
 
 **여자친구 확인 필요 항목 (예상)**:
-- Progress Notes "진단적 평가" 블록: GS 표준 형식인가, 이 케이스 특유인가?
+- Progress Notes "진단적 평가" 블록: **모든 Case Conference의 표준 형식인가, 이 케이스 특유인가?** ⭐ (S08 프롬프트 수정 여부 결정)
 - "III. Progress" 번호 오류: 오타인가 의도적인가?
 - Personal History 상세도: R1 표준인가, 이 케이스가 특별히 상세한 것인가?
 
@@ -94,6 +109,7 @@
 | 5-2b | 환자·어머니·언니 3명 면담 세그먼트 분리 | 정보원별 reliability 반영 |
 | 5-2c | 노이즈 정보 추가 (보고서 미수록 사항 5~10%) | 추가 항목 목록화 |
 | 5-2d | Manic episode 특성 반영 (pressured speech, circumstantiality) | GS2 MSE 참조 |
+| 5-2f | **대화 형태 설계**: 환자가 질문에 직접 답하지 않고 돌려 말하는 패턴, 비선형 주제 전환 반영. 단순 정보 나열이 아닌 실제 면담 대화 흐름으로 구성 | GS2 MSE circumstantiality(+) |
 | 5-2e | PT-2026-002 코드 부여 + `stt_YYYYMMDD.json` 포맷 준수 | 기존 PT-001 구조 참조 |
 
 **✅ 검증 포인트**:
@@ -228,10 +244,16 @@
 
 ## 이후 작업 (Tier 5 이후)
 
-### Step 4-6: 실사용 테스트 (Phase 5) — Tier 5 완료 후
+### Step 4-6: 실사용 테스트 (Phase 5) — Tier 5 완료 후 (~2주 후)
 
 > **전제**: GS2 기반 E2E + QC 75점+ 달성
 > **역할**: 사용자 (실환자 녹음 제공) → WF1-B → WF2 → §18 전공의 수정
+> **시점**: 새 환자 내원 예정 (~2주 후)
+
+**사전 준비 (실환자 E2E 전 완료 필수)**:
+- Railway 인스턴스 분리 검토: 결혼준비AI와 PsyCaseAuto 공유 → 실환자 데이터 보안 고려
+- 전공의 온보딩 1회 (~30분): Telegram→GDrive→Docs 수정→내보내기 전체 워크스루
+- s34-a1 원문 크기 모니터링 추가: `originalText.length` Telegram 알림 포함 (silent failure 방지)
 
 실제 환자 녹음 → WF1-B STT → WF2 보고서 생성 → 전공의 §18 절차 검증 → 피드백 수집.
 
@@ -244,7 +266,7 @@
 ✅ Tier 2 (프롬프트 5섹션 + QC 90.5/A)
 ✅ Tier 3 (Gemini Flash 전환, QC 86.5/A, ~$0.62/run)
 ✅ Tier 4 Step 4-0~4-3b (Safety 배너, Halluc v3.1, [추론] CSS)
-🔴 Tier 5 Step 5-1 GS2 구조 분석 ← 현재 위치
+🔴 Tier 5 Step 5-0 QC v2.1 준비 + Step 5-1 GS2 구조 분석 ← 현재 위치
 ⬜ Tier 5 Step 5-2~5-3 Mock 면담 JSON 생성
 ⬜ Tier 5 Step 5-4 여자친구 임상 검수
 ⬜ Tier 5 Step 5-5 WF2 E2E (GS2)
@@ -283,3 +305,4 @@
 |------|------|
 | 2026-04-05 | v3 신규 작성 — v2 Tier 1~4 완료 항목 압축, Tier 5 GS2 세부 단계 추가 (Step 5-1~5-8) |
 | 2026-04-05 | D-34~D-38 의사결정 기록 (GS2 추가, Mock 노이즈, regression 기준, 실환자 테스트 순서) |
+| 2026-04-05 | Claude.ai 평가 검토 반영: Step 5-0 QC v2.1 추가, Mock 대화 형태 설계(5-2f), Step 4-6 사전 준비(인스턴스 분리·온보딩·원문 모니터링) |
