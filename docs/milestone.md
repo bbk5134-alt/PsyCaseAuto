@@ -12,7 +12,7 @@
 |------|------|
 | 12개 Sub-WF 프롬프트 (Dual-Layer) | ✅ 완성 |
 | WF2 보고서 생성 (72노드) + E2E | ✅ 완료 |
-| Halluc 검증 프롬프트 v3.1 (FP 방어 1~8) | ✅ 완료 |
+| Halluc 검증 프롬프트 v3.1 (FP 방어 1~8 + passed 기준) | ✅ 완료 (세션 33 passed 기준 추가) |
 | QC 최종: 보고서 86.5/100, Halluc 89/100 | ✅ (GS1 기준, overfit 가능) |
 | **다음 작업** | 🔴 **Tier 5: GS2 추가 + Contamination-free 검증** |
 

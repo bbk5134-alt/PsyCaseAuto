@@ -17,3 +17,8 @@ Thumbs.db
 
 # Claude Code 로컬 설정 (개인 환경별 — 추적 제외)
 .claude/
+
+# ⚠️ 환자 데이터 — 절대 커밋하지 않음 (개인정보보호법, 의료법)
+Golden Standard File/
+"**아카이브"/
+halluc_jscode.txt
