@@ -4,6 +4,48 @@
 
 ---
 
+### 세션 38 — S02 파싱 오류 수정 + S03 meta 위치 보정 (2026-04-06)
+
+#### 문제 1: S02 parse_failed (코드펜스 + Gemini JSON 품질)
+
+S02 Chief Problems sub-WF에서 연속 2회 파싱 실패 발생.
+
+| 시도 | 오류 | 원인 | 수정 |
+|------|------|------|------|
+| 1차 | `parse_failed` | 코드펜스 제거 regex 불충분 | W-1a: anchored regex + `{…}` fallback 추출 |
+| 2차 | `Unterminated string in JSON at position 611` | Gemini 2.5 Flash가 JSON string 내 `"` 미이스케이프 | S02 모델을 Claude Sonnet 4.6으로 교체 |
+
+**W-1a 적용 범위** (코드펜스 방어 강화 — 6개 sub-WF):
+- S02 `TifgZTXdSNW9Gtlh`, S03 `J0EvW4lNbKGLo157`, S04 `StjkISptQwFHl5Ws`
+- S06 `Qp0IXqsbounP2X1l`, S07 `5wWj9DLBB1z1r9Fr`, S09 `4VyEFSX0H0FD2ilK`
+
+**S02 모델 교체**:
+- Gemini 2.5 Flash 노드 `removeNode` → Anthropic Chat Model 노드 `addNode`
+- Claude Sonnet 4.6, temp 0.3, maxTokens 16384
+- Credential: `anthropicApi` ID `RiXuEl0fGr0aAGNz`
+
+#### 문제 2: Telegram "오류:1건" — S03 meta 위치 이상
+
+WF2 E2E 실행 후 전 섹션 정상 생성됨에도 Telegram에 `오류:1건` 표시.
+
+| 항목 | 내용 |
+|------|------|
+| **오류 섹션** | S03 `informants` |
+| **증상** | `Phase 1 결과 병합` 노드에서 `error_count = 1` |
+| **근본 원인** | AI가 `meta`를 `structured.meta`에 중첩 출력 → 최상위 `meta = {}` → `status` 없음 → error 집계 |
+| **실제 상태** | `structured.meta.status = "complete"` (데이터 정상, 위치만 잘못됨) |
+
+**수정 (W-1b — 이중 방어)**:
+
+| # | 대상 | WF ID | 수정 내용 |
+|---|------|-------|----------|
+| W-1b-1 | S03 `출력 파싱` | `J0EvW4lNbKGLo157` | 4단계 추가: `structured.meta` → 최상위 `meta` 끌어올림 |
+| W-1b-2 | WF2 `Phase 1 결과 병합` | `LiN5bKslyWtZX6yG` | 모든 섹션 meta 방어: ① structured.meta 끌어올림 ② 그래도 없으면 `partial` 기본값 |
+
+**다음 작업**: Step 5-8 — WF2 E2E 재실행 (`오류:0건` 확인) + QC 재채점 (목표: 85+/A)
+
+---
+
 ### 세션 37 — Step 5-7: 8개 픽스 MCP 적용 완료 (2026-04-06)
 
 #### Step 5-7 결과: ALL 8 FIXES APPLIED ✅
