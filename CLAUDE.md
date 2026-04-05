@@ -28,6 +28,7 @@ psychiatric interview automation/
 │   ├── PROGRESS_LOG.md             ← 세션별 진척 기록
 │   ├── milestone.md                ← 단계별 작업 계획 (Tier 1~4, Step 단위)
 │   ├── system_prompt_quality_check_v2.md  ← QC 채점 프롬프트 (100점, v2.0)
+│   ├── WF4_QA_SCRIPT_PLAN_v0.2.md  ← WF4 Q&A 대본 자동화 기획안
 │   └── prompts/                    ← 섹션별 Sub-WF 프롬프트 (v3.1 Dual-Layer)
 │       └── system_prompt_section_01.md ~ section_12.md  ← 12개 완성
 ├── config/
@@ -76,7 +77,8 @@ psychiatric interview automation/
 | Tier 1: s34-c4 HTML 변환 수정 | ✅ | 세션 14 |
 | Tier 2: 프롬프트 미세 조정 + QC 90.5/A | ✅ | 세션 15~22 |
 | Tier 3: Gemini Flash 전환 + QC 86.5/A | ✅ | 세션 23~24, E2E ~$0.62 |
-| **다음 작업** | 🔴 | `docs/milestone.md` Tier 4 Step 4-0 (Safety 배너 CRITICAL) |
+| WF4 Q&A 대본 자동화 | 🟡 기획 완료 | Tier 5 완료 후 구현 (`docs/WF4_QA_SCRIPT_PLAN_v0.2.md`) |
+| **다음 작업** | 🔴 | `docs/milestone.md` Tier 5 Step 5-0 (QC v2.1 + GS2 구조 분석) |
 
 > QC 세부 결과: `docs/PROGRESS_LOG.md` 세션 13~14 참조.
 
@@ -124,6 +126,7 @@ psychiatric interview automation/
 | 전공의 보고서 수정 절차 | `docs/PROJECT_PLAN_v3.1.md` §18 |
 | 알려진 제약·위험 | `docs/PROJECT_PLAN_v3.1.md` §15, §19 |
 | 환경변수 목록 | `.env.example` |
+| WF4 Q&A 대본 기획안 | `docs/WF4_QA_SCRIPT_PLAN_v0.2.md` |
 
 ---
 

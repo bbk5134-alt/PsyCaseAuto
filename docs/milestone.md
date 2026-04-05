@@ -244,6 +244,27 @@
 
 ## 이후 작업 (Tier 5 이후)
 
+### Tier 6: WF4 Q&A 대본 자동화 — Tier 5 완료 후
+
+> **전제**: Tier 5 GS2 E2E + QC 75점+ 달성
+> **상세 기획**: `docs/WF4_QA_SCRIPT_PLAN_v0.2.md`
+> **목적**: 전공의 수정 완성본 → 감별 진단 Q&A 대본 + 논문 추천 목록 자동 생성
+
+**사전 준비 (Claude.ai — Tier 5 진행 중 병행 가능)**:
+- P-4: 범용 프롬프트 보강 (방어 멘트 카드, 교차 매핑 표, 타임라인)
+- P-5: 여자친구 임상 검토
+- P-6: 프롬프트 확정
+
+| Step | 작업 | 예상 |
+|------|------|------|
+| W4-1 | WF4 기본 구조 (Telegram → Google Docs → AI Agent → Drive → 알림) | 1세션 |
+| W4-2 | Stage 0 프롬프트 + Gemini QC 검증 | 1세션 |
+| W4-3 | Perplexity 논문 목록 + Switch 분기 | 1세션 |
+| W4-4 | Diff 기능 + E2E 테스트 (GS1 + GS2) | 1세션 |
+| W4-5 | HTML 템플릿 + Telegram 알림 최종 | 0.5세션 |
+
+---
+
 ### Step 4-6: 실사용 테스트 (Phase 5) — Tier 5 완료 후 (~2주 후)
 
 > **전제**: GS2 기반 E2E + QC 75점+ 달성
@@ -273,6 +294,7 @@
 ⬜ Tier 5 Step 5-6 GS2 QC + Contamination gap
 ⬜ Tier 5 Step 5-7 프롬프트 수정 (조건부: QC < 75)
 ⬜ Tier 5 Step 5-8 2-case regression framework
+⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
 ⬜ Step 4-6 실사용 테스트
 ```
 
@@ -306,3 +328,4 @@
 | 2026-04-05 | v3 신규 작성 — v2 Tier 1~4 완료 항목 압축, Tier 5 GS2 세부 단계 추가 (Step 5-1~5-8) |
 | 2026-04-05 | D-34~D-38 의사결정 기록 (GS2 추가, Mock 노이즈, regression 기준, 실환자 테스트 순서) |
 | 2026-04-05 | Claude.ai 평가 검토 반영: Step 5-0 QC v2.1 추가, Mock 대화 형태 설계(5-2f), Step 4-6 사전 준비(인스턴스 분리·온보딩·원문 모니터링) |
+| 2026-04-06 | Tier 6 (WF4 Q&A 대본 자동화) 추가. 기획안 v0.2 작성 완료 (`docs/WF4_QA_SCRIPT_PLAN_v0.2.md`) |
