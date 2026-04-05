@@ -106,6 +106,13 @@
 - 서술형 산문으로 작성 (3~4문장 권장)
 
 <!-- 수정: 수정1 -->
+<!-- 수정: Step 5-7 P-1 MSE 날짜 기준 + irritable 판정 -->
+**MSE 작성 날짜 기준 (필수)**:
+- MSE는 **경과 면담 데이터가 있는 경우, 경과 면담 STT만 기준**으로 작성한다.
+- 초진 STT와 경과 STT를 혼용하지 않는다.
+- 경과 면담 날짜 = MSE 날짜 헤더: `**VI. Mental Status Examination** (YYYY. MM. DD.)`
+- 초진 STT 내용(과거 에피소드, 이전 증상)은 Progress Notes 또는 Present Illness에서 다루며 MSE에는 반영하지 않는다.
+
 **2) Mood and Affect**:
 - 형식: `**Mood:** [형용사 조합]` / `**Affect:** [형용사 조합]`
 - Mood = 환자의 **주관적 진술** 기반 (어떤 기분이냐는 질문에 대한 답)
@@ -118,6 +125,11 @@
 - 불안 수식 (1개 필수): `anxious` / `sl. anxious` / `not anxious`
 - 규칙: **반드시 기본 상태 1개 + 과민성 1개 + 불안 수식 1개 조합**으로 표기
 - 조합 예시: `depressed, not irritable, sl. anxious` / `euthymic, not irritable, not anxious`
+
+**irritable 판정 기준 (절대 규칙)**:
+- `irritable` 기재 조건: 해당 면담 당시 환자가 의료진 또는 보호자에게 **직접** 공격적·짜증스러운 반응을 보인 STT 근거가 있는 경우에만 해당.
+- `not irritable` 기재 조건: 해당 면담에서 irritable 행동 관찰 없음. 보호자 보고나 과거 에피소드의 irritable 기술은 Thought Content 또는 Progress Notes에 별도 서술.
+- ❌ 금지: 초진에서 irritable 에피소드가 있었다는 이유만으로 경과 면담 MSE에 irritable 기재
 
 **Affect 표준 어휘 목록** (아래 조합으로만 사용):
 - 적절성 (1개 필수): `appropriate` / `inappropriate`
@@ -189,8 +201,9 @@ Gold Standard 예시: `**Mood:** depressed, not irritable, sl. anxious` / `**Aff
 
 - **자살 위험도 판정 기준**:
   - 자살의 위험성 **"상"**: SI(+) AND (SP(+) OR 과거 자살 시도 SA 과거력 있음)
-  - 자살의 위험성 **"중"**: SI(+) AND SP(-) AND SA 과거력 없음
-  - 자살의 위험성 **"하"**: SI(-) 또는 소극적 사망 소망만 있는 경우
+  - 자살의 위험성 **"중"**: SI(+) AND SP(-) AND SA 과거력 없음 **OR** 직접 SI(-) 부인이 있어도 충동적 위험행동(불특정 다수와의 성접촉, 알코올로 인한 심각한 신체 위험 등)이 면담에서 확인된 경우
+  - 자살의 위험성 **"하"**: SI(-) 이며 간접 위험행동도 없는 경우
+  - **간접 위험행동 포함 (Step 5-7)**: 환자가 SI를 직접 부인하더라도 충동적 자기파괴적 행동 패턴(무분별한 성관계, 위험한 음주, 충동적 고위험 행동)이 있으면 "중" 이상으로 판정
   - 위협적인 행동 가능성: HI 유무 + 과거 폭력력 기반으로 판단
 
 - **자해 vs 자살시도 엄격 구분 규칙 (Step 2-6, 필수)**:

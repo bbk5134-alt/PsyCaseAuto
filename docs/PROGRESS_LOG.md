@@ -4,6 +4,85 @@
 
 ---
 
+### 세션 37 — Step 5-7: 8개 픽스 MCP 적용 완료 (2026-04-06)
+
+#### Step 5-7 결과: ALL 8 FIXES APPLIED ✅
+
+GS2 QC 73.5/B 결과 기반 8개 수정사항을 n8n MCP를 통해 라이브 워크플로우에 적용.
+
+| Fix | 대상 | 워크플로우 | 노드 | 내용 | 상태 |
+|-----|------|-----------|------|------|:----:|
+| W-1 | s34-c4 (HTML 변환) | WF2 `LiN5bKslyWtZX6yG` | HTML 보고서 변환 | extractNarrative 오브젝트 분기 코드펜스 제거 + 중첩 JSON 재파싱 | ✅ |
+| P-1 | S06 MSE | `Qp0IXqsbounP2X1l` | S06 MSE Agent | MSE 경과 면담 STT 기준 + irritable 절대 규칙 | ✅ |
+| P-2 | S02 Chief Problems | `TifgZTXdSNW9Gtlh` | AI 보고서 생성 | Strict extraction + Onset STT-only | ✅ |
+| P-3 | S04 Past/Family Hx | `StjkISptQwFHl5Ws` | AI 보고서 생성 | AUD 형식 표준화 + Other Medical 범위 수정 | ✅ |
+| P-4 | S03 Informants | `J0EvW4lNbKGLo157` | AI 보고서 생성 | All-informants STT segments 규칙 | ✅ |
+| P-5 | S07 Mood Chart | `5wWj9DLBB1z1r9Fr` | AI 보고서 생성 | Anti-numeric-fabrication (수치 날조 금지) | ✅ |
+| P-6 | S09 Present Illness | `4VyEFSX0H0FD2ilK` | AI 보고서 생성 | 인과 연쇄 강화 (F→C→A→B 사슬 연결 필수) | ✅ |
+| H-1 | s34-a2 (Halluc 검증) | WF2 `LiN5bKslyWtZX6yG` | Hallucination 검증 AI Agent | MSE 고위험 항목 개별 STT 대조 의무 | ✅ |
+
+**다음 작업**: Step 5-8 — GS2 재실행 + QC 재채점 (목표: 85+/A)
+
+---
+
+### 세션 36 — Step 5-5: WF2 E2E 실행 (GS2 데이터) (2026-04-06)
+
+#### Step 5-5 결과: PARTIAL PASS
+
+출력 파일: `draft_20260406_0241_v1.html` + `hallucination_check_20260406_0241.json`
+
+##### 5-5c: HTML 섹션 검증
+
+| 섹션 | 상태 | 비고 |
+|------|:----:|------|
+| I. Identifying Data | ✅ | 정상 |
+| II. Chief Problems & Durations | ❌ | **raw JSON 노출** (D-21 위반) |
+| III. Present Illness | ✅ | 정상 |
+| IV. Past History & Family History | ✅ | 정상 |
+| V. Personal History | ✅ | 정상 |
+| VI. Mental Status Examination | ⚠️ | `[정보 없음]` 10회 (MSE 세부항목/처방) — Halluc 방지 fallback 정상 작동 |
+| VII. Mood Chart | ✅ | 정상 |
+| VIII. Progress Notes | ✅ | 정상 |
+| IX. Diagnostic Formulation | ✅ | 정상 |
+| X. 사회사업팀 평가 | ✅ | 의도된 placeholder ("해당 팀에서 작성") |
+| XI. 심리팀 평가 | ✅ | 의도된 placeholder |
+| XII. Case Formulation | ✅ | 정상 |
+| XIII. Psychodynamic Formulation | ✅ | 정상 |
+
+- PT-2026-002 코드 ✅
+- `[ERROR]` / `[SYSTEM NOTE]` / `source_ref` 노출 없음 ✅
+
+##### 5-5d: Halluc Check 검증
+
+| 항목 | 결과 |
+|------|:----:|
+| `parse_error` | false ✅ |
+| `sections_checked` | S01~S10 모두 ✅ |
+| `context_truncated` | false ✅ |
+| `passed` | **false** ❌ |
+
+**탐지된 이슈 2건 (모두 major)**:
+
+| # | 섹션 | type | text | 판정 근거 |
+|---|------|------|------|-----------|
+| 1 | S02 | fabricated_fact | `Onset) 내원 1` | "Emotional Numbness / Anhedonia" onset이 STT 원문에 없음 |
+| 2 | S07 | fabricated_fact | `기분 점수 7점(HD#1)→6점(HD#7)` | 점수 수치가 STT 원문에 없음 — 환자 주관 표현을 날조 수치화 |
+
+##### Step 5-5 종합 판정
+
+| 검증 항목 | 결과 |
+|----------|:----:|
+| E2E 실행 성공 | ✅ |
+| 13섹션 모두 생성 | ✅ |
+| Google Drive 저장 | ✅ |
+| parse_error: false | ✅ |
+| Section II JSON 노출 (D-21 위반) | ❌ → **Step 5-7 수정 필요** |
+| Halluc major 이슈 0건 | ❌ → **S02/S07 프롬프트 수정 필요** |
+
+**다음 작업**: Step 5-6 GS2 QC 채점 (Claude.ai)
+
+---
+
 ### 세션 35 — Step 5-0 + Step 5-1: QC v2.1 + GS2 구조 분석 (2026-04-06)
 
 #### Step 5-0 완료: QC 프롬프트 v2.1

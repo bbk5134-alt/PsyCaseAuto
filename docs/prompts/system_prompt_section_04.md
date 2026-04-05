@@ -111,13 +111,29 @@
 - 임상적으로 유의미한 수준이면 `**굵게**` 강조
 - 없으면: none
 
+<!-- 수정: Step 5-7 P-3 AUD 형식 표준화 -->
+- **AUD 진단 환자 필수 형식** (AUD 또는 알코올 사용 장애가 Chief Problems에 포함된 경우):
+  ```
+  [물질명]: Binge drinking (+/-), N times/week, [주종+용량]
+  Last drinking: [내원 N일 전 또는 날짜] [용량]
+  Smoking: for N yrs (해당 시)
+  ```
+  - `Binge drinking (+)`: 한 번에 다량(소주 3병+ 또는 맥주 5캔+) 음주 패턴이 있는 경우
+  - Last drinking: STT에 마지막 음주일·음주량이 언급된 경우 반드시 포함
+  - 빈도·용량·Last drinking이 확인되는 항목만 기재 (없으면 해당 줄 생략)
+
 **3) Lab finding issue**:
 - 입원 시 또는 면담 중 확인된 이상 검사 소견
 - 형식: `[날짜] 검사명 : 결과값 (정상범위)`
 - 없으면: none
 
 **4) Other medical issue**:
-- 내과·외과 병력 (수술, 알레르기, 만성질환 등)
+<!-- 수정: Step 5-7 P-3 Other Medical 오분류 방지 -->
+- **환자 본인의 정신과 외 신체 질환만 기재** (절대 규칙):
+  - ✅ 포함 대상: 입원 경위에서 언급된 신체 증상(경련·사지 근력 저하·시야 이상 등), 입원 후 확인된 신체 진단, 기존 만성 질환, 수술력, 알레르기, Lab finding과 연계된 진단
+  - ❌ 제외 대상: 환자 가족(환모·환부 등)의 산과력·임신력·개인 건강 정보 → Family History 또는 Personal History에 기재
+  - ❌ 제외 대상: 환자의 산과력(출산 관련 일반 사항) → Personal History Adulthood에 기재. 단, 출산 관련 직접 의학적 합병증(산후 출혈, 임신중독증 등)은 포함 가능.
+- 내과·외과 병력 (수술, 알레르기, 만성질환 등) — 환자 본인 것만
 - 없으면: none
 
 **5) Psychiatric family history**:
