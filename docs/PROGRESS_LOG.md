@@ -57,6 +57,81 @@ n8n MCP `n8n_update_partial_workflow` 적용 완료 (operationsApplied: 1, saved
 #### 다음 작업
 
 - s34-a1 핀 데이터 해제 후 E2E 재실행 → Halluc check QC 재채점 (목표 75점+)
+
+---
+
+### 세션 28~29 — s34-a2 v3 프롬프트 + parse_error 버그 수정 (2026-04-05)
+
+#### 작업 배경
+
+세션 27 이후 E2E 실행 시 s34-a3 `검증 결과 통합`에서 반복적인 parse_error 발생:
+1. `Bad control character` → LangChain OUTPUT_PARSING_FAILURE
+2. `Unterminated string` (응답 잘림)
+
+#### 버그 수정 이력
+
+| 단계 | 원인 | 수정 |
+|------|------|------|
+| s34-a2 ReAct parser 실패 | Gemini가 ` ```json ` fence 출력 → LangChain 파싱 실패 | Conversational Agent → **Tools Agent** 전환 (`parameters.agent: "toolsAgent"`) |
+| s34-a3 응답 잘림 (3888자) | `modelName` 미설정 → 구버전 모델 default (토큰 한계 낮음) | (이미 이전에 modelName, maxOutputTokens 설정되어 있었음 — 별도 수정 불필요) |
+| s34-a3 응답 잘림 (4543~5147자) | `maxOutputTokens: 16384` 이나 Gemini 2.5 Flash thinking 토큰이 출력 예산 소비 | `maxOutputTokens: 65536` (Gemini 2.5 Flash 최대값)으로 상향 |
+| s34-a3 fence stripping 오류 | regex `\`\`\`json\\n?` 에서 MCP JSON 인코딩 이중 이스케이프 | string 메서드(`startsWith`, `substring`, `endsWith`)로 교체 |
+| s34-a3 JSON 불완전 파싱 | 잘린 JSON으로 인한 `Unterminated string` | maxOutputTokens 65536 상향으로 해결 |
+
+#### s34-a2 v3 시스템 프롬프트 적용
+
+**v2 대비 v3 변경사항**:
+1. **FP 방어 6** 신규: NSSI(비자살적 자해)와 SA(자살 시도) 구분 — 5항목 체크리스트, 3가지 판정 규칙, 4가지 예시
+2. **FP 방어 7** 신규: 섹션 배치 오류 ≠ Hallucination 규칙
+3. 기존 FP 방어 1~5 및 JSON 출력 규칙 유지
+
+n8n MCP `patchNodeField` → `parameters.options.systemMessage` 적용 완료.
+파일: `docs/prompts/s34-a2_system_prompt_v3.md` 저장 완료.
+
+#### QC 결과 (v3 적용 후)
+
+**E2E 실행**: parse_error: false ✅, sections_checked: S01~S10 ✅, 13건 탐지
+
+Claude.ai QC 채점:
+- 원점수: **87/100** → 보정 후 **89/100** (absence_assumption 재차 오분류 감점 취소)
+- 판정: **Pass** (목표 80점+ 달성)
+- 이전 v2 대비: 77 → 89 (+12pt)
+- NSSI/SA FP 완전 해소 ✅
+
+| 기준 | 점수(보정) | 주요 변동 |
+|------|:---:|------|
+| A 정확성 | 18/20 | FP 1건 (Issue 3 알코올) — v3.1 FP 방어 8로 해소 예정 |
+| B 완전성 | 18/20 | FN 2건 모두 minor |
+| C 유용성 | 18/20 | 부재 가정 수정 방향 부족 |
+| D 프롬프트 준수도 | 19/20 | absence_assumption 오분류(채점 오류) |
+| E 임상 안전성 | 18/20 | NSSI/SA 정확 분류 ✅ |
+
+#### s34-a2 v3.1 프롬프트 적용 (FP 방어 8 추가)
+
+**QC 수정 사안 검토 결과**:
+- MEDIUM #1 (absence_assumption 공식화): 이미 v3에 포함 — 불필요
+- **MEDIUM #2 (물질 사용 FP 방어)**: ✅ 적용
+- LOW #3, #4: 보류
+
+**FP 방어 8 내용**: 임상적으로 유의미하지 않은 물질 사용(알코올 1회/월 미만 소주 1-2잔, 카페인 1-2잔/일 등)을 "none"으로 기재한 경우 FP로 처리.
+
+n8n MCP `patchNodeField` → `parameters.options.systemMessage` 적용 완료.
+파일: `docs/prompts/s34-a2_system_prompt_v3.md` (v3.1 내용 포함) 업데이트 완료.
+
+#### 현재 s34-a2-gemini 노드 설정값
+
+| 파라미터 | 값 |
+|---------|---|
+| modelName | `models/gemini-2.5-flash` (default) |
+| maxOutputTokens | 65536 |
+| temperature | 0.1 |
+| safetySettings | 4개 카테고리 모두 BLOCK_NONE |
+| agent type | Tools Agent |
+
+#### 다음 작업 (Tier 4)
+
+- `docs/milestone.md` Tier 4 Step 4-0 Safety 배너 CRITICAL 작업
+- 2분할 병렬 처리: 실환자 데이터 테스트 후 QC 재평가 시 필요하면 적용
 - v2 적용 후 FP Issue 7 해소 확인 + FN-1 탐지 여부 확인
 
 ---
