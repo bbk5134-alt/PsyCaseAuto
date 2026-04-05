@@ -4,6 +4,47 @@
 
 ---
 
+### 세션 33 — s34-a2 systemMessage 구조 분석 + passed 기준 추가 (2026-04-05)
+
+#### 배경
+
+이전 세션에서 비행기 탑승으로 작업 중단 → 데스크탑 Claude Code가 s34-a2 수정을 시도했으나 중단. 해당 수정사항(Claude.ai 검토본)이 현재 n8n에 적용되어 있는지 점검.
+
+#### 조사 결과: 예상과 다른 구조 발견
+
+n8n WF2 s34-a2 노드에 **systemMessage가 2개** 존재함:
+
+| 필드 위치 | 내용 | n8n 실제 사용 여부 |
+|----------|------|:-----------------:|
+| `parameters.options.systemMessage` | v3.md 내용 (올바른 섹션 매핑) | **YES (실제 작동)** |
+| `parameters.systemMessage` | 구버전 ([개선 1-7], 잘못된 섹션 매핑) | NO (dead field) |
+
+#### 제안된 변경사항 검토 결과
+
+Claude.ai가 제안한 7개 변경사항 중 **6개 이미 적용**, 1개만 누락:
+
+| 항목 | 상태 |
+|------|:----:|
+| 섹션 매핑 수정 (S04=Past/Family, S07=Mood Chart, S09=Present Illness) | ✅ 이미 적용 |
+| FP 방어 6 (NSSI/SA 구분) | ✅ 이미 적용 |
+| severity_distortion 하향 변조 탐지 | ✅ 이미 적용 |
+| context_truncated 우선순위 정정 (S09, S04, S06) | ✅ 이미 적용 |
+| FP 방어 8 (물질 사용) | ✅ 이미 적용 |
+| **`passed` 명시적 판정 기준** | ❌ **누락 → 이번에 추가** |
+
+#### 적용 내용 (s34-a2 시스템 프롬프트 v3.1 패치)
+
+`passed` 판정 기준 명시 추가:
+- `passed: false` — critical 또는 major 이슈 1개 이상
+- `passed: true` — issues 비어 있거나 minor만 존재
+- 적용: `docs/prompts/s34-a2_system_prompt_v3.md` + n8n WF2 s34-a2 노드 (`patchNodeField` 성공)
+
+#### E2E 판단: 불필요
+
+보고서 생성 로직 변경 없음. 기존 암묵적 규칙의 명시화(additive). GS2 E2E(Step 5-5) 시 자연스럽게 검증됨.
+
+---
+
 ### 세션 32 — GS2 추가 의사결정 + 아카이브 정리 (2026-04-05)
 
 #### 배경
