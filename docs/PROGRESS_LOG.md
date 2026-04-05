@@ -163,6 +163,31 @@ n8n MCP `updateNode` → `parameters.jsCode` 전체 교체 완료 (7072 → 7445
 
 ---
 
+### 세션 31 — Step 4-3b 정적 검증 (2026-04-05)
+
+#### 작업 내용
+
+세션 30에서 MCP `updateNode`로 적용한 Step 4-3b 변경사항이 n8n 실제 노드에 반영되어 있는지 정적 확인.
+
+**검증 방법**: `n8n_get_workflow` (WF2: `LiN5bKslyWtZX6yG`) → s34-c4 노드 `parameters.jsCode` 직접 검색.
+
+**검증 결과:**
+
+| 항목 | 확인 내용 | 결과 |
+|------|---------|:----:|
+| CSS `.inference` | `.inference { color: #888; font-style: italic; }` | ✅ |
+| CSS `@media print` | `@media print { .inference { display: none; } }` | ✅ |
+| `withInference` — toHtml() | `[추론](.*?)[\/추론]` → `<span class="inference">$1</span>` | ✅ |
+| `withInference` — Progress Notes 루프 | 동일 변환 + `// Step 4-3b` 주석 포함 | ✅ |
+
+**판정**: E2E 실행 불필요. `[추론]` 태그 실제 렌더링은 Step 4-6 실환자 데이터에서 자연 검증.
+
+#### 다음 작업
+
+- Step 4-6: 실환자 녹음 → WF1-B → WF2 → §18 전공의 수정 E2E
+
+---
+
 ### 세션 26 — s34-a1 원문 절단 버그 수정 (2026-04-03)
 
 #### 발견 경위
