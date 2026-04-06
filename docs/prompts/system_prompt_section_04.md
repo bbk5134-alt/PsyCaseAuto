@@ -114,20 +114,45 @@
 - 없으면: none
 
 <!-- 수정: Step 5-7 P-3 AUD 형식 표준화 -->
+<!-- 수정: Fix-B Phase 2 Alcohol 형식 보완 + 금단 분류 규칙 -->
 - **AUD 진단 환자 필수 형식** (AUD 또는 알코올 사용 장애가 Chief Problems에 포함된 경우):
   ```
-  [물질명]: Binge drinking (+/-), N times/week, [주종+용량]
+  Alcohol: Binge drinking (+/-), N times/week, [주종+용량]
   Last drinking: [내원 N일 전 또는 날짜] [용량]
   Smoking: for N yrs (해당 시)
   ```
   - `Binge drinking (+)`: 한 번에 다량(소주 3병+ 또는 맥주 5캔+) 음주 패턴이 있는 경우
   - Last drinking: STT에 마지막 음주일·음주량이 언급된 경우 반드시 포함
   - 빈도·용량·Last drinking이 확인되는 항목만 기재 (없으면 해당 줄 생략)
+  - GS2 예시: `Alcohol: Binge drinking (+), 7 times/week, 소주 3병, 맥주 2캔` / `Last drinking: 입원 전일 맥주 500cc 2캔` / `Smoking: for 15 yrs`
+
+- **금단 증상 기재 위치 구분 (절대 규칙)**:
+  - **금단 사건(seizure, DT 등)의 의학적 진단** → `4. Other medical issue`에 기재
+    - 예) `alcohol withdrawal seizure`, `delirium tremens`
+  - **금단 증상이 입원 경위에 해당** → `Present Illness (S09)` 서술 내에서 경과로 기재
+  - **이 항목(2번)에는 물질 사용 패턴만 기재** — 금단 진단명을 여기에 넣지 않는다
+  - ❌ `2. Alcohol: ... alcohol withdrawal seizure` (금단 진단이 substance 항목에 혼재)
+  - ✅ `2. Alcohol: Binge drinking (+), 7 times/week, 소주 3병` + `4. Other medical issue: alcohol withdrawal seizure`
 
 **3) Lab finding issue**:
 - 입원 시 또는 면담 중 확인된 이상 검사 소견
-- 형식: `[날짜] 검사명 : 결과값 (정상범위)`
+- 형식: `[날짜] 검사명 : ↑ 또는 ↓결과값 (정상범위)`
 - 없으면: none
+
+<!-- 수정: Fix-B Phase 2 Lab finding 복수 항목 규칙 -->
+- **복수 항목 기재 규칙**:
+  - 검사 소견이 여러 항목인 경우 각 항목 별줄로 기재
+  - 날짜가 다른 경우에도 각 줄에 개별 날짜 표기
+  - 임상적으로 유의미한 이상치는 `**굵게**` 강조
+  - GS2 예시:
+    ```
+    [2026-03-18] CK : ↑5,817
+    [2026-03-17] γ-GT : ↑512
+    [2026-03-17] AST (SGOT) : ↑172
+    [2026-03-17] ALT (SGPT) : ↑65
+    ```
+  - 정상범위가 STT에 언급되지 않은 경우: 결과값만 기재, `(정상범위)` 생략
+  - ↑/↓ 방향 표기: 정상 상한 초과 = `↑`, 정상 하한 미만 = `↓`
 
 **4) Other medical issue**:
 <!-- 수정: Step 5-7 P-3 Other Medical 오분류 방지 -->
@@ -138,9 +163,34 @@
 - 내과·외과 병력 (수술, 알레르기, 만성질환 등) — 환자 본인 것만
 - 없으면: none
 
+<!-- 수정: Fix-B Phase 2 Other medical 복수 진단 + 분류 기준 -->
+- **복수 진단 기재**: 해당 사항이 여러 건인 경우 각 진단명 별줄로 나열 (쉼표 구분도 허용)
+  - GS2 예시:
+    ```
+    alcohol withdrawal seizure,
+    peripheral neuropathy,
+    macrocytic normochromic anemia,
+    mild leukopenia
+    ```
+- **알코올/물질 관련 신체 합병증 분류 기준**:
+  - 금단 관련 신체 진단 (seizure, DT, neuropathy) → 여기(4번)에 기재
+  - 음주 패턴·빈도·양 → 2번 Alcohol에 기재
+  - 알코올 관련 Lab 이상 (LFT, MCV 등) → 3번 Lab finding에 기재
+
 **5) Psychiatric family history**:
 - 가족 정신과 병력 (관계, 진단명 또는 기술)
 - 없으면: none
+
+<!-- 수정: Fix-B Phase 2 Family history 복수 가족 형식 -->
+- **복수 가족 기재**: 각 가족 구성원별 별줄로 기재
+  - 형식: `[관계] [진단명 또는 기술]`
+  - 같은 진단을 가진 가족은 한 줄에 병기 가능
+  - GS2 예시:
+    ```
+    친조부, 친백부 alcohol use disorder
+    환부, 언니 panic disorder
+    ```
+  - 공식 진단 미확인 시: "(공식 진단 미확인)" 부기 (Error Handling 규칙 10 연동)
 
 **6) Current medication**:
 - 투약 형식 필수: 약물명(generic) 아침-점심-저녁-취침mg
@@ -196,6 +246,46 @@ clonazepam 0-0-0-1mg
 
 ---
 
+### Gold Standard 2 (GS2) — AUD + 복합 내과력 케이스
+
+**IV. Past History and Family History**
+
+1\. Psychiatric admission: 내원 하루 전 알코올 중독 병원 1시간 입원
+
+2\. Alcohol and other substance issue: Alcohol: Binge drinking (+), 7 times/week, 소주 3병, 맥주 2캔
+
+Last drinking: 입원 전일 맥주 500cc 2캔
+
+Smoking: for 15 yrs
+
+3\. Lab finding issue: [2026-03-18] CK : ↑5,817
+
+[2026-03-17] γ-GT : ↑512
+
+[2026-03-17] AST (SGOT) : ↑172
+
+[2026-03-17] ALT (SGPT) : ↑65
+
+4\. Other medical issue: alcohol withdrawal seizure,
+
+peripheral neuropathy,
+
+macrocytic normochromic anemia,
+
+mild leukopenia
+
+5\. Psychiatric family history: 친조부, 친백부 alcohol use disorder
+
+환부, 언니 panic disorder
+
+6\. Current medication: none
+
+**Family pedigree**
+
+[가계도 삽입]
+
+---
+
 ### 형식 준수 체크포인트
 
 - [ ] 6개 항목 번호 순서 유지 (1~6)
@@ -205,6 +295,10 @@ clonazepam 0-0-0-1mg
 - [ ] Lab finding: `[날짜] 검사명 : 결과값 (정상범위)` 형식
 - [ ] Family pedigree 항목 포함
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
+- [ ] AUD 환자: `Alcohol: Binge drinking (+/-), N times/week, [주종+용량]` 형식 준수
+- [ ] Lab findings 복수 항목: 각 항목 별줄, 각 날짜 개별 표기
+- [ ] 금단 진단(seizure, DT): 4번 Other medical에 기재 (2번 Alcohol에 혼재 금지)
+- [ ] 복수 가족 정신과 병력: 진단명별 그룹화, 별줄 기재
 
 ---
 
@@ -222,7 +316,9 @@ clonazepam 0-0-0-1mg
       "data": {
         "psychiatric_admission": "none",
         "alcohol_substance": {
-          "content": "4년간 매일 맥주 2~6캔 음주",
+          "content": "Alcohol: Binge drinking (+), 7 times/week, 소주 3병, 맥주 2캔",
+          "last_drinking": "입원 전일 맥주 500cc 2캔",
+          "smoking": "for 15 yrs",
           "clinically_significant": true
         },
         "lab_findings": [
@@ -264,6 +360,8 @@ clonazepam 0-0-0-1mg
 |----|------|------|
 | `structured.data.psychiatric_admission` | string | 정신과 입원력 (없으면 "none") |
 | `structured.data.alcohol_substance.clinically_significant` | boolean | 임상 유의 수준 물질 사용 여부 |
+| `structured.data.alcohol_substance.last_drinking` | string\|null | 마지막 음주 시점·양 (AUD 환자, 확인 시) |
+| `structured.data.alcohol_substance.smoking` | string\|null | 흡연력 (해당 시) |
 | `structured.data.lab_findings` | array | 이상 검사 소견 목록 |
 | `structured.data.lab_findings[].abnormal` | boolean | 정상범위 이탈 여부 |
 | `structured.data.other_medical` | string | 내과/외과 병력 (없으면 "none") |

@@ -178,9 +178,17 @@ Gold Standard 예시: `**Mood:** depressed, not irritable, sl. anxious` / `**Aff
   `Mental status: [alert/drowsy/stupor/coma]`
   `Orientation (T/P/P): [intact/intact/intact] ([날짜 답변]/[장소 답변]/[인물 답변])`
   `Memory (I/R/R): [intact/intact/intact] ([즉각 기억 검사값]/[최근 기억 검사값]/[원격 기억 검사값])`
-  `Concentration & calculation: [intact/impaired] ([계산 결과 나열])`
-  `Abstract thinking: [intact/impaired] ([질문과 답변])`
+  `Concentration & calculation: [intact/impaired/not tested] ([계산 결과 나열])`
+  `Abstract thinking: [intact/impaired/not tested] ([질문과 답변])`
 - 실제 검사 수치·답변이 있으면 괄호 안에 기재
+
+**intact/impaired/not tested 판정 기준 (절대 규칙)**:
+- `intact` 또는 `impaired`: STT에 **해당 검사를 실제 수행한 기록**(계산 과제 결과, 추상적 사고 질문-답변 등)이 있는 경우에만 판정
+- `not tested`: STT에 해당 검사 수행 기록이 **없는** 경우. 괄호 내용 생략
+  - 예) `Concentration & calculation: not tested`
+  - 예) `Abstract thinking: not tested`
+- ❌ **금지**: 검사 미수행 상태에서 다른 증상(사고 비약, 말 빠름, 조증 등)을 근거로 `impaired` 추론 기재
+- ✅ 다른 증상에서 관찰된 인지 기능 저하 소견은 Thought Content, General Appearance 등 해당 항목에서 서술
 
 <!-- 수정: 수정3 -->
 **7) Impulsivity**:
@@ -216,10 +224,18 @@ Gold Standard 예시: `**Mood:** depressed, not irritable, sl. anxious` / `**Aff
   - ✅ 허용: SA(-) + `"self_harm_history": "YYYY-MM, N회, 손목 찰과상"` 기재
 
 <!-- 수정: 수정2 -->
+<!-- 수정: Fix-3 Phase 2 Judgment not tested + testing/social 구분 -->
 **8) Judgment and Insight**:
 - 형식:
-  `**Judgment:** testing -- [intact/impaired]`
+  `**Judgment:** testing -- [intact/impaired/not tested]`
   `           social -- [intact/impaired]`
+
+**testing vs social 판정 기준 구분 (절대 규칙)**:
+- `testing judgment`: STT에 가상 상황 질문("길에서 지갑을 주우면?", "불이 나면?" 등)에 대한 **환자의 답변이 기록된 경우에만** intact/impaired 판정
+  - STT에 해당 질문-답변이 없으면 → `testing -- not tested`
+- `social judgment`: 면담 중 관찰된 **환자의 사회적 행동·대인관계 패턴**에서 추론 가능
+  - 면담 태도, 대화 맥락, 보호자 보고 등을 근거로 intact/impaired 판정 허용
+- ❌ 금지: testing judgment를 면담 태도나 병력에서 추론하여 판정
   (빈 줄)
   `**Insight:** [아래 7단계 중 해당 단계의 문장 전체]`
 
@@ -365,6 +381,8 @@ Reliable
 - [ ] Judgment: `testing -- intact` (대시 2개 사용)
 - [ ] Spontaneity: `**Spontaneity of speech (-)**` (대괄호 없음, (+/-) 값까지 굵게)
 - [ ] Sensorium: 검사값을 괄호 안에 기재 (있는 경우)
+- [ ] Sensorium: STT 검사 미수행 항목은 `not tested` 표기 (impaired 추론 판정 금지)
+- [ ] Judgment: testing 미평가 시 `testing -- not tested` 표기 (social과 구분)
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
 - [ ] Mood: 기본 상태 + 과민성 + 불안 수식 3요소 조합 준수
 - [ ] Affect: 적절성 + 강도 + 범위 3요소 조합 준수
@@ -433,8 +451,8 @@ Reliable
           "memory_immediate": "intact",
           "memory_recent": "intact",
           "memory_remote": "intact",
-          "concentration": "intact",
-          "abstract_thinking": "intact",
+          "concentration": "intact | impaired | not_tested",
+          "abstract_thinking": "intact | impaired | not_tested",
           "test_values": {
             "orientation_answers": [],
             "memory_immediate_items": [],
@@ -454,7 +472,7 @@ Reliable
           "self_harm_history": null
         },
         "judgment": {
-          "testing": "intact",
+          "testing": "intact | impaired | not_tested",
           "social": "impaired"
         },
         "insight": "Awareness that illness is due to something unknown in the patient",
@@ -484,6 +502,9 @@ Reliable
 | `structured.data.speech.spontaneity` | boolean | 자발적 발화 여부 |
 | `structured.data.perception.*` | boolean\|null | 지각 이상 여부 (미확인 시 null) |
 | `structured.data.thought.*` | boolean\|null | 사고 이상 여부 (미확인 시 null) |
+| `structured.data.sensorium_cognition.concentration` | enum | intact / impaired / not_tested — STT 검사 기록 유무 기준 |
+| `structured.data.sensorium_cognition.abstract_thinking` | enum | intact / impaired / not_tested — STT 검사 기록 유무 기준 |
+| `structured.data.judgment.testing` | enum | intact / impaired / not_tested — STT 가상 질문 답변 유무 기준 |
 | `structured.data.impulsivity.suicide_risk` | enum | 상/중/하 — SI·SP·SA 판정 기준 적용 |
 | `structured.data.impulsivity.violence_risk` | enum | 상/중/하 — HI·과거 폭력력 기반 판단 |
 | `structured.data.insight` | string | Insight 단계 (7단계 중 해당 문장 전체) |
@@ -523,11 +544,18 @@ Reliable
 9. **Thought Content 항목 일부 미확인 시** → 해당 항목 `(확인 필요)` 표기.
    structured.data.thought.해당항목 = null.
 
-10. **Sensorium 검사 미시행 시** → 항목명만 기재하고 `(검사 미시행)` 표기.
-    structured.data.sensorium_cognition.해당항목 = null.
+10. **Sensorium 검사 미시행 시** → narrative에 `not tested` 표기. `(검사 미시행)` 사용 금지.
+    structured.data.sensorium_cognition.해당항목 = "not_tested" (null 아님).
     meta.missing_items에 해당 항목 기재.
+    - 적용 대상: Concentration & calculation, Abstract thinking
+    - ❌ `impaired ([정보 없음])` 형태 금지 — 판정과 미검사를 혼합하지 않는다
+    - ✅ `not tested` — 검사 미수행 사실만 기재
 
-11. **자살 위험 "상" 감지 시** → meta.alert = "HIGH_SUICIDE_RISK" 설정 필수.
+11. **Judgment testing 미평가 시** → narrative에 `testing -- not tested` 표기.
+    structured.data.judgment.testing = "not_tested".
+    meta.missing_items에 "testing judgment 확인 필요" 기재.
+
+12. **자살 위험 "상" 감지 시** → meta.alert = "HIGH_SUICIDE_RISK" 설정 필수.
     (WF2 메인에서 탐지하여 Telegram 알림에 포함됨)
 
 ### 에스컬레이션 규칙

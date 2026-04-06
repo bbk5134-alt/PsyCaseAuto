@@ -23,6 +23,12 @@
      대괄호(`[]`), 콜론+값 쌍 형태의 기계적 태그 절대 금지
    - 예) ❌ `narrative: "환자는 우울감을 호소. source_ref: 면담1_L12"`
    - 예) ✅ `narrative: "환자는 내원 1년 7개월 전부터 우울감을 호소하였다."`
+   - **구체적 금지 패턴 목록** (하나라도 narrative에 출현 시 출력 무효):
+     - `"key":` 형태의 JSON 키-값 쌍 (예: `"symptom_en": "Depressed mood"`)
+     - `{ }` 또는 `[ ]` 로 감싼 구조체
+     - `"number": 1`, `"informants": [...]`, `"remote_onset":` 등 structured 필드명
+     - `null`, `true`, `false` 등 JSON 리터럴이 산문 맥락 없이 단독 출현
+   - **자가 검증**: narrative 출력 전, JSON 키워드(`"type"`, `"data"`, `"status"`, `"source_ref"`, `"problems"`, `"onset"`)가 포함되어 있으면 해당 부분을 임상 산문으로 재작성
 
 2. **면담 기록에 없는 사실 생성 금지**
    - 입력 데이터에 명시되지 않은 수치·날짜·사건·발언을 사실처럼 서술 금지
@@ -114,19 +120,35 @@
 
 > **모든 시점은 절대 날짜 금지. 반드시 "내원 N개월/년 전" 상대시점만 사용.**
 
-발병 횟수에 따라 아래 두 가지 형식 중 하나만 선택:
+<!-- 수정: Fix-A Phase 2 Aggravation 패턴 추가 (3가지 형식) -->
+발병 패턴에 따라 아래 세 가지 형식 중 하나만 선택:
 
 | 조건 | 형식 |
 |------|------|
 | **발병이 1회** (시작 시점 단 1개, 이후 지속) | `Onset) 내원 N년/개월 전` |
-| **발병이 2회 이상** (명확히 구분되는 원격 발병 + 최근 악화 또는 재발) | `Remote onset) 내원 N년/개월 전` + `Recent onset) 내원 N개월/주 전` |
+| **발병 후 동일 에피소드 내 악화** (소실·재발 없이 기존 증상이 심해짐) | `Onset) 내원 N년/개월 전` + `Aggravation) 내원 N개월/주 전` |
+| **발병이 2회 이상** (호전·소실 후 명확한 재발) | `Remote onset) 내원 N년/개월 전` + `Recent onset) 내원 N개월/주 전` |
 
-- **Onset 단독 사용 기준**: 증상이 특정 시점에 시작된 후 지속되어 온 경우 (단일 에피소드 또는 시작 시점만 확인 가능한 경우)
-  - Gold Standard 예시: Identity disturbance → `Onset) 내원 2년 2개월 전`
-- **Remote/Recent 이분법 사용 기준**: 증상이 원격 시점에 발병했다가 호전·소실 후 재발한 경우, 또는 명확한 악화 시점이 최근에 별도로 존재하는 경우
-  - Gold Standard 예시: Depressed mood → `Remote onset) 내원 1년 7개월 전` + `Recent onset) 내원 1개월 전`
+- **Onset 단독 사용 기준**: 증상이 특정 시점에 시작된 후 변동 없이 지속되어 온 경우
+  - GS1 예시: Identity disturbance → `Onset) 내원 2년 2개월 전`
+  - GS2 예시: Labile mood → `Onset) 내원 3개월 전`
+
+- **Onset + Aggravation 사용 기준**: 증상이 시작된 후 소실 없이 지속되다가, 특정 시점에 명확한 **악화**(양·빈도·강도 증가)가 확인되는 경우
+  - GS2 예시: Alcohol use dependence → `Onset) 내원 2년 전` + `Aggravation) 내원 3달 전`
+  - 핵심 구분: 중간에 호전·소실 기간이 **없이** 계속 있던 증상이 더 나빠진 것
+  - Aggravation은 반드시 Onset보다 최근 시점이어야 함
+
+- **Remote/Recent 이분법 사용 기준**: 증상이 원격 시점에 발병했다가 **호전·소실 후 재발**한 경우
+  - GS1 예시: Depressed mood → `Remote onset) 내원 1년 7개월 전` + `Recent onset) 내원 1개월 전`
+  - 핵심 구분: 중간에 호전·소실 기간이 **있고** 다시 나타난 것
+
 - **면담 기록에서 시점이 2개 이상 확인되더라도, 동일 에피소드의 연속적 경과라면 Onset 단독** 사용
 - Remote onset에 복수 시점 허용: `Remote onset) 내원 1년 7개월 전, 내원 7개월 전`
+
+**Aggravation vs Recent onset 선택 기준**:
+- 중간에 증상 **소실·호전 기간 있음** → `Remote onset) / Recent onset)`
+- 중간에 소실 **없이 지속** + 악화 시점 확인 → `Onset) / Aggravation)`
+- 판단 불가 시: `Onset)` 단독 사용 + meta.missing_items에 사유 기재
 
 <!-- 수정: P4 Onset 역전 방지 규칙 (fallback 강화) -->
 - **Remote/Recent 시점 역전 방지 규칙 (절대 규칙)**:
@@ -145,6 +167,25 @@
 2. 보호자가 관찰한 변화 (객관적 보완)
 3. 면담자가 관찰한 임상 소견
 - 정보 제공자가 복수일 경우 "By. 환자, 환자의 남편" 형식으로 병기
+
+<!-- 수정: Fix-A Phase 2 다중 정보원 처리 규칙 -->
+**다중 정보원 케이스 처리 (2명 이상)**:
+
+정보원이 2명 이상인 경우 아래 규칙을 적용한다:
+
+- **동일 증상을 복수 정보원이 공통 호소**: `By. 환자, 환모, 언니` 형식으로 한 줄에 병기
+  - 예) 환자·환모·언니 모두 동일 증상을 보고 → `By. 환자, 환모, 언니`
+  - 증상 설명은 각 정보원의 관찰을 통합하여 가장 풍부한 기술 채택
+
+- **특정 증상을 일부 정보원만 호소**: 해당 증상의 `By.` 에 호소한 정보원만 기재
+  - 예) 환자만 호소한 증상 → `By. 환자`
+  - 예) 보호자만 관찰한 증상 → `By. 환모` 또는 `By. 환모, 언니`
+
+- **정보원 간 증상 기술이 상이한 경우**: 증상 설명에 차이를 반영
+  - 예) `- 환자는 기분 변동을 부정하나, 환모와 언니에 의하면 하루에도 수십 번 기분이 변한다고 한다`
+  - meta.discrepancy_flag = true 설정
+
+- **정보원 순서**: 환자 → 보호자(가족관계 순) → 의료진 순으로 기재
 
 **DSM-5-TR 용어 변환 필수**:
 - "잠을 못 잔다" → Insomnia
@@ -205,6 +246,30 @@ Onset) 내원 2년 2개월 전
 
 ---
 
+### Gold Standard 2 (GS2) — 다중 정보원 + Aggravation 케이스
+
+**II. Chief problems and durations**
+
+**1. Alcohol use dependence**
+
+\- 과도한 음주로 건강이 좋지 않다고 들었음에도 오랜 기간 술을 마시고 양이 점차 늘어나는 모습
+
+By. 환자, 환모, 언니
+
+Onset) 내원 2년 전
+
+Aggravation) 내원 3달 전
+
+**2. Labile mood**
+
+\- 울다가도 기분좋은 일 있으면 웃다가, 5분 뒤 다시 우울해져 우는, 하루에도 기분이 수십 번씩 변화하는 모습
+
+By. 환자, 환모, 언니
+
+Onset) 내원 3개월 전
+
+---
+
 ### 형식 준수 체크포인트
 
 - [ ] 영문 증상명 굵게(`**`) 처리
@@ -214,6 +279,9 @@ Onset) 내원 2년 2개월 전
 - [ ] **발병 2회+**: `Remote onset) / Recent onset)` 이분법 사용 ← Gold Standard Depressed mood 패턴
 - [ ] **절대 날짜(연도, 월, 일) 금지** — "내원 N개월/년 전"만 허용
 - [ ] narrative에 JSON 태그·기계적 기호 없음 ← Anti-Halluc 규칙 1 연동
+- [ ] narrative에 `"key":`, `{ }`, `[ ]`, `null`, `true/false` 등 JSON 리터럴 없음 ← Anti-Halluc 강화
+- [ ] 다중 정보원: `By. 환자, 환모, 언니` 형식 (쉼표 구분, 한 줄)
+- [ ] Aggravation: 소실 없이 지속 악화 시 `Onset)` + `Aggravation)` 조합 사용
 <!-- 수정: P4 체크포인트 추가 -->
 - [ ] Remote onset이 Recent onset보다 이전 시점인지 역전 여부 확인 (N1 > N2)
 
@@ -250,7 +318,8 @@ Onset) 내원 2년 2개월 전
             "informants": ["환자"],
             "remote_onset": null,
             "recent_onset": null,
-            "onset": "내원 2년 2개월 전"
+            "onset": "내원 2년 2개월 전",
+            "aggravation": null
           }
         ]
       }
@@ -270,13 +339,16 @@ Onset) 내원 2년 2개월 전
 
 ### Onset 필드 사용 규칙
 
-| 증상 유형 | remote_onset | recent_onset | onset |
-|-----------|-------------|-------------|-------|
-| 발병 2회+ (원격+최근 구분 가능) | 값 기재 | 값 기재 | `null` |
-| 발병 1회 (단일 시점 또는 지속 경과) | `null` | `null` | 값 기재 |
+| 증상 유형 | remote_onset | recent_onset | onset | aggravation |
+|-----------|-------------|-------------|-------|-------------|
+| 발병 2회+ (소실 후 재발) | 값 기재 | 값 기재 | `null` | `null` |
+| 발병 1회 + 악화 (소실 없이 지속 악화) | `null` | `null` | 값 기재 | 값 기재 |
+| 발병 1회 (단일 시점, 변동 없이 지속) | `null` | `null` | 값 기재 | `null` |
 
-> ⚠️ `onset`과 `remote_onset/recent_onset`은 동시에 값을 가질 수 없음.
-> 둘 중 하나만 사용하고 나머지는 반드시 `null`.
+> ⚠️ 네 필드 중 동시에 값을 가질 수 있는 조합은 위 3가지뿐.
+> - `onset` + `aggravation` 조합 가능 (동일 에피소드 내 악화)
+> - `remote_onset` + `recent_onset` 조합 가능 (소실 후 재발)
+> - `onset` + `remote_onset` 동시 값 보유 금지
 
 ### 추가 키 설명
 
@@ -291,6 +363,7 @@ Onset) 내원 2년 2개월 전
 | `problems[].remote_onset` | string\|null | Remote onset 시점 (없으면 null) |
 | `problems[].recent_onset` | string\|null | Recent onset 시점 (없으면 null) |
 | `problems[].onset` | string\|null | 단일 onset 시점 (발병 1회 또는 구분 불가 시) |
+| `problems[].aggravation` | string\|null | 악화 시점 (소실 없이 지속 악화 시). onset과 함께 사용 |
 | `meta.problems_count` | integer | 추출된 증상 총 개수 |
 
 ---
@@ -326,6 +399,11 @@ Onset) 내원 2년 2개월 전
    - `Remote onset) / Recent onset)` 이분법: 발병 후 상대적 호전이 있다가 최근 명확한 재발·악화 시점이 별도로 존재하는 경우
    - 면담 기록에서 "처음에는 ~, 최근에 다시 ~" 패턴이 확인될 때만 Remote/Recent 이분법 적용
    - 판단 불가 시: `Onset)` 단독 사용 + meta.missing_items에 "Remote/Recent 구분 확인 필요" 기재
+
+8-1. **Onset/Aggravation vs Remote/Recent 선택 판단 기준**:
+   - 면담에서 "점점 심해졌다", "양이 늘었다", "더 자주" 등 악화 표현 → `Onset)` + `Aggravation)`
+   - 면담에서 "다시 ~", "다시 나타났다", "한동안 괜찮다가" 등 재발 표현 → `Remote onset)` + `Recent onset)`
+   - 모호한 경우: `Onset)` 단독 + meta.missing_items에 "Aggravation/Recent onset 구분 확인 필요" 기재
 
 9. **증상이 1개만 확인될 경우** → 1개만 생성. meta.problems_count = 1.
    meta.missing_items에 "추가 증상 확인 필요" 기재.

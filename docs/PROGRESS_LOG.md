@@ -4,6 +4,80 @@
 
 ---
 
+### 세션 43 — Phase 2 Fix-A (S02) + Fix-B (S04) n8n 적용 완료 (2026-04-06)
+
+#### 완료 항목
+
+| Fix | 대상 Sub-WF | .md | n8n |
+|-----|-----------|:---:|:---:|
+| Fix-A (전체) | S02 Chief Problems (`TifgZTXdSNW9Gtlh`) | ✅ | ✅ |
+| Fix-B (전체) | S04 Past Family History (`StjkISptQwFHl5Ws`) | ✅ | ✅ |
+
+**Fix-A 수정 내용 (S02)**:
+- Rule 1: JSON literal forbidden patterns block 추가 (self-verification 포함)
+- Typo fix: `기벅에` → `기록에` (Unicode U+B085 corruption 수정)
+- 다중 정보원 케이스 처리 섹션 추가 (multi-informant rules)
+- Onset 2-pattern → 3-pattern (Onset / Aggravation / Remote+Recent 구분)
+- Aggravation vs Recent onset 선택 규칙 추가 (rule 8-1)
+- GS2 예시 추가 (Alcohol use dependence + Labile mood)
+- JSON: `"aggravation": null` 필드 추가, Onset field 테이블 3행화, key description 테이블 업데이트
+- 체크리스트 3개 항목 신설
+
+**Fix-B 수정 내용 (S04)**:
+- `[물질명]:` → `Alcohol:` 형식 표준화
+- 금단 증상 기재 위치 구분 규칙 추가 (seizure/DT → 4번 Other medical)
+- Lab finding 복수 항목 기재 규칙 + GS2 Lab 예시 (CK, γ-GT, AST, ALT)
+- Other medical 복수 진단 기재 규칙 + 알코올 관련 분류 기준
+- Family history 복수 가족 기재 규칙 + GS2 예시 (친조부/친백부/환부/언니)
+- Gold Standard 2 (GS2) 전체 예시 섹션 추가
+- JSON: `last_drinking`, `smoking` 필드 추가
+- 체크리스트 11개 항목으로 확장
+- Anti-Hallucination Rules 상세화, 출력 규칙 보완, Error Handling 전용 규칙 추가
+
+#### 패치 기술 노트
+
+- Fix-A n8n: 총 9회 `patchNodeField` 적용 (일부 continueOnError 활용)
+  - Unicode corruption 디버깅: U+B085 (`벅`) vs U+B85D (`록`) — 수학적 역산으로 정확한 codepoint 확인 후 수정
+  - 기존 내용이 `parameters.options.systemMessage`에 있고 `parameters.systemMessage`는 별도 필드임 확인
+- Fix-B n8n: `updateNode` 방식으로 `parameters.options.systemMessage` 전체 교체 (patchNodeField 실패 → bracket 문자 처리 이슈 우회)
+  - 이전 세션에서 `[물질명]` find string 실패 원인 추정: patchNodeField regex 처리 가능성
+  - 해결: `updateNode + updates` 오브젝트로 전체 필드 교체
+
+#### 다음 작업
+
+- Step 5-5: WF2 E2E 재실행 (PT-2026-002 mock JSON 투입)
+- GS2 QC 비교 검증
+
+---
+
+### 세션 42 — Phase 2 Fix-3 (S06 MSE not tested 규칙) 적용 완료 (2026-04-06)
+
+#### 완료 항목
+
+| Fix | 대상 Sub-WF | 문제 | 수정 내용 | .md | n8n |
+|-----|-----------|------|----------|:---:|:---:|
+| Fix-3 | S06 MSE (`Qp0IXqsbounP2X1l`) | Concentration/Abstract thinking 검사 미수행 시 다른 증상(조증 등)에서 `impaired` 추론 기재 (inference_unmarked) + testing judgment를 면담 태도에서 추론 판정 | **not tested 옵션 추가** (수정1~5): Sensorium 3항목, Judgment testing, JSON 스키마 enum 확장, Error Handling 규칙 10 교체 + 규칙 11 신설(Judgment testing not tested), 키 설명 테이블 신설 | ✅ | ✅ |
+
+#### 패치 기술 노트
+
+- n8n S06 노드의 Error Handling rule 10이 .md보다 단순 형식 (단일 줄) → `항목명만 기재하고` 앵커로 find 성공
+- `추가 키 설명` 테이블이 n8n에 미존재 → `"alert": null ... \`\`\`` 앵커로 삽입 성공
+- 총 7개 find/replace 패치 (4회 n8n_update_partial_workflow 호출)
+
+#### 남은 Phase 2 이슈
+
+| Fix | 대상 | 내용 | 우선순위 |
+|-----|------|------|:--------:|
+| Fix-A | S02 | JSON 노출 방지 + 3명 정보원 형식 | 🔴 고 |
+| Fix-B | S04 | Lab findings, AUD, 경련 이력 규칙 | 🔴 고 |
+
+#### 다음 작업
+
+- Claude.ai Session 2: Fix-A + Fix-B 수정안 제작 (S02.md, S04.md, GS2 보고서, STT 파일 첨부)
+- 수정안 적용 후 Step 5-5: WF2 E2E 재실행 (PT-2026-002)
+
+---
+
 ### 세션 41 — Phase 2 Fix-C/D 적용 완료 (2026-04-06)
 
 #### 완료 항목
