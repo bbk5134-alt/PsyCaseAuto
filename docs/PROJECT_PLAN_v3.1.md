@@ -78,6 +78,8 @@
 | **D-30** | **Halluc 검증: Haiku → Gemini Flash 전환 검토** | Google AI Studio 크레딧 활용, 비용↓ | 04-01 |
 | **D-31** | **`__rl` ResourceLocator 필드는 n8n API 도트 표기법 업데이트 불가** | `parameters.folderId.value` 도트 경로 업데이트 실패 확인 → Code 노드 출력에서 값 전달 우회 | 04-02 |
 | **D-32** | **WF2 Pin 대상: Execute Workflow 노드만** | Drive 업로드·Telegram·외부 API 노드 Pin 금지 — 실행 건너뜀 발생 | 04-02 |
+| **D-33** | **MCP 노드 업데이트 후 n8n UI 수동 저장 금지** | UI 저장 시 MCP 변경사항 덮어씌워짐 | 04-03 |
+| **D-41** | **WF2 P3-6 JS 검증 노드: 비차단(non-blocking) 후처리 검증** | Phase 2 결과 병합 직후 4개 항목 자동 점검. S02 chief_problems 5개 초과, S04 lab_findings 누락(narrative 검사 키워드 존재 시만 발화), S07 기분 수치 감지, S06 자살위험성 '하'. 경고 시 Telegram 알림 + HTML 배너 삽입. 메인 플로우 차단 없음 | 04-07 |
 
 ---
 

@@ -4,6 +4,24 @@
 
 ---
 
+### 세션 50 — P3-6 JS 검증 노드 이슈 수정 I-1~3 (2026-04-07)
+
+#### 완료 항목
+
+| 이슈 | 수정 내용 | 대상 | 상태 |
+|------|----------|------|:----:|
+| I-1 S04 노이즈 | Lab findings 조건: `labKeywordRe.test(s04Narrative) &&` 추가 — narrative에 검사 키워드 존재 시만 경고 | WF2 `p3-6-validate` jsCode | ✅ |
+| I-2 S07 타입 안전성 | `typeof narrative === 'string'` guard 추가 — Object 입력 시 silent 오류 방지 | WF2 `p3-6-validate` jsCode | ✅ |
+| I-3 D-41 문서화 | D-33·D-41 §2 의사결정 표 추가 | `PROJECT_PLAN_v3.1.md` §2 | ✅ |
+
+**I-1 수정 핵심**: S04 검사 키워드 패턴 — `/혈액|CBC|BMP|LFT|검사결과|혈당|전해질|갑상선|TSH/i`
+검사 언급이 없는 일반 케이스에서 경고가 항상 발화되던 노이즈 제거.
+
+**I-2 수정 핵심**: `typeof sections.mood_chart?.narrative === 'string'` 삼항 조건 사용.
+Sub-WF S07 파싱 실패 시 narrative가 Object일 경우 `|| ''` fallback 미작동 문제 해결.
+
+---
+
 ### 세션 49 — S09 Fix-경어체 + P3-6 JS 검증 노드 (2026-04-07)
 
 #### 완료 항목
