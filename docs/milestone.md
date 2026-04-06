@@ -14,7 +14,8 @@
 | WF2 보고서 생성 (72노드) + E2E | ✅ 완료 |
 | Halluc 검증 프롬프트 v3.1 (FP 방어 1~8 + passed 기준) | ✅ 완료 (세션 33 passed 기준 추가) |
 | QC 최종: 보고서 86.5/100, Halluc 89/100 | ✅ (GS1 기준, overfit 가능) |
-| **다음 작업** | 🔴 **Tier 5: GS2 추가 + Contamination-free 검증** |
+| **Tier 5 최종 수정** | ✅ Fix-O/P/Q/R 4건 (.md + n8n) — 세션 54 |
+| **다음 작업** | 🟢 **실사용 대기** — ~2주 후 실데이터 첫 사용 or Tier 6 WF4 |
 
 ---
 
@@ -296,11 +297,13 @@
 ✅ Tier 5 W-1a/W-1b S02 파싱 오류 + S03 meta 보정 (세션 38)
 ✅ Tier 5 Phase 1 Fix-1/2/4 (S03/S04/S07 options.systemMessage 패치) (세션 40)
 ✅ Tier 5 Phase 2 Fix-C/D/E/F/3/A/B 모든 픽스 n8n 적용 완료 (세션 41~43)
-🔴 Tier 5 Step 5-8 E2E 재실행 (GS2, PT-2026-002) ← 현재 위치
-⬜ Tier 5 Step 5-8b 2-case regression framework 구축
+✅ Tier 5 Step 5-8 E2E 재실행 (GS2) — 63/100 (B등급) (세션 36)
+✅ Tier 5 Phase 3 P3-1~P3-8 프롬프트 미세조정 (세션 44~53)
+✅ Tier 5 Fix-경어체 S06 (세션 53)
+✅ Tier 5 최종 수정 4건 Fix-O/P/Q/R (.md + n8n) (세션 54)
+🟢 **실사용 대기 상태** — 추가 E2E 중단, ~2주 후 실데이터로 첫 사용
 ⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
-⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
-⬜ Step 4-6 실사용 테스트
+⬜ Step 4-6 실사용 테스트 (~2주 후)
 ```
 
 ---
@@ -379,3 +382,4 @@
 | 2026-04-05 | Claude.ai 평가 검토 반영: Step 5-0 QC v2.1 추가, Mock 대화 형태 설계(5-2f), Step 4-6 사전 준비(인스턴스 분리·온보딩·원문 모니터링) |
 | 2026-04-06 | Tier 6 (WF4 Q&A 대본 자동화) 추가. 기획안 v0.2 작성 완료 (`docs/WF4_QA_SCRIPT_PLAN_v0.2.md`) |
 | 2026-04-06 | Claude.ai vs Claude Code 역할 분리 가이드 추가 (Step별 판단 + 첨부 파일 목록) |
+| 2026-04-07 | GS1/GS2 QC 비교 분석 완료 (82 vs 63). 프로젝트 방향 전환: 추가 E2E 중단 → 실사용 대기. Fix-O/P/Q/R 4건 최종 수정 (.md + n8n). P3-7 known limitation 기록. |

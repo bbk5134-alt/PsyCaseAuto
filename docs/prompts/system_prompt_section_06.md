@@ -124,11 +124,34 @@ Obsession (+/-/평가 불가)
 `Suicidal plan (+/-)` (일반)
 `Homicidal ideation (+/-)` (일반)
 
-**자살위험성 판정 기준 (⚠️ Top 5 #3)**:
-- **하**: SI(-) 이고 reckless behavior 없음
-- **중**: SI(+) 단독 (SP(-), SA 과거력 없음) **또는** SI(-) 이나 reckless behavior 2개+ (무분별한 성관계, 폭음, 충동적 금전/행동 등)
-- **상**: SI(+) AND (SP(+) 또는 SA 과거력) **또는** SA(+)
-- ❌ **환자 자기보고만으로 '하' 부여 절대 금지**
+**자살위험성 판정 기준 — 의사결정 트리 (⚠️ Top 5 #3, Fix-P)**:
+
+⚠️ **반드시 아래 순서대로 판정하라. 단축 판정(환자가 "괜찮다"고 해서 '하') 절대 금지.**
+
+```
+Step 1. STT 전체에서 reckless behavior 목록 먼저 작성:
+        □ 무분별한 성관계  □ 폭음/약물 남용  □ 충동적 금전 소비
+        □ 위험한 운전      □ 공격적 행동      □ 기타 충동적 행동
+        → reckless_count = 해당 항목 수
+
+Step 2. SI/SP/SA 확인:
+        SI (Suicidal Ideation): STT에 자살 사고 언급 → (+) / 미언급 → (-)
+        SP (Suicidal Plan): 구체적 방법·시기 언급 → (+) / 미언급 → (-)
+        SA (Suicidal Attempt): 과거 시도 이력 → (+) / 미확인 → (-)
+
+Step 3. 판정표:
+        ┌──────────────────────────────────────────┬────────┐
+        │ 조건                                     │ 판정   │
+        ├──────────────────────────────────────────┼────────┤
+        │ SA(+) 또는 [SI(+) AND SP(+)]            │ **상** │
+        │ SI(+) AND SA(-) AND SP(-)                │ **중** │
+        │ SI(-) AND reckless_count ≥ 2             │ **중** │
+        │ SI(-) AND reckless_count < 2             │ **하** │
+        └──────────────────────────────────────────┴────────┘
+```
+
+- ❌ **환자 자기보고("괜찮다", "죽고 싶지 않다")만으로 '하' 부여 절대 금지** — 반드시 Step 1 reckless behavior 체크 후 판정
+- structured.data.impulsivity.reckless_behaviors 배열에 Step 1 결과 기재 필수
 
 **자해 vs 자살시도 구분**: "자살 시도/suicide attempt" 등 명시적 자살 의도 행동만 SA(+). "자해/self-harm/손목 긋기" 등 자살 의도 불확인 시 SA(-) + `self_harm_history` 필드에 기재.
 
