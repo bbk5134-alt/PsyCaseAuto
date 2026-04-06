@@ -4,6 +4,46 @@
 
 ---
 
+### 세션 49 — S09 Fix-경어체 + P3-6 JS 검증 노드 (2026-04-07)
+
+#### 완료 항목
+
+| 작업 | 대상 | 상태 |
+|------|------|:----:|
+| S09 프롬프트 재검증 (P3-4 범위) | S09 Present Illness | ✅ |
+| Fix-경어체 추가 | S09 .md §3 rule 5 + n8n `4VyEFSX0H0FD2ilK` | ✅ |
+| P3-6 JS 검증 노드 (D-41) | WF2 메인 `LiN5bKslyWtZX6yG` | ✅ |
+
+**S09 검증 발견 이슈**:
+- 🔴 중간: Fix-경어체 누락 — §3 출력 형식 규칙에 경어체 금지 명시 없음 (S03과 비일관)
+- 🟡 낮음: Output Format 예시에 GS1 고유값 혼재 (structured 필드, narrative 아님)
+- 🟡 낮음: A(Affect) 3문장 규칙 엄격성 (Error Handling 13번으로 커버 중)
+
+**S09 Fix-경어체 적용**:
+- `.md` §3 rule 5: `'~하였다'`, `'~보였다'` 서술체 통일. 경어체 절대 금지.
+- n8n `4VyEFSX0H0FD2ilK` `parameters.options.systemMessage` 동기화 ✅
+- git commit `560f889`
+
+**P3-6 JS 검증 노드 (WF2)**:
+- 위치: Phase 2 결과 병합 직후, 보고서 준비 직전 (fan-out 비차단 패턴)
+- 새 노드 3개: `P3-6 JS 검증` (Code) + `P3-6 경고 확인` (IF) + `P3-6 Telegram 경고` (Telegram)
+- 연결: p2-merge → P3-6 JS 검증 → [보고서 준비, P3-6 경고 확인 → Telegram] (비차단 fork)
+- s34-c4 HTML 변환 노드: `.validation-warn` CSS + 경고 배너 삽입 코드 추가
+
+**JS 검증 로직 4항목**:
+1. S02: Chief Problems > 5개 경고
+2. S04: `past_family_history.structured.data.lab_findings` 없음 경고
+3. S07: narrative에 `\d+점` 패턴 감지 경고
+4. S06: `mental_status_exam.structured.data.impulsivity.suicide_risk === '하'` 경고
+
+**기술 노트**:
+- D-41 비차단 패턴: P3-6 JS 검증 output[0] → 보고서 준비 + P3-6 경고 확인 동시 fan-out
+- Telegram 발송 조건: `p3_6_warning_count > 0` (IF true branch)
+- s34-c4에서 `$('P3-6 JS 검증').first().json.p3_6_warnings`로 경고 배열 참조
+- WF2 nodeCount: 72 → 75 (+3)
+
+---
+
 ### 세션 48 — Phase 3 P3-5: S07/S03/S05 소규모 픽스 적용 완료 (2026-04-06)
 
 #### 완료 항목
