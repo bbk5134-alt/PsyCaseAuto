@@ -4,6 +4,47 @@
 
 ---
 
+### 세션 44 — Phase 3 P3-1a/b: S06 MSE 프롬프트 수정 + n8n 적용 (2026-04-06)
+
+#### 완료 항목
+
+| Phase | 대상 | .md | n8n |
+|-------|------|:---:|:---:|
+| P3-1a: S06 MSE 프롬프트 수정 (Claude.ai 검수) | `docs/prompts/system_prompt_section_06.md` | ✅ | — |
+| P3-1b: Sub-WF S06 n8n 적용 + 모델 교체 | Sub-WF S06 MSE (`Qp0IXqsbounP2X1l`) | ✅ | ✅ |
+
+**P3-1a 수정 내용 (PHASE3_FIX_PLAN Fix-G/H/I/J)**:
+- Fix-G: MSE-Progress Note O) 교차 검증 mandatory, Affect 교차검증, Thought Content 근거 없이 (-) 금지
+- Fix-H: Paranoid ideation 코딩 예시 추가 (결제내역 외도 확신, 적대적 의도 해석)
+- Fix-I: 자살 위험성 판정 로직 — reckless behavior 포함 종합판정, 자기보고만으로 '하' 금지
+- Fix-J: Grandiosity vs Grandiose delusion 분리 기재 (별개 항목)
+- **추가 수정 (P3-1a 검증 중 발견)**:
+  - Issue 1 [Critical]: Gold Standard §6 Sensorium and Cognition 예시 추가 (Alert, Orientation, Memory, Concentration, Abstract thinking)
+  - Issue 2 [Moderate]: Thought Content 13개 항목 각각 별줄 형식으로 변경 (기존 슬래시 구분 → 각 항목 독립 행)
+  - Issue 3 [Minor]: 에스컬레이션 규칙 섹션 제거 → Error Handling #10에 통합
+
+**P3-1b 기술 노트**:
+- 기존 시스템 메시지 ~16K자 → 신규 12,600자 (≈3,500 tokens)
+- patchNodeField 3-step 전략으로 교체 (MCP 도구 크기 제한 우회):
+  - Step 1: 헤더+Role 교체 + `STOP_MARKER_OLD_CONTENT` 삽입
+  - Step 2: regex `STOP_MARKER[\s\S]*` → §3~§7 내용 + `SPLIT_MARKER_PART2`
+  - Step 3: `SPLIT_MARKER_PART2` → §8~§9 Output Format + Error Handling
+- 모델: Gemini 2.5 Flash → **Claude Sonnet 4** (`claude-sonnet-4-20250514`, temp 0.3, maxTokens 16384)
+  - Gemini 노드 제거 (`removeNode`) + Anthropic Chat Model 노드 추가 + 연결
+
+**P3-1b 검증 결과** (5/5 PASS):
+- [PASS] "절대 위반 불가 Top 5" 키워드 존재
+- [PASS] "Progress Note O)" 키워드 존재
+- [PASS] "reckless behavior" 키워드 존재
+- [PASS] "Grandiosity (+/-/평가 불가)" 형태로 존재 (검증 기준 `(+/-)` 포함)
+- [PASS] 모델 = `claude-sonnet-4-20250514`
+
+#### 다음 작업
+
+- P3-2: Fix-K S04 Past Family History 추가 수정 (milestone.md 참조)
+
+---
+
 ### 세션 43 — Phase 2 Fix-A (S02) + Fix-B (S04) n8n 적용 완료 (2026-04-06)
 
 #### 완료 항목
