@@ -4,6 +4,34 @@
 
 ---
 
+### 세션 48 — Phase 3 P3-5: S07/S03/S05 소규모 픽스 적용 완료 (2026-04-06)
+
+#### 완료 항목
+
+| Fix | 대상 | .md | n8n |
+|-----|------|:---:|:---:|
+| Fix-M (기분 수치 출처 제한) | S07 Mood Chart | ✅ | ✅ |
+| Fix-경어체 (서술체 통일) | S03 Informants | ✅ | ✅ |
+| Fix-N (출생 순서 S01 연동) | S05 Personal History | ✅ | ✅ |
+
+**Fix-M (S07)**:
+- Anti-Hallucination rule 5 추가: 기분 수치는 STT 원문 환자 자기평가/표준척도(BDI/BAI/MDQ/AUDIT)만 허용. AI 임의 점수 절대 금지.
+- n8n `5wWj9DLBB1z1r9Fr` `parameters.options.systemMessage` 적용 ✅
+
+**Fix-경어체 (S03)**:
+- 출력 형식 규칙 item 4 추가: '~하였다'/'~보였다' 서술체 통일, 경어체 절대 금지
+- n8n S03 (`J0EvW4lNbKGLo157`) SHORT version 기준 anchor: `3. 순수 JSON 출력` → item 4 삽입 ✅
+
+**Fix-N (S05)**:
+- Anti-Hallucination rule 5 추가: Prenatal 서술 시 출생 순서는 STT 원문/S01 값과 일치. '첫째' 임의 서술 금지.
+- n8n `SmR2paPpXEYTuWZO` `parameters.options.systemMessage` 적용 ✅
+
+**기술 노트**:
+- S03 n8n은 SHORT version (`parameters.options.systemMessage`), .md 전문과 달리 항목 수 적음
+- Fix-경어체 anchor: `3. 순수 JSON 출력` (SHORT) — `3. 순수 JSON만 출력 (코드펜스 금지)` (legacy field)는 inactive
+
+---
+
 ### 세션 47 — Phase 3 P3-4a/b: S09 Present Illness GS 복원 + n8n 적용 (2026-04-06)
 
 #### 완료 항목
