@@ -74,7 +74,7 @@
 
 ---
 
-### Step 5-1: GS2 구조 분석 + 프롬프트 커버리지 점검 ← 현재 위치
+### Step 5-1: GS2 구조 분석 + 프롬프트 커버리지 점검 ✅ (세션 35)
 
 > **역할**: Claude Code (분석) + 사용자 (여자친구 확인 요청)
 > **예상 소요**: 1세션
@@ -287,13 +287,16 @@
 ✅ Tier 2 (프롬프트 5섹션 + QC 90.5/A)
 ✅ Tier 3 (Gemini Flash 전환, QC 86.5/A, ~$0.62/run)
 ✅ Tier 4 Step 4-0~4-3b (Safety 배너, Halluc v3.1, [추론] CSS)
-🔴 Tier 5 Step 5-0 QC v2.1 준비 + Step 5-1 GS2 구조 분석 ← 현재 위치
-⬜ Tier 5 Step 5-2~5-3 Mock 면담 JSON 생성
-⬜ Tier 5 Step 5-4 여자친구 임상 검수
-⬜ Tier 5 Step 5-5 WF2 E2E (GS2)
-⬜ Tier 5 Step 5-6 GS2 QC + Contamination gap
-⬜ Tier 5 Step 5-7 프롬프트 수정 (조건부: QC < 75)
-⬜ Tier 5 Step 5-8 2-case regression framework
+✅ Tier 5 Step 5-0 QC v2.1 준비 (세션 35)
+✅ Tier 5 Step 5-1 GS2 구조 분석 (세션 35)
+✅ Tier 5 Step 5-2~5-3 Mock 면담 JSON 생성 (세션 35)
+✅ Tier 5 Step 5-4 여자친구 임상 검수 반영 (세션 35)
+✅ Tier 5 Step 5-5 WF2 E2E (GS2) — partial pass (세션 36)
+✅ Tier 5 Step 5-7 프롬프트 수정 8개 픽스 MCP 적용 (세션 37)
+✅ Tier 5 W-1a/W-1b S02 파싱 오류 + S03 meta 보정 (세션 38)
+🔴 Tier 5 Step 5-8 E2E 재실행 (오류:0건 확인) + QC 재채점 ← 현재 위치
+⬜ Tier 5 Step 5-8b 2-case regression framework 구축
+⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
 ⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
 ⬜ Step 4-6 실사용 테스트
 ```

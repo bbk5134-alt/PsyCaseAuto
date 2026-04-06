@@ -4,6 +4,42 @@
 
 ---
 
+### 세션 39 — GitHub pull + n8n 상태 동기화 확인 (2026-04-06)
+
+#### 배경
+
+이전 컨텍스트 소진 후 재개. GitHub origin/master에서 12개 커밋 pull (c45e412 → 1e45548). 세션 34~38 작업이 원격에 완료되어 있었음.
+
+#### Pull 결과 요약
+
+| 세션 | 내용 | 상태 |
+|------|------|:----:|
+| 34~35 | Step 5-0 (QC v2.1) + Step 5-1 (GS2 구조 분석) + Step 5-2~5-3 (Mock STT JSON) | ✅ |
+| 35 | Step 5-4 여자친구 임상 검수 반영 (Mock STT 3건 수정) | ✅ |
+| 36 | Step 5-5 WF2 E2E (GS2, partial pass) — S02 JSON 노출, Halluc major 2건 | ✅ |
+| 37 | Step 5-7 8개 픽스 MCP 적용 (W-1, P-1~P-6, H-1) | ✅ |
+| 38 | W-1a (코드펜스 방어 6개 Sub-WF) + W-1b (S03 meta 보정 + WF2 병합 노드 방어) + S02 모델 Claude Sonnet 4.6 교체 | ✅ |
+
+#### n8n 라이브 상태 확인
+
+| 확인 항목 | 방법 | 결과 |
+|----------|------|:----:|
+| S02 모델 교체 | S02 workflow structure 조회 | `Anthropic Chat Model` 연결 ✅ |
+| S03 W-1a 코드펜스 방어 | S03 출력 파싱 jsCode 확인 | anchored regex + `{…}` fallback 추출 ✅ |
+| S03 W-1b meta 위치 보정 | S03 출력 파싱 jsCode 확인 | 4단계 meta 끌어올림 코드 ✅ |
+| 마지막 WF2 실행 | executions list | #754 success (23:24→23:29) ✅ |
+
+#### 미확인 항목
+
+- 실행 #754 Telegram 메시지: `오류:N건` 확인 불가 (실행 파일 크기 초과로 파싱 실패)
+- WF2 Phase 1 결과 병합 노드 W-1b-2 코드: 세션 38에서 적용됐다고 기록됨, 별도 검증 미완료
+
+#### 다음 작업
+
+- **Step 5-8**: WF2 E2E 재실행 (사용자가 n8n UI에서 수동 실행 필요) → Telegram `오류:0건` 확인
+
+---
+
 ### 세션 38 — S02 파싱 오류 수정 + S03 meta 위치 보정 (2026-04-06)
 
 #### 문제 1: S02 parse_failed (코드펜스 + Gemini JSON 품질)
