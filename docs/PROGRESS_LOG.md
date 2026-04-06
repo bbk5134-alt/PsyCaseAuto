@@ -4,6 +4,35 @@
 
 ---
 
+### 세션 41 — Phase 2 Fix-C/D 적용 완료 (2026-04-06)
+
+#### 완료 항목
+
+| Fix | 대상 Sub-WF | 문제 | 수정 내용 | .md | n8n active |
+|-----|-----------|------|----------|:---:|:----------:|
+| Fix-C | S08 (`lbr2QAXPhX80MuZG`) | GS1 MDD `not anxious` 패턴을 GS2 Bipolar 환자에 그대로 복사 → 불안 발화("소송 갈까 봐 무서운 거죠") 있음에도 `not anxious` 기재 | **Mood/Affect 서술 절대 규칙 추가**: `not [descriptor]` 는 명시적 근거 있을 때만, GS1 패턴 복사 금지, ⚠️ fabricated_fact 경고 | ✅ | ✅ |
+| Fix-D | S12 (`Hq4QhEKT48aPShWb`) + s34-c4 | S12 긴 산문(3단락)에서 큰따옴표 이스케이프 미적용 시 JSON 파싱 실패 위험 + s34-c4 extractNarrative P7 regex 정지 | **S12 P-01 규칙 강화**: la belle indifférence 등 전문용어 인용 시 `\"` 이스케이프 필수 명시. s34-c4는 Step 5-7 W-1에서 이미 object-branch + 재파싱 추가 완료 | ✅ | ✅ |
+
+#### 패치 기술 노트
+
+- Fix-C find 앵커: `임상적 추론/해석은 O) 항목에서만 허용 (S)에 해석 혼입 금지)` — 성공
+- Fix-D find 앵커: `\n1. **narrative 내 큰따옴표 이스케이프 필수 (P-01)**\n2. **JSON 키 이름 고정 (P-02)**` — 성공
+- s34-c4의 P7 regex `((?:[^"\\]|\\[\s\S])*)` 는 이미 이스케이프된 따옴표를 올바르게 처리 → S12에서 이스케이프 규칙 준수 시 truncation 없음
+
+#### 남은 Phase 2 이슈
+
+| Fix | 대상 | 내용 | 우선순위 |
+|-----|------|------|:--------:|
+| Fix-E | s34-a2 | STT 날짜 혼동 방어 | 🟡 중 |
+| Fix-F | 전체 | JSON 파싱 방어 표준화 | 🟡 중 |
+
+#### 다음 작업
+
+- 사용자 Fix-C/D 확인 후 Fix-E/F 진행 여부 결정
+- Step 5-8: WF2 E2E 재실행 (사용자 n8n UI 수동 실행)
+
+---
+
 ### 세션 40 — Phase 1 Fix-1/2/4 적용 완료 (2026-04-06)
 
 #### 배경

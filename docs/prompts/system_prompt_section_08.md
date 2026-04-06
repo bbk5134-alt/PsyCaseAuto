@@ -147,6 +147,13 @@ P)  ← Plan: 투약 목록 (약물명 용량-용량-용량-용량mg 형식)
 - 이후: 해당 면담에서 관찰된 임상적 소견 및 해석 (굵게 강조 필요한 핵심 해석은 **텍스트** 형식)
 - 임상적 추론/해석은 O) 항목에서만 허용 (S)에 해석 혼입 금지)
 
+<!-- 수정: Fix-C Phase 2 S08 Mood/Affect anti-halluc rule -->
+**Mood/Affect 서술 절대 규칙 (fabricated_fact 방지)**:
+- `not [descriptor]` 형식(예: `not anxious`, `not irritable`)은 해당 면담 원문에서 해당 증상이 **없었다는 명시적 근거**가 있을 때만 사용
+- 환자가 불안·공포·두려움을 표현했으면 → `anxious` 기재 (예: "소송 갈까 봐 무서운 거죠" → not anxious 금지)
+- Gold Standard(GS1 MDD)의 `not irritable, not anxious` 패턴을 다른 진단군에 그대로 복사 금지
+- ⚠️ 예) 환자가 "소송 갈까 봐 무서운 거죠" 발화 → `not anxious` 기재는 fabricated_fact(날조)로 간주됨
+
 **P) 항목 작성 규칙**:
 - "Medication :" 으로 시작
 - 약물명은 generic name 사용
