@@ -4,6 +4,41 @@
 
 ---
 
+### 세션 45 — Phase 3 P3-2a/b: S04 Past Family History 프롬프트 수정 + n8n 적용 (2026-04-06)
+
+#### 완료 항목
+
+| Phase | 대상 | .md | n8n |
+|-------|------|:---:|:---:|
+| P3-2a: S04 프롬프트 수정 (Claude.ai 검수) | `docs/prompts/system_prompt_section_04.md` | ✅ | — |
+| P3-2b: Sub-WF S04 n8n 적용 | Sub-WF S04 Past Family History (`StjkISptQwFHl5Ws`) | ✅ | ✅ |
+
+**P3-2a 수정 내용 (PHASE3_FIX_PLAN Fix-K)**:
+- Issue 1: §3 Lab Finding 제목 → "MANDATORY 규칙 (Fix-K)"로 변경 + 규칙 1번 앞에 `⚠️ MANDATORY:` 접두어 추가
+- Issue 2: GS2 Lab finding `...` → AST(SGOT) ↑172, ALT(SGPT) ↑65 실제 수치 복원 (4개 항목 완성)
+- Issue 3: GS2 항목명 `2. Alcohol:` → `2. Alcohol and other substance issue:` + Last drinking/Smoking 별줄 분리
+
+**P3-2b 기술 노트**:
+- `parameters.options.systemMessage` 대상 (n8n AI Agent 노드 active field)
+- patchNodeField 3-step 전략으로 교체 (MCP 크기 제한 우회):
+  - Step 1: 구 Role 텍스트 → 신 Role + `STOP_MARKER_S04`
+  - Step 2: regex `STOP_MARKER_S04[\s\S]*` → §2~§5 + `SPLIT_MARKER_S04_PART2`
+  - Step 3: `SPLIT_MARKER_S04_PART2` → §6~§9
+- 모델: Gemini 2.5 Flash 유지 (P3-2b 스펙에 모델 교체 없음)
+
+**P3-2b 검증 결과** (5/5 PASS):
+- [PASS] "MANDATORY" 키워드 존재 (§3 제목 + 규칙 1번)
+- [PASS] "Lab Finding" 키워드 존재
+- [PASS] "보호자 보고" 키워드 존재
+- [PASS] GS2 AST(SGOT) ↑172, ALT(SGPT) ↑65 포함
+- [PASS] GS2 항목명 `Alcohol and other substance issue` 정상
+
+#### 다음 작업
+
+- P3-3: Fix-L/M 다음 Sub-WF 수정 (milestone.md 참조)
+
+---
+
 ### 세션 44 — Phase 3 P3-1a/b: S06 MSE 프롬프트 수정 + n8n 적용 (2026-04-06)
 
 #### 완료 항목
