@@ -80,6 +80,7 @@
 | **D-32** | **WF2 Pin 대상: Execute Workflow 노드만** | Drive 업로드·Telegram·외부 API 노드 Pin 금지 — 실행 건너뜀 발생 | 04-02 |
 | **D-33** | **MCP 노드 업데이트 후 n8n UI 수동 저장 금지** | UI 저장 시 MCP 변경사항 덮어씌워짐 | 04-03 |
 | **D-41** | **WF2 P3-6 JS 검증 노드: 비차단(non-blocking) 후처리 검증** | Phase 2 결과 병합 직후 4개 항목 자동 점검. S02 chief_problems 5개 초과, S04 lab_findings 누락(narrative 검사 키워드 존재 시만 발화), S07 기분 수치 감지, S06 자살위험성 '하'. 경고 시 Telegram 알림 + HTML 배너 삽입. 메인 플로우 차단 없음 | 04-07 |
+| **D-42** | **WF2 P3-7 MSE↔Progress Note 교차 검증: AI Agent (Gemini Flash) 자동 교정** | Phase 1 결과 병합 직후 비차단 fan-out. S06 Mood/Affect/Thought Content ↔ S08 최근 O) 값 불일치 탐지 → S06 structured.data 자동 교정 → p2-merge에서 적용. +$0.005/run | 04-07 |
 
 ---
 

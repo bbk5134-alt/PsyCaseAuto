@@ -4,6 +4,41 @@
 
 ---
 
+### 세션 51 — Step P3-7: MSE↔Progress Note 교차 검증 AI Agent 추가 (2026-04-07)
+
+#### 완료 항목
+
+| 작업 | 대상 | 상태 |
+|------|------|:----:|
+| P3-7 교차 검증 준비 (Code) | WF2 `p3-7-prep` | ✅ |
+| P3-7 AI 교차 검증 (AI Agent, Gemini Flash) | WF2 `p3-7-agent` | ✅ |
+| P3-7 Gemini Flash (LM 서브노드) | WF2 `p3-7-gemini` | ✅ |
+| P3-7 불일치 교정 (Code) | WF2 `p3-7-correct` | ✅ |
+| p2-merge S06 교정 적용 패치 | WF2 `p2-merge` jsCode | ✅ |
+| D-42 문서화 | `PROJECT_PLAN_v3.1.md` §2 | ✅ |
+
+**실행 흐름**:
+- Phase 1 결과 병합 → **fan-out** → [Phase 1 완료 알림 (Phase 2 체인), P3-7 교차 검증 준비]
+- P3-7 체인: 준비 → AI Agent (Gemini Flash, ~3-5초) → 불일치 교정 (dead-end)
+- Phase 2 완료 후 p2-merge가 `$('P3-7 불일치 교정').first().json`으로 교정된 S06 적용
+
+**교차 검증 항목 (3개)**:
+1. S06 Mood ↔ S08 최근 O) Mood
+2. S06 Affect ↔ S08 최근 O) Affect
+3. S06 Thought Content 양성 ↔ S08 S) 환자 발언 근거 존재 여부
+
+**자동 교정 대상**: `structured.data.mood`, `structured.data.affect`, narrative 문자열 치환
+
+**비용**: +~$0.005/run (Gemini Flash, ~500 tokens input + ~100 tokens output)
+
+**기술 노트**:
+- AI Agent 시스템 메시지: JSON 예시에 `{{` `}}` LangChain 이스케이프 적용
+- 입력 준비 Code: JSON.stringify 후 `{→{{`, `}→}}` 이스케이프 (LangChain 파싱 방어)
+- WF2 nodeCount: 75 → 79 (+4), connectionCount: 68 → 71 (+3)
+- 타이밍 보장: Phase 2 체인은 AI 4회 순차 호출(~2분) → P3-7(~5초) 항상 먼저 완료
+
+---
+
 ### 세션 50 — P3-6 JS 검증 노드 이슈 수정 I-1~3 (2026-04-07)
 
 #### 완료 항목
