@@ -19,17 +19,24 @@
 - Fix-D find 앵커: `\n1. **narrative 내 큰따옴표 이스케이프 필수 (P-01)**\n2. **JSON 키 이름 고정 (P-02)**` — 성공
 - s34-c4의 P7 regex `((?:[^"\\]|\\[\s\S])*)` 는 이미 이스케이프된 따옴표를 올바르게 처리 → S12에서 이스케이프 규칙 준수 시 truncation 없음
 
+#### Phase 1 Fix-E/F (세션 41 추가 완료)
+
+| Fix | 대상 | 문제 | 수정 내용 | n8n |
+|-----|------|------|----------|:---:|
+| Fix-E | WF2 s34-a2 (`LiN5bKslyWtZX6yG`) | "내원 N개월 전" 형식이 절대 날짜의 시간 정규화임에도 fabricated_fact 오판정 가능 | **FP 방어 9 추가**: 절대 날짜→상대 기간 변환은 hallucination 아님, ±2개월 오차 허용 | ✅ |
+| Fix-F | WF2 s34-a1 (`LiN5bKslyWtZX6yG`) | Sub-WF parse 실패 시 raw JSON narrative가 s34-a2에 전달되어 halluc 검증 혼란 가능 | **cleanNarrativeForCheck 함수 추가**: code fence 제거 + JSON 파싱 후 narrative 추출 후 전달 | ✅ |
+
 #### 남은 Phase 2 이슈
 
 | Fix | 대상 | 내용 | 우선순위 |
 |-----|------|------|:--------:|
-| Fix-E | s34-a2 | STT 날짜 혼동 방어 | 🟡 중 |
-| Fix-F | 전체 | JSON 파싱 방어 표준화 | 🟡 중 |
+| Phase 2 | S02 | JSON 노출 + 형식 이슈 | 🔴 고 |
+| Phase 2 | S04 | 추가 Past History 방어 | 🔴 고 |
 
 #### 다음 작업
 
-- 사용자 Fix-C/D 확인 후 Fix-E/F 진행 여부 결정
-- Step 5-8: WF2 E2E 재실행 (사용자 n8n UI 수동 실행)
+- 사용자 Phase 2 검토 후 S02/S04 수정 (Phase 2)
+- 전체 완료 후 Step 5-8: WF2 E2E 재실행
 
 ---
 
