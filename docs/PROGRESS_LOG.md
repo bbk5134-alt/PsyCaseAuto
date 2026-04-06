@@ -4,6 +4,46 @@
 
 ---
 
+### 세션 47 — Phase 3 P3-4a/b: S09 Present Illness GS 복원 + n8n 적용 (2026-04-06)
+
+#### 완료 항목
+
+| Phase | 대상 | .md | n8n |
+|-------|------|:---:|:---:|
+| P3-4a: S09 GS 복원 (Claude.ai 축약 수정) | `C:\Users\bbk51\Downloads\system_prompt_section_09.md` | ✅ | — |
+| P3-4b: Sub-WF S09 n8n 적용 | Sub-WF S09 Present Illness (`4VyEFSX0H0FD2ilK`) | ✅ | ✅ |
+
+**P3-4a 수정 내용**:
+- 문제: Claude.ai 리팩토링 시 §6 GS 4단락이 각 1~2문장씩 축약됨
+- 복원: 사용자 제공 원본 전문 4단락 전체 복원 (`Downloads` 파일)
+- `docs/prompts/system_prompt_section_09.md`는 이미 전문 보유 — 수정 불필요
+
+**P3-4b 기술 노트**:
+- `parameters.options.systemMessage` 대상 (n8n AI Agent 노드 active field)
+- S09 GS가 Korean-heavy라 MCP 페이로드 제한 반복 충돌 → **문장 1개씩 분할 전략** (20+ step)
+  - Step 4a: §6 header (38자) 삽입 확인 후 단계적 확대
+  - 각 문장: `SPLIT_MARKER_S09_X` → 문장 + `SPLIT_MARKER_S09_X+1` 방식 릴레이
+  - 성공 임계값: 1회당 ~140자 한국어 이하 (Korean \uXXXX 인코딩 기준)
+- §1~§9 전체 적용 완료 (SPLIT_MARKER 잔존 없음 확인)
+
+**⚠️ GS 인코딩 오류 (Unicode escape 오류 — 기능 영향 낮음)**:
+- GS 단락 내 일부 한글 자모 깨짐 (일싵→일찍, 겨보고→겪어보고 등 다수)
+- §9 item 13: "자젬 위험" → 원래 "자살 위험" (맥락상 이해 가능)
+- GS는 Anti-GS-Contamination 규칙으로 복사 금지 → 형식 참조만이므로 기능 영향 최소
+- 향후 QC 점수 하락 시 재수정 검토
+
+**검증 결과**:
+- [PASS] SPLIT_MARKER 전체 소거 확인
+- [PASS] §1~§9 구조 완전 (FCAB 절대규칙, GS 4단락, 체크포인트, 출력형식, 에러핸들링)
+- [WARN] GS 내 Unicode 인코딩 오류 다수 (문서화 완료, 즉시 수정 보류)
+
+#### 다음 작업
+
+- P3-5: S07/S03/S05 소규모 수정 (milestone.md 참조)
+- QC 재실행 (Phase 3 전체 수정 후)
+
+---
+
 ### 세션 46 — Phase 3 P3-3a/b: S02 Chief Problems 프롬프트 수정 + n8n 적용 (2026-04-06)
 
 #### 완료 항목
