@@ -4,6 +4,40 @@
 
 ---
 
+### 세션 53 — P3-8 FN 방지 규칙 검토 + s34-a2 시스템 프롬프트 v3.1 적용 (2026-04-07)
+
+#### 완료 항목
+
+| 작업 | 상태 | 비고 |
+|------|:----:|------|
+| FN 방지 1~5 규칙 + 기존 v3 결합 프롬프트 검증 | ✅ | 4개 수정사항 도출 |
+| `s34-a2_system_prompt_v3.1.md` 생성 | ✅ | 16,103 chars (+2,595 vs v3) |
+| WF2 `s34-a2` Hallucination 검증 AI Agent systemMessage 업데이트 | ✅ | MCP updateNode 적용, `operationsApplied: 1` |
+| PROGRESS_LOG 세션 53 기록 | ✅ | |
+
+#### 수정사항 4개 (FN 방지 규칙 내부)
+
+| # | 위치 | 문제 | 수정 내용 |
+|---|------|------|----------|
+| Fix 1 | FN 방지 2 | `type: fabricated_fact` 오분류 — "있는 것을 없다고 단정"은 `absence_assumption` | `absence_assumption (major)`로 변경 + 분류 이유 주석 추가 |
+| Fix 2 | FN 방지 5 | severity 기본값 override 미명시 — `absence_assumption`은 기본 `minor`이므로 명시 필요 | `⚠ 이 규칙에 한해 severity: major로 처리한다` override 문구 추가 |
+| Fix 3 | FN 방지 1 | 복수 경과 기록 존재 시 비교 기준 모호 | `가장 최근 경과 기록(latest O)의 값 사용` + 날짜 기준 명시 |
+| Fix 4 | FN 방지 3 | 자해(NSSI) → reckless behavior 카운트 시 FP 위험 | `FP 방어 6 NSSI 체크리스트 먼저 적용` 후 포함 지시 추가 |
+
+#### 검증 결과
+
+| 검증 포인트 | 결과 |
+|------------|:----:|
+| FN 방지 5개 규칙 키워드 존재 확인 | ✅ |
+| 프롬프트 길이 증가 < 500 tokens | ✅ (~420 tokens 증가) |
+| 기존 v3 내용 무변경 확인 | ✅ |
+
+**기술 노트**:
+- n8n `s34-a2` 노드 업데이트: `n8n_update_partial_workflow` + `updateNode` op + `"parameters.options.systemMessage"` dot notation 사용
+- WF2 ID: `LiN5bKslyWtZX6yG`
+
+---
+
 ### 세션 52 — P3-7 Mock 테스트 검증 완료 (2026-04-07)
 
 #### 완료 항목
