@@ -4,6 +4,44 @@
 
 ---
 
+### 세션 40 — Phase 1 Fix-1/2/4 적용 완료 (2026-04-06)
+
+#### 배경
+
+Halluc check (hallucination_check_20260406_0828.json, PT-2026-002)에서 8개 이슈 발견 (major 3건 + minor 5건). 세션 39에서 Step 5-8 E2E 재실행 전 주요 버그 3건 우선 수정.
+
+**핵심 발견**: 이전 세션(37)에서 P-4/P-5 패치가 `parameters.systemMessage`(비활성)에만 적용되고 `parameters.options.systemMessage`(런타임 활성)에는 미적용됨 → 재발 원인.
+
+#### Phase 1 수정 3건
+
+| Fix | 대상 Sub-WF | 문제 | 수정 내용 | .md | n8n active |
+|-----|-----------|------|----------|:---:|:----------:|
+| Fix-2 | S03 (`J0EvW4lNbKGLo157`) | P-4가 options.systemMessage SHORT 버전에 없음 → 환모 누락 3연속 | full_text/segments 분기 + 마커 기반 발화자 식별 규칙 삽입 | ✅ | ✅ |
+| Fix-4 | S04 (`StjkISptQwFHl5Ws`) | 1시간 비자발적 입원을 `none`으로 기재 | ⚠️ 핵심 규칙 + 예시("1시간만에 나왔어도 기재") 추가 | ✅ | ✅ |
+| Fix-1 | S07 (`5wWj9DLBB1z1r9Fr`) | 기분 수치 날조 — P-5가 options.systemMessage에 미적용, Output Format 예시에 `N점(HD#N)` 자리표시자 잔존 | 내러티브 형식 "방향성만 서술" + ⚠️ fabricated_fact 경고 + Case A/B Output 예시 교체 | ✅ | ✅ |
+
+#### 패치 기술 노트
+
+- `patchNodeField` 필드명: `fieldPath` (not `field`), 값 형식: `patches: [{find, replace}]` (not `value`)
+- 한글+인용부호 안의 텍스트를 find 문자열에 넣으면 MCP가 unicode-escape → 짧고 인용부호 없는 substring으로 우회 성공
+- S03 options.systemMessage는 SHORT 버전 (필수포함항목 섹션 없음) → `- 실명 사용 금지\n\n## 5.` 앞에 새 섹션 삽입으로 해결
+
+#### 남은 이슈 (Phase 2 — 사용자 검토 후 진행)
+
+| Fix | 대상 | 내용 |
+|-----|------|------|
+| Fix-C | S08 | HD#2부터 시작하는 Progress Notes 형식 |
+| Fix-D | s34-c4/S12 | truncation 방어 |
+| Fix-E | s34-a2 | STT 날짜 혼동 방어 |
+| Fix-F | 전체 | JSON 파싱 방어 표준화 |
+
+#### 다음 작업
+
+- 사용자 Phase 2 검토 후 Fix-C/D/E/F 적용
+- Step 5-8: WF2 E2E 재실행 (사용자 n8n UI 수동 실행) → Halluc 재검증 목표 0건
+
+---
+
 ### 세션 39 — GitHub pull + n8n 상태 동기화 확인 (2026-04-06)
 
 #### 배경

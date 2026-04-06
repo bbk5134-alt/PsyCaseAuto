@@ -1,6 +1,6 @@
 # PsyCaseAuto — Milestone v3 (세션 32~)
 
-> **작성일**: 2026-04-05 | **최종 업데이트**: 2026-04-05
+> **작성일**: 2026-04-05 | **최종 업데이트**: 2026-04-06 (세션 40)
 > **기준**: PROJECT_PLAN_v3.1 rev.3 + D-34~D-38 (GS2 추가 의사결정)
 > **이전 Milestone**: v2 Tier 1~4 (세션 14~31) — **Step 4-3b까지 완료**
 
@@ -294,7 +294,8 @@
 ✅ Tier 5 Step 5-5 WF2 E2E (GS2) — partial pass (세션 36)
 ✅ Tier 5 Step 5-7 프롬프트 수정 8개 픽스 MCP 적용 (세션 37)
 ✅ Tier 5 W-1a/W-1b S02 파싱 오류 + S03 meta 보정 (세션 38)
-🔴 Tier 5 Step 5-8 E2E 재실행 (오류:0건 확인) + QC 재채점 ← 현재 위치
+✅ Tier 5 Phase 1 Fix-1/2/4 (S03/S04/S07 options.systemMessage 패치) (세션 40)
+🔴 Tier 5 Phase 2 Fix-C/D/E/F 검토 + Step 5-8 E2E 재실행 ← 현재 위치
 ⬜ Tier 5 Step 5-8b 2-case regression framework 구축
 ⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
 ⬜ Tier 6 WF4 Q&A 대본 자동화 (Step W4-1~W4-5)
