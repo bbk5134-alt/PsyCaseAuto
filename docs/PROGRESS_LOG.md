@@ -4,6 +4,39 @@
 
 ---
 
+### 세션 46 — Phase 3 P3-3a/b: S02 Chief Problems 프롬프트 수정 + n8n 적용 (2026-04-06)
+
+#### 완료 항목
+
+| Phase | 대상 | .md | n8n |
+|-------|------|:---:|:---:|
+| P3-3a: S02 프롬프트 수정 (Claude.ai 검수) | `docs/prompts/system_prompt_section_02.md` | ✅ | — |
+| P3-3b: Sub-WF S02 n8n 적용 | Sub-WF S02 Chief Problems (`TifgZTXdSNW9Gtlh`) | ✅ | ✅ |
+
+**P3-3a 수정 내용 (PHASE3_FIX_PLAN Fix-L)**:
+- Issue 1: `**3~5개**로 제한` → `3~5개로 제한` (bold 마커 제거 — patchNodeField find 매칭용)
+
+**P3-3b 기술 노트**:
+- `parameters.options.systemMessage` 대상 (n8n AI Agent 노드 active field)
+- patchNodeField 3-step 전략으로 교체 (MCP 크기 제한 우회):
+  - Step 1: 첫 줄 제목 뒤 → `STOP_MARKER_S02` 삽입
+  - Step 2: regex `STOP_MARKER_S02[\s\S]*` → §1~§5 + `SPLIT_MARKER_S02_PART2`
+  - Step 3: `SPLIT_MARKER_S02_PART2` → §6~§9
+- 모델: claude-sonnet-4-6 유지
+
+**P3-3b 검증 결과** (5/5 PASS):
+- [PASS] `3~5개로 제한` (Fix-L §3)
+- [PASS] GS2: Alcohol use dependence + Labile mood
+- [PASS] `Aggravation) 내원 3달 전`
+- [PASS] `aggravation` JSON 필드
+- [PASS] `HIGH_SUICIDE_RISK` (§9 rule 11)
+
+#### 다음 작업
+
+- P3-4: S09 Present Illness 프롬프트 수정 (milestone.md 참조)
+
+---
+
 ### 세션 45 — Phase 3 P3-2a/b: S04 Past Family History 프롬프트 수정 + n8n 적용 (2026-04-06)
 
 #### 완료 항목
