@@ -1,6 +1,6 @@
 # PsyCaseAuto — Milestone v3 (세션 32~)
 
-> **작성일**: 2026-04-05 | **최종 업데이트**: 2026-04-06 (세션 43)
+> **작성일**: 2026-04-05 | **최종 업데이트**: 2026-04-07 (세션 55)
 > **기준**: PROJECT_PLAN_v3.1 rev.3 + D-34~D-38 (GS2 추가 의사결정)
 > **이전 Milestone**: v2 Tier 1~4 (세션 14~31) — **Step 4-3b까지 완료**
 
@@ -273,9 +273,9 @@
 > **시점**: 새 환자 내원 예정 (~2주 후)
 
 **사전 준비 (실환자 E2E 전 완료 필수)**:
-- Railway 인스턴스 분리 검토: 결혼준비AI와 PsyCaseAuto 공유 → 실환자 데이터 보안 고려
-- 전공의 온보딩 1회 (~30분): Telegram→GDrive→Docs 수정→내보내기 전체 워크스루
-- s34-a1 원문 크기 모니터링 추가: `originalText.length` Telegram 알림 포함 (silent failure 방지)
+- Railway 인스턴스 분리 검토: 결혼준비AI와 PsyCaseAuto 공유 → 환자 이름 미사용으로 보안 이슈 없음 판단, **Pass**
+- 전공의 온보딩 1회 (~30분): 실사용 전 직접 설명 예정, **Pass**
+- ✅ s34-a1 원문 크기 모니터링 추가: `original_text_length` Telegram 알림 포함 (세션 55 적용 완료)
 
 실제 환자 녹음 → WF1-B STT → WF2 보고서 생성 → 전공의 §18 절차 검증 → 피드백 수집.
 
@@ -313,7 +313,7 @@
 | ID | 파일 | 진단 | 작성자 | 상태 |
 |----|------|------|--------|------|
 | GS1 | `20230927_Case conference_R2_임지원(mdd).docx` | MDD | R2 임지원 | ✅ 활용 중 (PT-2026-001) |
-| GS2 | `260401_Case conference_R1_문혜린.docx` | Bipolar I + AUD | R1 문혜린 (사용자 본인) | 🔴 Mock 생성 대기 |
+| GS2 | `260401_Case conference_R1_문혜린.docx` | Bipolar I + AUD | R1 문혜린 (사용자 본인) | ✅ 활용 중 (PT-2026-002) |
 
 ---
 
