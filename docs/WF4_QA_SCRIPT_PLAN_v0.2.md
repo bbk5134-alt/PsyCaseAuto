@@ -70,9 +70,12 @@
     ↓
 [s5] Switch: 논문 보강?
     ├── YES (`논문` 키워드 있음)
-    │   ↓ Perplexity API: 핵심 질문별 논문 목록 + 간단 요약
+    │   ↓ AI Agent (Gemini Flash + Perplexity Tool)
+    │   ↓   - Chat Model: Gemini 2.5 Flash
+    │   ↓   - Tool: Perplexity (검색 쿼리는 AI가 자동 생성)
+    │   ↓ 입력: 핵심 질문 3~5개 (s4 출력)
+    │   ↓ 출력: 질문별 논문 목록 + 간단 요약 + citation URL
     │   ↓ (정밀 검증 없이 "추천 목록" 용도)
-    │   ↓ citation URL 포함
     └── NO → 바로 s6으로
     ↓
 [s6] 이전 대본 존재 시 diff 생성 (Code 노드)
@@ -112,7 +115,9 @@
 | 7 | QC 결과 처리 | code | pass/fail 분기 + 미달 태깅 |
 | 8 | 핵심 질문 추출 | code | 위험도 필터링 |
 | 9 | Switch: 논문 보강? | switch | `논문` 키워드 분기 |
-| 10 | Perplexity 논문 검색 | Sub-WF/Tool | 질문별 논문 목록 |
+| 10 | AI Agent (논문 검색) | agent | Gemini Flash + Perplexity Tool, 질문별 논문 목록 |
+| 10a | Chat Model (Gemini Flash) | chatModel | Sub-node |
+| 10b | Tool (Perplexity) | tool | Sub-node, 검색 쿼리 자동 생성 |
 | 11 | 이전 대본 diff | code | 변경 사항 요약 |
 | 12 | HTML 대본 생성 | code | 템플릿 |
 | 13 | Google Drive 저장 | googleDrive | convert to Docs |
@@ -139,7 +144,7 @@
 | W4-04 | Trigger: Telegram 수동 명령 | ✅ 확정 | 단일 명령어 `/대본생성` |
 | W4-05 | 프롬프트: 동적 축 도출 방식으로 범용화 | ✅ 확정 | Claude.ai 시뮬레이션 Conditional Pass |
 | W4-06 | AI Agent 노드 사용 (D-29 준수) | ✅ 확정 | |
-| W4-07 | Perplexity: 논문 목록 추천 + 간단 요약 (정밀 검증 불필요) | ✅ 확정 | 사용자가 논문 직접 확인 전제 |
+| W4-07 | 논문 검색: AI Agent(Gemini Flash) + Perplexity Tool 조합 — Option B | ✅ 확정 | AI가 핵심 질문을 받아 검색 쿼리 자동 생성, 사용자가 논문 직접 확인 전제 |
 | W4-08 | 입력: 전공의 수정 완성본 (Google Docs, 최근 파일) | ✅ 확정 | WF2 초안 아님 |
 | W4-09 | QC: Gemini Flash 별도 검증 (pass/fail + 미달 태깅) | ✅ 확정 | self-evaluation bias 방지 |
 | W4-10 | 재실행 시 이전 대본과 diff 표시 | ✅ 확정 | 단일 명령어 유지 |
@@ -212,15 +217,28 @@ WF2의 Hallucination Check (s34-a2/a3)와 동일한 설계 철학.
 
 ---
 
-## 7. 논문 보강 설계 (v0.2 수정)
+## 7. 논문 보강 설계 (v0.3 — Option B 채택)
 
-### 목적 변경 (v0.1 → v0.2)
+### 목적 변경 (v0.1 → v0.2 → v0.3)
 
-| v0.1 | v0.2 |
-|------|------|
-| 논문 검색 → Q&A에 근거 삽입 | **논문 목록 추천 + 간단 요약** (1~2문장) |
-| AI가 논문 내용을 Q&A에 통합 | 사용자가 목록을 받아 **직접 논문 확인** |
-| 정확도 검증 필요 | 추천 목록 용도이므로 **정확도 검증 불필요** |
+| v0.1 | v0.2 | v0.3 (현재) |
+|------|------|------------|
+| 논문 검색 → Q&A에 근거 삽입 | **논문 목록 추천 + 간단 요약** (1~2문장) | 동일 |
+| AI가 논문 내용을 Q&A에 통합 | 사용자가 목록을 받아 **직접 논문 확인** | 동일 |
+| 정확도 검증 필요 | 추천 목록 용도이므로 **정확도 검증 불필요** | 동일 |
+| (구현 방식 미정) | Perplexity API 직접 호출 (HTTP) | **AI Agent(Gemini Flash) + Perplexity Tool** |
+
+### Option B 채택 근거 (W4-07 변경)
+
+| 항목 | Option A (v0.2) | Option B (v0.3) |
+|------|----------------|----------------|
+| 구현 | HTTP Request 노드 + 수동 쿼리 포맷 | AI Agent + Perplexity Tool 서브노드 |
+| 쿼리 품질 | 고정 템플릿 | AI가 임상 맥락 기반 쿼리 자동 생성 |
+| n8n 패턴 일관성 | HTTP 직접 호출 (D-29 예외) | **D-29 준수** (AI Agent 노드 사용) |
+| 비용 | Perplexity 호출만 | + Gemini Flash 호출 (~$0.005 추가) |
+| 유연성 | 쿼리 변경 시 코드 수정 | 시스템 프롬프트 수정만으로 쿼리 전략 조정 |
+
+→ **D-29 일관성 + 임상 맥락 기반 쿼리 품질**을 위해 Option B 채택.
 
 ### 근거
 
@@ -395,3 +413,4 @@ WF2의 Hallucination Check (s34-a2/a3)와 동일한 설계 철학.
 |------|------|
 | 2026-04-06 | v0.1 초안 작성 (Claude Code) |
 | 2026-04-06 | v0.2 — Claude.ai 검토 + 사용자 5가지 피드백 반영: 입력 소스 확정(전공의 수정본), Perplexity 목적 축소(논문 목록 추천), r/o fallback 규칙, Gemini QC 검증, diff 기능, 단일 명령어 |
+| 2026-04-08 | v0.3 — Option B 채택: 논문 검색을 HTTP 직접 호출 → AI Agent(Gemini Flash) + Perplexity Tool 조합으로 변경 (D-29 준수) |

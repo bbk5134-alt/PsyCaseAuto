@@ -79,8 +79,8 @@ psychiatric interview automation/
 | Tier 3: Gemini Flash 전환 + QC 86.5/A | ✅ | 세션 23~24, E2E ~$0.62 |
 | Tier 5: GS2 E2E + Phase 3 프롬프트 수정 | ✅ | 세션 35~54, Fix-O/P/Q/R 최종 완료 |
 | s34-a1 원문 크기 모니터링 | ✅ | 세션 55, silent failure 방지 |
-| WF4 Q&A 대본 자동화 | 🟡 기획 완료 | Tier 6, 언제든 진행 가능 (`docs/WF4_QA_SCRIPT_PLAN_v0.2.md`) |
-| **다음 작업** | 🟢 | **실사용 대기** (~2주 후 첫 실환자) or Tier 6 WF4 구현 |
+| WF4 Q&A 대본 자동화 | 🟡 Stage 0 v0.2.1 완성 | GS1/GS2 QC 통과 — P-5 여자친구 검토 대기 (`docs/prompts/wf4_stage0_v0.2.1.md`) |
+| **다음 작업** | 🟢 | **실사용 대기** or P-5 검토 후 Tier 6 WF4 구현 |
 
 > QC 세부 결과: `docs/PROGRESS_LOG.md` 참조. 구 세션 기록: `docs/archieve(이전 log)/` 참조.
 
