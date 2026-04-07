@@ -4,6 +4,49 @@
 
 ---
 
+### 세션 57 — WF4 노드 10-prep + 11~14 추가 완료 (2026-04-08)
+
+#### 작업 내용
+
+WF4 워크플로우 (`Nq2pSgm7YS9EYQgy`) 에 노드 10-prep, 11~14 추가. 28노드, valid: true, errorCount: 0.
+
+#### 추가 노드 목록
+
+| 노드 ID | 이름 | 타입 | 역할 |
+|---------|------|------|------|
+| wf4-n10-prep | 논문 결과 정리 | Code | 논문 검색 AI Agent 출력 + 고위험 질문 추출 prev 데이터 병합 |
+| wf4-n11 | diff 생성 | Code | 양 경로(논문/미논문) 수렴, 파일명 생성, diffSummary 세팅 |
+| wf4-n12 | HTML 대본 생성 | Code | §10 템플릿 기반 HTML 생성 + binary 출력 (Drive 업로드용) |
+| wf4-n13 | Google Drive 저장 | Google Drive | HTML → Google Docs 변환 저장 (patient_folder_id 하위) |
+| wf4-n14 | 최종 Telegram 알림 | Telegram | §8 형식: QC 결과 + Google Docs 링크 + diff 요약 + 논문 여부 |
+
+#### 연결 구조
+
+```
+논문 검색 AI Agent → 논문 결과 정리 → diff 생성
+                                         ↑
+논문 검색 여부 분기 (output 1, no_papers) ┘
+
+diff 생성 → HTML 대본 생성 → Google Drive 저장 → 최종 Telegram 알림
+```
+
+#### 설계 결정 사항
+
+| 항목 | 결정 | 이유 |
+|------|------|------|
+| diff 기능 | 현재 "신규 생성" 고정 | Phase 2에서 Drive 이전 대본 조회 후 질문 단위 비교 구현 예정 |
+| Drive 저장 위치 | patient_folder_id 직접 (서브폴더 없음) | 서브폴더 생성은 2~3 Drive 노드 추가 필요 → 단순화 |
+| HTML → Docs 변환 | `convertToDocument: true` | Google Docs 링크 생성, 전공의 수정 가능 |
+| Telegram 링크 | `https://docs.google.com/document/d/{$json.id}/edit` | Drive 노드 출력 `id` 활용 |
+| 논문 미요청 시 알림 | `/대본생성 {patient_code} 논문 으로 추가 가능` 안내 포함 | §8 설계 준수 |
+
+#### 다음 작업
+
+- **권장**: E2E 테스트 (`/대본생성 PT-2026-002` 및 `/대본생성 PT-2026-002 논문`)
+- **Phase 2 TODO**: diff 기능 (Drive 이전 대본 조회), 대본 서브폴더 분리
+
+---
+
 ### 세션 54 — GS1/GS2 QC 비교 분석 + 프로젝트 방향 전환 + 최종 프롬프트 수정 5건 (2026-04-07)
 
 #### 배경
