@@ -1,0 +1,288 @@
+{
+  "quality_check": {
+    "patient_code": "PT-2026-002",
+    "checked_at": "2026-04-07T15:30:00+09:00",
+    "gold_standard_report": "260401_Case_conference_R1_문혜린.docx",
+    "source_interviews_count": 2,
+
+    "section_scores": {
+      "A01_identifying_data": {
+        "max": 5,
+        "score": 4,
+        "issues": [
+          "출생/거주 표기가 '수원/인천 남동구'로 약식. Gold Standard는 '경기도 수원시/인천시 남동구'로 정식 행정구역 표기. (-0.5)",
+          "병전 성격 서술이 Gold Standard 대비 과도하게 길고, 성격 특성을 넘어 경력·행동 이력(콩쿠르 대상, 전교회장, 혼전 임신 등)까지 포함함. 병전 성격은 '성격 특성'에 국한되어야 함. (-0.5)"
+        ],
+        "prompt_fix": "병전 성격 필드에 '성격 특성만 기술하라. 학업·수상·결혼 등 이력은 Personal History에서 다룬다.' 제약을 추가하고, 출생/거주를 시/도 포함 정식 행정구역으로 기재하도록 지시할 것."
+      },
+      "A02_chief_problems": {
+        "max": 5,
+        "score": 3.5,
+        "issues": [
+          "증상 설명이 Gold Standard 대비 과도하게 길음. Gold Standard는 1~2줄 이내 간결한 설명인데 AI 초안은 3~4줄의 상세 서술. (-1)",
+          "Gold Standard의 핵심 증상 'Labile mood'와 'Irritability'가 AI 초안에 독립 항목으로 없음. 대신 'Insomnia'가 포함되어 있으나, Gold Standard에는 별도 Chief Problem으로 취급되지 않음. (내용 오류이나 형식 감점 아님 → B에서 처리)",
+          "Onset/Aggravation 형식은 Gold Standard와 일치하여 적절함. (-0.5 증상 설명 길이)"
+        ],
+        "prompt_fix": "Chief Problems의 증상 설명을 '1~2줄 이내의 간결한 행동 관찰 기술'로 제한하는 지시를 추가할 것. Gold Standard 예시: '- 과도한 음주로 건강이 좋지 않다고 들었음에도 오랜 기간 술을 마시고 양이 점차 늘어나는 모습'."
+      },
+      "A03_informants_reliability": {
+        "max": 3,
+        "score": 3,
+        "issues": [],
+        "prompt_fix": ""
+      },
+      "A04_present_illness": {
+        "max": 12,
+        "score": 11,
+        "issues": [
+          "시간 표기에 '내원 약 N년 전'으로 '약'이 체계적으로 삽입됨. Gold Standard는 '내원 N년 N개월 전' 형식으로 정확한 시점을 제시. '약'은 불필요한 모호성을 추가함. (-1)"
+        ],
+        "prompt_fix": "시간 표기에서 '약'을 사용하지 말고 STT 원문의 시간 정보를 입원일 기준으로 정확히 계산하여 '내원 N년 N개월 전' 형식으로 기재하라는 지시를 강화할 것."
+      },
+      "A05_past_family_history": {
+        "max": 4,
+        "score": 2.5,
+        "issues": [
+          "항목 2(Alcohol and other substance issue)가 Gold Standard의 간결한 1~2줄 형식과 달리 장문의 서술형으로 작성됨. Gold Standard 예시: 'Binge drinking (+), 7 times/week, 소주 3병, 맥주 2캔 / Last drinking: 입원 전일 맥주 500cc 2캔 / Smoking: for 15 yrs'. (-0.5)",
+          "항목 3(Lab finding issue)에 구체적 검사 수치가 없고 '[보호자 보고]'로만 기재됨. Gold Standard는 '[2026-03-18] CK : ↑5,817' 등 구체적 수치를 기재. STT에 '간 수치가 높다'는 보호자 진술은 있으나 구체적 수치는 의무기록 기반이므로 AI 한계는 인정. (-0.5)",
+          "항목 4(Other medical issue)에 Gold Standard에 있는 'peripheral neuropathy, macrocytic normochromic anemia, mild leukopenia'가 누락되고, 대신 환모의 젖몸살 이력(severe breast engorgement)이 환자의 medical issue로 오기재됨. (-0.5)"
+        ],
+        "prompt_fix": "항목 2는 Gold Standard 형식 예시를 프롬프트에 포함하여 'Binge drinking (+/-)、빈도、양 / Last drinking / Smoking' 형식의 간결한 나열로 작성하도록 지시. Lab/Medical issue는 STT에 구체적 수치가 없을 경우 '[의무기록 확인 필요]'로 표기하되, 보호자 진술을 환자 본인 의학 이력으로 오기재하지 않도록 경고를 추가할 것."
+      },
+      "A06_personal_history": {
+        "max": 5,
+        "score": 4,
+        "issues": [
+          "Late childhood 섹션에서 Gold Standard에 있는 핵심 에피소드(왕따 경험, 첫 연애, 콩쿠르 대상 과정, 기숙사 생활과 환부의 6년간 통학 지원)가 상당 부분 누락됨. STT 원문에 직접적 언급이 없는 항목도 있으나, 존재하는 정보(콩쿠르 대상, 대학 진학 등)도 축약됨. (-1)"
+        ],
+        "prompt_fix": "Personal History의 Late childhood에서 '또래 갈등, 첫 연애 경험, 성취 경험의 구체적 과정'을 면담 원문에서 최대한 추출하여 기술하도록 지시를 강화할 것. 면담에 명시되지 않은 항목은 [확인 필요]로 표기."
+      },
+      "A07_mse": {
+        "max": 5,
+        "score": 4,
+        "issues": [
+          "Sensorium and Cognition의 모든 항목(Orientation, Memory, Concentration, Abstract thinking)이 'not tested'로 기재됨. Gold Standard는 구체적 검사 결과를 기재(예: '100-93-86-79-72', '사과와 배의 공통점은 과일'). 검사 결과가 STT에 없더라도, 형식적으로 Gold Standard 패턴과 불일치. (-1)"
+        ],
+        "prompt_fix": "MSE Sensorium 항목에 대해 STT에서 인지기능 관련 정보를 추출하고, 직접적 검사 결과가 없는 경우에도 면담 중 관찰된 인지 수준(대화의 논리성, 지남력 등)을 기반으로 추론 기재하도록 지시. 단, 추론 기재 시 [면담 관찰 기반 추론] 태그를 부착할 것."
+      },
+      "A08_mood_chart": {
+        "max": 2,
+        "score": 0.5,
+        "issues": [
+          "STT 원문에 없는 기분 수치(7점, 6점)가 날조됨. AI가 임의로 생성한 수치는 Fabrication에 해당. (-1)",
+          "핵심 사건 표기는 일부 존재하나 날조된 수치와 결합되어 신뢰성이 없음. (-0.5)"
+        ],
+        "prompt_fix": "Mood Chart 프롬프트에 '기분 수치는 환자의 직접 진술 또는 표준 척도(BDI, BAI 등) 결과에서만 추출할 것. STT에 수치 근거가 없으면 [수치 미확인 — 임상 관찰 기반 추정] 태그를 부착하고, 구체적 숫자를 임의 생성하지 말 것.' 제약을 추가."
+      },
+      "A09_progress_notes": {
+        "max": 5,
+        "score": 4,
+        "issues": [
+          "HD #1 (2026.03.19)을 Progress Note로 작성했으나, Gold Standard에서 초진 면담 데이터는 Present Illness의 소스로만 사용되고 Progress Notes는 HD#2부터 시작됨. 초진 면담을 Progress Note로 중복 작성하는 것은 형식 오류. (-1)"
+        ],
+        "prompt_fix": "Progress Notes 프롬프트에 '초진 면담 데이터는 Present Illness 섹션의 소스이다. Progress Notes는 입원 후 경과 면담(HD#2~)부터 작성하라. 초진일을 HD#1 Progress Note로 생성하지 마라.' 제약을 추가."
+      },
+      "A10_diagnostic_formulation": {
+        "max": 3,
+        "score": 3,
+        "issues": [],
+        "prompt_fix": ""
+      },
+      "A11_case_formulation": {
+        "max": 5,
+        "score": 4,
+        "issues": [
+          "Gold Standard는 4P를 2×2 표(Predisposition|Pattern / Precipitants|Perpetuants) 형식으로 제시하나, AI 초안은 각 항목을 개별 헤더로 분리하여 산문형으로 나열. 시각적 구조가 Gold Standard와 다름. (-0.5)",
+          "Psycho 치료계획이 Gold Standard 대비 구체성이 부족함. Gold Standard는 supportive psychotherapy의 구체적 기법(approval, 지지적 면담 상세)과 psychoeducation의 내용을 각각 상세 기술하는 반면, AI 초안은 간략한 1~2문장으로 요약. (-0.5)"
+        ],
+        "prompt_fix": "4P 구조를 2×2 표 형식으로 출력하도록 HTML 템플릿을 프롬프트에 포함하고, Psycho 치료계획은 '구체적 면담 기법(approval, limit setting 등)과 해당 환자에 적용한 방식을 3~5문장으로 상세 기술'하도록 지시할 것."
+      },
+      "A12_psychodynamic": {
+        "max": 6,
+        "score": 6,
+        "issues": [],
+        "prompt_fix": ""
+      }
+    },
+
+    "category_scores": {
+      "A_format_fidelity": {
+        "max": 60,
+        "score": 49.5
+      },
+      "B_factual_accuracy": {
+        "max": 25,
+        "score": 5,
+        "note": "B-1: 10(base) - 5(즉시실격:자살위험도하향) = 5점. B-2: 10 - 15(fabrication 3건 × -5) = 0점(floor). 합계 5/25.",
+        "issues": [
+          {
+            "category": "B-1",
+            "field": "인적사항",
+            "issue": "사회경제적 상태: AI '상' vs Gold Standard '중'. STT에 SES 직접 언급 없음 — AI가 근거 없이 '상'으로 기재.",
+            "deduction": -1
+          },
+          {
+            "category": "B-1",
+            "field": "가족력",
+            "issue": "AI '친조부와 친부에게 alcohol use disorder' vs Gold Standard '친조부, 친백부 alcohol use disorder'. 친부(아버지) vs 친백부(큰아버지) 오류. STT에서 환자는 '아빠도 술 잘 드셨고'로 진술했으나, 환모는 '시아버지가 술을 많이 드셨어요. 시아버지 형님도요'로 진술하여 친백부(또는 백조부)를 지칭. Gold Standard는 친백부로 기재.",
+            "deduction": -1
+          },
+          {
+            "category": "B-1",
+            "field": "증상 기술",
+            "issue": "MSE Mood/Affect 값이 Gold Standard 및 STT 경과기록과 완전 불일치. AI: 'euthymic, not irritable, not anxious / appropriate, adequate, broad'. Gold Standard: 'elevated, not-irritable, sl-anxious / inappropriate, inadequate, labile'. 가장 최근 경과(HD#7)의 O) 기록도 'sl-elevated, sl-irritable' → euthymic은 명백한 오류.",
+            "deduction": -2
+          },
+          {
+            "category": "B-1",
+            "field": "증상 기술",
+            "issue": "Circumstantiality: AI (-) vs Gold Standard (+). STT 경과 원문에서 환자가 주제를 벗어났다가 돌아오는 양상(도서관 책 이야기 삽입)이 관찰됨.",
+            "deduction": -0.5
+          },
+          {
+            "category": "B-1",
+            "field": "과거력",
+            "issue": "Other medical issue에 환모의 젖몸살 이력을 환자 본인의 medical history로 오기재(severe breast engorgement). 이는 환모가 첫째 출산 시 겪은 증상이지 환자의 의학적 이력이 아님.",
+            "deduction": -0.5
+          },
+          {
+            "category": "B-1_즉시실격감점",
+            "field": "자살 위험도 하향 기재",
+            "issue": "★즉시실격조건 적용★ AI '자살의 위험성: 하' vs Gold Standard '자살의 위험성: 중'. 위협적 행동 가능성도 AI '하' vs Gold Standard '중'. STT에서 reckless behavior 다수(클럽 성관계, 새벽 외출, 가족 협박, 금주 거부) 확인됨. 원본보다 경미한 기재는 환자 안전에 직결되는 critical error.",
+            "deduction": -5
+          },
+          {
+            "category": "B-2",
+            "field": "Mood Chart",
+            "issue": "기분 점수 '7점'(HD#1), '6점'(HD#7)은 STT 원문에 전혀 존재하지 않는 수치. AI가 임의로 생성한 fabricated fact.",
+            "deduction": -5
+          },
+          {
+            "category": "B-2",
+            "field": "Present Illness",
+            "issue": "'2026.3.19 외래 경유하여 입원하였다' — STT 원문에서 환자는 119 경유 응급실 내원 후 입원. Gold Standard도 '본원 응급실 내원하였으며...본과 전과되어 개방병동 자의입원하였다'로 기재. '외래 경유'는 원문에 없는 사실 날조.",
+            "deduction": -5
+          },
+          {
+            "category": "B-2",
+            "field": "Personal History",
+            "issue": "'환자가 첫째임을 시사하나' — AI가 Identifying Data에서는 '2녀 중 둘째'로 정확히 기재하면서, Personal History에서는 환모의 '첫째 때 젖몸살이 심했다'를 오독하여 '환자가 첫째'라는 모순된 추론을 기재. 내부 불일치이자 사실 오류.",
+            "deduction": -5
+          }
+        ],
+        "detail": {
+          "B1_base": 10,
+          "B1_deductions_base": -5,
+          "B1_suicide_penalty": -5,
+          "B1_final": 5,
+          "B2_base": 10,
+          "B2_deductions": -15,
+          "B2_final": 0,
+          "B2_note": "B-2 floor = 0. 3건 fabrication 감지(기분수치 -5, 외래경유 -5, 출생순서 -5 = -15 → 0점)",
+          "B_total": 5
+        }
+      },
+      "C_hallucination_check": {
+        "max": 15,
+        "score": 8.5,
+        "fp_count": 0,
+        "fn_count": 2,
+        "fp_items": [],
+        "fn_items": [
+          {
+            "missed_error": "사회경제적 상태 '상' 기재",
+            "actual": "STT에 SES 직접 언급 없음, Gold Standard '중'. AI가 근거 없이 '상'으로 기재한 fabrication을 halluc check가 놓침.",
+            "section": "S01"
+          },
+          {
+            "missed_error": "가족 정신과 병력 오기재: '친부' AUD",
+            "actual": "Gold Standard는 '친백부' AUD. STT에서 환모가 '시아버지 형님'으로 진술한 대상을 AI가 '친부'로 오기재. Halluc check가 이 misattribution을 놓침.",
+            "section": "S04"
+          }
+        ],
+        "detail": {
+          "C1_coverage": {
+            "max": 3,
+            "score": 2.5,
+            "note": "S01~S10 검증 완료. S11(Case Formulation), S12(Psychodynamic)은 미검증이나 이들은 inference 태그가 부착된 초안 섹션이므로 감점 최소화."
+          },
+          "C2_false_positive": {
+            "max": 4,
+            "score": 4,
+            "note": "Halluc Check의 6건 지적 모두 TP(정당 탐지). FP 0건. 특히 absence_assumption(Circumstantiality) 탐지는 STT 원문 근거가 있어 TP로 판정."
+          },
+          "C3_false_negative": {
+            "max": 8,
+            "score": 2,
+            "note": "FN 2건 확인. (1) SES '상' fabrication 미탐지, (2) 가족력 '친부' vs '친백부' misattribution 미탐지. FN 2건 = 8 - 6 = 2점."
+          }
+        }
+      }
+    },
+
+    "total_score": 63,
+    "max_score": 100,
+
+    "verdict": {
+      "grade": "B",
+      "label": "일부 섹션 재작성 필요",
+      "note": "A(형식) 49.5/60(82.5%)은 양호하나, B(사실정확성) 5/25가 총점을 크게 끌어내림. MSE Mood/Affect 완전 오류 + 자살위험도 하향 기재(즉시실격 -5) + Mood Chart 수치 날조 + 외래 경유 날조가 핵심 실패 요인. 형식 품질은 B등급이지만 사실 오류가 해결되지 않으면 임상적으로 사용 불가.",
+      "top3_worst_sections": [
+        {
+          "section": "B_factual_accuracy",
+          "score": 0,
+          "max": 25,
+          "priority_fix": "MSE Mood/Affect 값이 STT 원문과 완전 불일치(euthymic vs elevated). S06 프롬프트에서 '가장 최근 경과기록의 O) Mood/Affect 값을 MSE에 반영하라' 지시 강화. 또한 자살위험도를 reckless behavior 갯수 기반으로 산정하는 체크리스트를 프롬프트에 포함해야 함."
+        },
+        {
+          "section": "A08_mood_chart",
+          "score": 0.5,
+          "max": 2,
+          "priority_fix": "S07 프롬프트에 '기분 수치는 환자 직접 진술 또는 표준 척도에서만 추출. 근거 없는 수치 생성 절대 금지.' 제약 추가. 수치 대신 '시간축 + 핵심 사건 + 관찰된 기분 상태(elevated/depressed 등)' 형태로 출력하도록 구조 변경."
+        },
+        {
+          "section": "A05_past_family_history",
+          "score": 2.5,
+          "max": 4,
+          "priority_fix": "S04 프롬프트에 Gold Standard 예시 형식을 직접 포함하고, '항목 2는 Binge drinking (+/-), 빈도, 양, Last drinking, Smoking 형식으로 간결하게 기재하라' 지시. Lab finding은 '[의무기록 확인 필요]'로 기재하고 보호자 진술을 수치로 변환하지 말 것."
+        }
+      ]
+    },
+
+    "prompt_improvement_guide": {
+      "summary": "형식 충실도(A)는 49.5/60(82.5%)으로 전반적으로 양호하나, 사실 정확성(B)이 0/25로 치명적. 핵심 원인은 (1) MSE 프롬프트(S06)가 경과기록 O) 값을 올바르게 추출하지 못함, (2) 안전 관련 항목(자살위험도)에 대한 보수적 산정 로직 부재, (3) 수치 생성 금지 제약 미비. Present Illness(A04=11/12)와 Psychodynamic(A12=6/6)은 우수하므로 해당 프롬프트는 현행 유지. 최우선 수정 대상은 S06(MSE), S07(Mood Chart), S04(Past/Family Hx) 순.",
+      "per_section": [
+        {
+          "section": "A07_mse (S06 프롬프트)",
+          "sub_workflow": "S06",
+          "current_score": 4,
+          "target_score": 5,
+          "problem": "MSE Mood/Affect 값이 STT 경과기록의 가장 최근 O) 값과 완전 불일치(euthymic vs elevated). Circumstantiality도 STT 행동 근거가 있는데 (-)로 기재. Sensorium 항목 전체가 'not tested'로 처리됨. 자살위험도가 Gold Standard보다 1단계 낮게 기재됨.",
+          "fix": "S06 프롬프트에 다음을 추가: (1) 'MSE Mood/Affect 값은 반드시 가장 최근 경과기록의 O) Mood/Affect를 기본값으로 사용하라. 임의 판단 금지.' (2) Circumstantiality 판정 시 '환자가 질문과 무관한 세부 이야기를 삽입했다가 다시 주제로 돌아오는 사례가 1건 이상 있으면 (+)로 판정하라.' (3) 자살위험도 판정에 'reckless behavior가 2건 이상이면 최소 \"중\"으로 산정하라.' 체크리스트 포함. (4) Sensorium에 대해 STT에서 인지 관련 단서(대화 논리성, 시간/장소 인지 등)를 추출하여 추론 기재하도록 지시.",
+          "example_good": "Gold Standard MSE — Mood: elevated, not-irritable, sl-anxious / Affect: inappropriate, inadequate, labile / Circumstantiality (+): 불필요한 세부묘사를 넘치게 말하나 다시 주제로 돌아오는 모습 / 자살의 위험성: 중",
+          "example_bad": "AI 초안 MSE — Mood: euthymic, not irritable, not anxious / Affect: appropriate, adequate, broad / Circumstantiality (-) / 자살의 위험성: 하"
+        },
+        {
+          "section": "A08_mood_chart (S07 프롬프트)",
+          "sub_workflow": "S07",
+          "current_score": 0.5,
+          "target_score": 2,
+          "problem": "STT에 전혀 존재하지 않는 기분 수치(7점, 6점)를 AI가 임의 생성. 이는 B-2 Fabrication으로도 감점됨.",
+          "fix": "S07 프롬프트에 '기분 수치는 환자의 직접 자기보고(예: \"기분이 10점 만점에 몇 점이에요?\") 또는 BDI/BAI 등 표준 척도 결과에서만 추출할 것. STT 원문에 수치적 근거가 없으면 수치를 생성하지 말고 \"[환자 자기보고 수치 없음]\"으로 표기. 대신 시점별 관찰된 기분 상태를 서술형(elevated, depressed, labile 등)으로 기재하라.' 제약 추가.",
+          "example_good": "Gold Standard Mood Chart: [시각적 차트 이미지로 시점별 기분 변화 표시. 입원 시 scale 수치(BDI 6, BAI 19, MDQ 8+, AUDIT 33) 포함]",
+          "example_bad": "AI 초안: 'HD#1 기분 점수 7점...HD#7 기분 점수 6점' — 원문에 없는 수치 날조"
+        },
+        {
+          "section": "A05_past_family_history (S04 프롬프트)",
+          "sub_workflow": "S04",
+          "current_score": 2.5,
+          "target_score": 4,
+          "problem": "항목 2(음주력)가 장문 서술형으로 Gold Standard의 간결한 나열 형식과 불일치. Lab finding에 구체적 수치 없이 '[보호자 보고]'로만 기재. 환모의 젖몸살 이력을 환자의 medical history로 오기재. 가족 정신과 병력에서 '친부'를 '친백부' 대신 기재.",
+          "fix": "S04 프롬프트에 Gold Standard 형식 템플릿을 직접 포함: '2. Alcohol and other substance issue: [음주패턴] (+/-), [빈도]/week, [양] / Last drinking: [날짜] [종류] [양] / Smoking: for [N] yrs'. 또한 '가족 정신과 병력은 STT에서 각 정보제공자가 언급한 관계 명칭을 그대로 사용하라. 추론으로 관계를 재해석하지 마라.' 제약 추가. Lab finding은 '[의무기록 확인 필요]'로 표기하도록 지시.",
+          "example_good": "Gold Standard: '2. Alcohol and other substance issue: Alcohol: Binge drinking (+), 7 times/week, 소주 3병, 맥주 2캔 / Last drinking: 입원 전일 맥주 500cc 2캔 / Smoking: for 15 yrs / 5. Psychiatric family history: 친조부, 친백부 alcohol use disorder / 환부, 언니 panic disorder'",
+          "example_bad": "AI 초안: '2. Alcohol and other substance issue: 10년 전 남편이 의전원 진학 후 바빠지면서 혼자 맥주를 마시기 시작하였고...(4줄 서술)'"
+        }
+      ]
+    }
+  }
+}
