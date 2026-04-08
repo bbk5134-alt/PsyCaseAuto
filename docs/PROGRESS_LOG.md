@@ -4,6 +4,51 @@
 
 ---
 
+### 세션 59 — WF4 E2E QC 분석 + 개선 계획 확정 (2026-04-09)
+
+#### 작업 내용
+
+WF4 첫 E2E 출력(`대본_PT-2026-002_20260408_1932.html`) 대상으로 Claude.ai QC(81점/B) 수행 및 결과 분석. 개선 계획 확정 저장. 시행은 Gemini Deep Research 논문 검증 후 진행 예정.
+
+#### QC 결과 요약
+
+| 항목 | 점수 | 비고 |
+|------|-----:|------|
+| A. 보고서 반영도 | 17/20 | HPD R/O 보고서 범위 초과(경미), AUD onset 모호성 |
+| B. 질문 임상 타당성 | 18/20 | 감별 진단 비중 85%, 핵심 질문 정확 포착 |
+| C. 답변 충분성 | 16/20 | Q3 이후 HTML 절단 버그로 답변 소실 |
+| D. 고위험 영역 | 12/15 | GTC seizure 병력, 과거 SI 활용 미흡 |
+| E. 논문 적절성 | 10/15 | Q1·Q4·Q6 논문 미발견, URL 있는 6편은 검증 필요 |
+| F. 형식·가독성 | 8/10 | 절단 버그 감안 시 실제 5~6점 수준 |
+| **합계** | **81/100** | **B — 경미한 수정 후 사용 가능** |
+
+#### 확정 개선 항목 (상세: `docs/WF4_improvement_plan_v1.0.md`)
+
+| 항목 | 결정 |
+|------|------|
+| #1-A Stage 0 출력 절단 | 상위 5개 유지 + 답변 구조 단축 (핵심 3~5문장 + bullet 3개) |
+| #1-B HTML 가독성 | marked.js CDN 추가 → 마크다운 표 HTML 렌더링 |
+| #2 논문 fallback | 미추가 — Gemini Deep Research 분업 유지 |
+| #3 Section 5 확장 | 미시행 — 반대로 단축 |
+| #5 Cyclothymia 로직 | 일반화 "배제 근거 추출" 규칙으로 대체 |
+| A-2 자기검증 | WF 내부 불가 — Claude.ai QC targeted 검증으로 대응 |
+| B-2 수정일 트리거 | Drive webhook 미구현 — HTML 메타에 수정일 명시 |
+| C-2 비용 모니터링 | 간이 예상 비용 Telegram 알림 추가 |
+| 건의사항 | /대본 폴더 분리 저장 |
+
+#### 생성된 파일
+
+- `docs/system_prompt_wf4_qc_v1.0.md` — Claude.ai QC 프롬프트
+- `docs/system_prompt_wf4_paper_qc_v1.0.md` — Gemini Deep Research 논문 검증 프롬프트
+- `docs/WF4_improvement_plan_v1.0.md` — 개선 계획 확정본
+
+#### 다음 작업
+
+1. Gemini Deep Research로 논문 검증 (`docs/system_prompt_wf4_paper_qc_v1.0.md` 사용)
+2. 검증 결과 확인 후 `WF4_improvement_plan_v1.0.md` 시행 우선순위 1번부터 적용
+
+---
+
 ### 세션 57 — WF4 노드 10-prep + 11~14 추가 완료 (2026-04-08)
 
 #### 작업 내용
