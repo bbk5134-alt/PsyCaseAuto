@@ -1,16 +1,68 @@
 # WF4 개선 계획 v1.0
 
 > **작성일**: 2026-04-09
-> **근거**: 세션 58~59 E2E 테스트 + Claude.ai QC (81점/B) 결과 분석
-> **상태**: 🟡 Gemini Deep Research 논문 검증 결과 대기 — 결과 확인 후 시행
-> **참조**: `docs/PROGRESS_LOG.md` 세션 59
+> **최종 수정**: 2026-04-09 (세션 60 — Gemini Deep Research QC 결과 반영)
+> **근거**: 세션 58~59 E2E 테스트 + Claude.ai QC (81점/B) + Gemini Deep Research 논문 검증
+> **상태**: 🟢 논문 검증 완료 — 시행 조건 충족, #1-A부터 순차 시행 가능
+> **참조**: `docs/PROGRESS_LOG.md` 세션 59~60
+
+---
+
+## Gemini Deep Research 논문 검증 결과 요약 (세션 60)
+
+> **검증 대상**: PT-2026-002 대본 논문 8편 + Group C 공백 3건
+> **검증 도구**: Gemini Deep Research (PubMed/PMC/Google Scholar 실검색)
+
+### 종합 점수
+
+| 항목 | 점수 | 비고 |
+|------|------|------|
+| 존재 정확도 | 4/8 (50%) | 4편 완벽 일치, 4편 저자·학술지 오류 |
+| 임상 관련성 평균 | 4.8/5.0 | 주제 선정 능력은 우수 |
+| 커버리지 충족도 | 6/6 (100%) | Group C 대체 논문 추천으로 완비 |
+| **종합 판정** | **B** | 서지 오류 교정 후 A등급 가능 |
+
+### 서지 오류 교정 목록 (PT-2026-002 대본 즉시 수정)
+
+| 논문 | 오류 | 수정 내용 |
+|------|------|-----------|
+| **논문 2** | 저자 오류: Perroud → | **Sanches M.** (2019), Diseases, DOI: 10.3390/diseases7030049 |
+| **논문 4** | 저자·연도 오류: Vieta 2014 → | **Angst J.** (2013), Int J Bipolar Disord, PMID: 24280140 |
+| **논문 5** | 저자·학술지 오류: Skirrow, CNS Drugs → | **Comparelli A, et al.** (2022), Front Psychiatry, PMID: 35951152 |
+| **논문 6** | 저자·학술지 오류: Martz, Transl Psychiatry → | **Faedda GL, et al.** (2016), J Child Psychol Psychiatry, PMID: 26801494 |
+| **논문 8** | 제목 불일치 | "The **relationship** between BPD and bipolar disorder" (Overlapping → relationship) |
+
+> 논문 1 (Dell'Osso), 3 (Severus), 7 (Quello): ✅ 완벽 일치 — 수정 불필요.
+
+### Group C 대체 논문 확정 (PT-2026-002 대본에만 수동 삽입)
+
+**Q1 (알코올 유발 기분장애 vs BD I 감별)**
+- Farren CK & McElroy SL (2008), Int J Psychiatry Clin Pract — PMCID: PMC3730445 ⭐⭐⭐⭐⭐
+- Schuckit MA et al. (2020), Front Psychiatry — DOI: 10.3389/fpsyt.2020.522228 ⭐⭐⭐⭐
+
+**Q4 (알코올 금단 증상 vs 조증 감별)**
+- Jesse S, et al. (2017), Dtsch Arztebl Int — PMCID: PMC5268336 ⭐⭐⭐⭐ ← **주 인용 권장**
+- Musinguzi J, et al. (2024), EAHRJ — DOI: 10.24248/eahrj.v8i1.734 ⭐⭐⭐⭐⭐ (보조 인용)
+
+> Musinguzi 2024는 소형 지역 학술지(EAHRJ). Jesse 2017(독일 공식 의학 저널)을 주 인용으로.
+
+**Q6 (BD I Moderate Severity 기준)**
+- APA DSM-5-TR BD Update (2022): https://www.psychiatry.org/getmedia/98fd2c17-93f0-42cd-9f41-755d77b862a5/APA-DSM5TR-BipolarIandBipolarIIDisorders.pdf ⭐⭐⭐⭐⭐
+
+> **Vieta et al. (2018) Lancet Psychiatry 최종 판정**: PMID 30146246 실존 확인됨. 단, 실제 제목은 "Areas of uncertainties and unmet needs in bipolar disorders" — Q6 severity specifier 직접 논의 아님. **미채택**, APA 공식 문서 단독 사용.
+
+### Group C 논문 프롬프트 하드코딩 — 미채택 (결정 B)
+
+> **이유**: PT-2026-002 특화 논문을 Stage 0 프롬프트에 고정 삽입하면,
+> 다른 진단(우울증, 조현병 등) 케이스에서 불필요한 토큰·context 소모 발생.
+> **대신**: 현재 케이스 대본 HTML에만 수동 추가. WF4 프롬프트는 수정하지 않음.
 
 ---
 
 ## 시행 조건
 
-> **Gemini Deep Research 논문 검증(E항목) 결과 확인 후 아래 항목 순차 시행.**
-> 검증 전 n8n 워크플로우 수정 금지.
+> **✅ 완료** — Gemini Deep Research 논문 검증 결과 확인됨 (2026-04-09).
+> **#1-A부터 시행 가능.**
 
 ---
 
@@ -88,6 +140,25 @@
 
 ---
 
+### #6. Perplexity 논문 서지 정확도 강화 — PMID 필수 규칙 (신규, 세션 60)
+
+**배경**: Gemini QC 결과 8편 중 4편이 저자명·학술지 오류 (50%). "제목은 맞고 저자가 틀리는" 전형적 LLM hallucination 패턴.
+
+**결정**: AI Agent 논문 검색 프롬프트에 아래 규칙 추가.
+
+**추가할 규칙**:
+```
+[논문 서지 정보 필수 규칙]
+- 논문 인용 시 반드시 PMID 또는 DOI를 함께 반환할 것
+- 제1저자명은 PubMed 원문 기준으로 확인할 것
+- PMID 확인 불가 시 "[PMID 미확인 — 서지 정보 검증 필요]" 태그를 논문 옆에 삽입
+- 저자명과 학술지를 추정으로 채우지 말 것 (불확실하면 태그 삽입)
+```
+
+**적용 대상**: WF4 AI Agent 논문 검색 노드 시스템 프롬프트 (Perplexity Tool 사용 노드)
+
+---
+
 ### A-2. Section 2.5 자기검증 — WF4 내부 불가
 
 **결정**: WF4 AI Agent 내 자기검증(셀 단위 fact-check) 추가 안 함.
@@ -162,14 +233,20 @@ const estimatedCost = includePapers
 | 3 | **B-2** 보고서 수정일 메타 추가 | 하 | 10분 |
 | 4 | **C-2** 간이 비용 표시 | 하 | 10분 |
 | 5 | **#5** 일반화 배제 근거 규칙 추가 | 중 | 20분 |
-| 6 | **건의사항** /대본 폴더 분리 저장 | 중 | 30분 |
+| 6 | **#6** PMID 필수 규칙 추가 (신규) | 하 | 10분 |
+| 7 | **건의사항** /대본 폴더 분리 저장 | 중 | 30분 |
 
 > **미시행 항목**: #2 fallback, #3 확장, A-2 자기검증 (WF 내부)
+> **케이스 한정 수동 작업**: PT-2026-002 대본 논문 서지 교정 + Group C 논문 삽입 (WF4 재실행 시 자동 반영 예정)
 
 ---
 
 ## 다음 세션 시작 조건
 
-1. ✅ Gemini Deep Research 논문 검증 완료
-2. ✅ 검증 결과 검토 후 논문 공백(Q1·Q4·Q6) 대체 논문 확정
-3. 위 완료 후 시행 우선순위 1번부터 순차 적용
+1. ✅ Gemini Deep Research 논문 검증 완료 (2026-04-09)
+2. ✅ 검증 결과 검토 완료 — 의사결정 확정:
+   - 서지 오류 4건: #1-A 프롬프트 수정 + WF4 재실행으로 자동 교정
+   - Group C 논문: 프롬프트 하드코딩 미채택, 재실행 대본에 반영
+   - Vieta 2018: 미채택 (내용 불일치), APA 공식 문서 단독 사용
+   - PMID 필수 규칙: #6으로 추가 확정
+3. **시행 우선순위 1번(#1-A)부터 순차 시행**
